@@ -815,58 +815,72 @@ function fetchAllMatches(){
   var today = new Date();
   var d = today.getFullYear()+'-'+pad(today.getMonth()+1)+'-'+pad(today.getDate());
 
-  /* eventsnext — always returns real upcoming data for each league */
-  var nextF = LEAGUES.map(function(lg){
-    return fetch(TSDB+'/eventsnext.php?id='+lg.id)
-      .then(function(r){ return r.ok?r.json():{events:[]}; })
+  /* Fetch with timeout — TheSportsDB can be slow */
+  function fetchWithTimeout(url, ms){
+    ms = ms || 8000;
+    return Promise.race([
+      fetch(url).then(function(r){ return r.ok?r.json():{events:[],results:[]}; }),
+      new Promise(function(_,rej){ setTimeout(function(){ rej(new Error('timeout')); }, ms); })
+    ]).catch(function(){ return {events:[],results:[]}; });
+  }
+
+  /* STEP 1 — Fetch next 5 leagues first (fastest, always has data) */
+  var priorityLeagues = LEAGUES.slice(0,6); /* UCL, EPL, La Liga, Bundesliga, Serie A, Ligue 1 */
+
+  var priorityNext = priorityLeagues.map(function(lg){
+    return fetchWithTimeout(TSDB+'/eventsnext.php?id='+lg.id, 6000)
       .then(function(data){
         return (data.events||[]).slice(0,5).map(function(e){ return _tag(e,lg,'upcoming'); });
-      }).catch(function(){ return []; });
+      });
   });
 
-  /* eventslast — always returns real recent results for each league */
-  var lastF = LEAGUES.map(function(lg){
-    return fetch(TSDB+'/eventslast.php?id='+lg.id)
-      .then(function(r){ return r.ok?r.json():{results:[]}; })
-      .then(function(data){
-        var evts=data.results||data.events||[];
-        return evts.slice(0,5).map(function(e){ return _tag(e,lg,'result'); });
-      }).catch(function(){ return []; });
-  });
-
-  /* eventsday — today's fixtures, may be empty on off days */
-  var dayF = LEAGUES.map(function(lg){
-    return fetch(TSDB+'/eventsday.php?d='+d+'&l='+encodeURIComponent(lg.name))
-      .then(function(r){ return r.ok?r.json():{events:[]}; })
-      .then(function(data){
-        return (data.events||[]).map(function(e){ return _tag(e,lg,'today'); });
-      }).catch(function(){ return []; });
-  });
-
-  /* Show upcoming instantly — don't wait for day fetch */
-  Promise.all(nextF).then(function(res){
+  /* Show priority upcoming IMMEDIATELY — renders Live screen fast */
+  Promise.all(priorityNext).then(function(res){
     var arr=[]; res.forEach(function(r){ arr=arr.concat(r); });
     arr.sort(function(a,b){ return (a.dateEvent||'').localeCompare(b.dateEvent||''); });
-    ALL_UPCOMING = arr;
-    if(!DATA_LOADED){
+    if(arr.length > 0){
+      ALL_UPCOMING = arr;
       renderHeroCarousel();
       renderHomeTodayCards();
-      renderLiveScreen();
+      renderLiveScreen(); /* Shows data immediately */
       renderMarkets();
       buildScoreTicker();
     }
   });
 
-  /* Show results instantly */
-  Promise.all(lastF).then(function(res){
+  /* STEP 2 — Fetch all leagues next + last in two batches to avoid rate limit */
+  var allNext = LEAGUES.map(function(lg){
+    return fetchWithTimeout(TSDB+'/eventsnext.php?id='+lg.id, 10000)
+      .then(function(data){
+        return (data.events||[]).slice(0,5).map(function(e){ return _tag(e,lg,'upcoming'); });
+      });
+  });
+
+  var allLast = LEAGUES.map(function(lg){
+    return fetchWithTimeout(TSDB+'/eventslast.php?id='+lg.id, 10000)
+      .then(function(data){
+        var evts=data.results||data.events||[];
+        return evts.slice(0,5).map(function(e){ return _tag(e,lg,'result'); });
+      });
+  });
+
+  var dayF = LEAGUES.map(function(lg){
+    return fetchWithTimeout(TSDB+'/eventsday.php?d='+d+'&l='+encodeURIComponent(lg.name), 8000)
+      .then(function(data){
+        return (data.events||[]).map(function(e){ return _tag(e,lg,'today'); });
+      });
+  });
+
+  /* Render results as soon as they come in */
+  Promise.all(allLast).then(function(res){
     var arr=[]; res.forEach(function(r){ arr=arr.concat(r); });
     arr.sort(function(a,b){ return (b.dateEvent||'').localeCompare(a.dateEvent||''); });
     ALL_RECENT = arr;
-    if(!DATA_LOADED) renderLiveScreen();
+    renderLiveScreen();
   });
 
-  /* Final merge — all 3 complete */
-  Promise.all([Promise.all(dayF), Promise.all(nextF), Promise.all(lastF)])
+  /* Final complete merge */
+  Promise.all([Promise.all(dayF), Promise.all(allNext), Promise.all(allLast)])
   .then(function(all){
     var dayArr=[], nextArr=[], lastArr=[];
     all[0].forEach(function(r){ dayArr=dayArr.concat(r); });
@@ -877,11 +891,10 @@ function fetchAllMatches(){
     nextArr.sort(function(a,b){ return (a.dateEvent||'').localeCompare(b.dateEvent||''); });
     lastArr.sort(function(a,b){ return (b.dateEvent||'').localeCompare(a.dateEvent||''); });
 
-    /* Today = day matches if available, else next matches dated today */
     ALL_TODAY    = dayArr.length ? dayArr : nextArr.filter(function(e){ return e.dateEvent===d; });
-    ALL_UPCOMING = nextArr;
-    ALL_RECENT   = lastArr;
-    ALL_MATCHES  = ALL_TODAY.concat(nextArr.slice(0,30)).concat(lastArr.slice(0,20));
+    ALL_UPCOMING = nextArr.length ? nextArr : ALL_UPCOMING; /* keep priority data if full fetch failed */
+    ALL_RECENT   = lastArr.length ? lastArr : ALL_RECENT;
+    ALL_MATCHES  = ALL_TODAY.concat(ALL_UPCOMING.slice(0,30)).concat(ALL_RECENT.slice(0,20));
     LIVE_MATCHES = ALL_TODAY.filter(isLive);
     DATA_LOADED  = true;
 
@@ -1276,10 +1289,17 @@ function renderLiveScreen(){
   }
 
   if(!html){
-    html='<div style="text-align:center;padding:2rem;color:var(--t2)">'
-      +'<div class="spin" style="margin:0 auto 1rem"></div>'
-      +'Loading fixtures from TheSportsDB...</div>';
-    if(!DATA_LOADED) fetchAllMatches();
+    /* No data at all — show loading or trigger fetch */
+    if(!DATA_LOADED && ALL_UPCOMING.length===0 && ALL_RECENT.length===0){
+      html='<div style="text-align:center;padding:2.5rem 1rem;color:var(--t2)">'
+        +'<div class="spin" style="margin:0 auto 1rem;width:28px;height:28px;border-width:2.5px"></div>'
+        +'<div style="font-family:var(--fb);font-size:.82rem;margin-bottom:.4rem">Fetching fixtures...</div>'
+        +'<div style="font-size:.7rem;opacity:.6">TheSportsDB · 12 leagues · Auto-updating</div>'
+        +'</div>';
+      fetchAllMatches();
+    } else {
+      html='<div style="text-align:center;padding:1.5rem;color:var(--t2);font-size:.8rem">No matches for this filter.</div>';
+    }
   }
 
   el.innerHTML=html;
