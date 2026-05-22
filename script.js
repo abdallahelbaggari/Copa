@@ -1646,4 +1646,3 @@ function checkPremium(){
     if(m){ document.querySelectorAll('.ll').forEach(function(b){b.classList.remove('on');}); m.classList.add('on'); }
   }
 }());
-
