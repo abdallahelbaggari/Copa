@@ -706,6 +706,8 @@ function navTo(id){
   document.querySelectorAll('.screen').forEach(function(s){ s.classList.remove('on'); });
   document.querySelectorAll('.bnav').forEach(function(b){ b.classList.toggle('on',b.dataset.s===id); });
   var s=$('scr-'+id); if(s) s.classList.add('on');
+  if(id==='live')      renderLiveScreen();   /* Always re-render with latest data */
+  if(id==='home')      { renderHeroCarousel(); renderHomeLive(); renderHomeTodayCards(); }
   if(id==='community') buildCommContent(CURR_COMM);
   if(id==='stats')     buildStats(CURR_STATS);
   if(id==='fantasy')   buildFantasy(CURR_FANTASY);
@@ -842,7 +844,7 @@ function fetchAllMatches(){
       ALL_UPCOMING = arr;
       renderHeroCarousel();
       renderHomeTodayCards();
-      renderLiveScreen(); /* Shows data immediately */
+      renderLiveScreen();
       renderMarkets();
       buildScoreTicker();
     }
@@ -1234,72 +1236,92 @@ function likeComment(mid, id){
   if(c){ c.likes=(c.likes||0)+1; localStorage.setItem('copa_coms',JSON.stringify(COMMENTS)); renderMatchComments(mid); }
 }
 
-/* ═══ LIVE SCORES SCREEN — LiveScore style grouped by competition ═══ */
+/* ═══ LIVE SCORES SCREEN — LiveScore style ═══ */
 function renderLiveScreen(){
   var el=$('liveMatchesList'); if(!el) return;
 
-  /* Collect all matches to show */
-  var todayF    = ALL_TODAY.filter(function(e){ return CURR_COMP==='ALL'||e._comp===CURR_COMP; });
-  var upcomingF = ALL_UPCOMING.filter(function(e){ return CURR_COMP==='ALL'||e._comp===CURR_COMP; }).slice(0,30);
-  var recentF   = ALL_RECENT.filter(function(e){ return CURR_COMP==='ALL'||e._comp===CURR_COMP; }).slice(0,30);
+  var allAvailable = ALL_TODAY.concat(ALL_UPCOMING).concat(ALL_RECENT);
+
+  /* If no data at all yet — show spinner and fetch */
+  if(allAvailable.length === 0){
+    el.innerHTML='<div style="text-align:center;padding:2.5rem 1rem;color:var(--t2)">'
+      +'<div class="spin" style="margin:0 auto 1rem;width:28px;height:28px;border-width:2.5px"></div>'
+      +'<div style="font-family:var(--fb);font-size:.82rem;margin-bottom:.3rem">Fetching live data...</div>'
+      +'<div style="font-size:.68rem;opacity:.55">TheSportsDB · 12 competitions</div>'
+      +'</div>';
+    fetchAllMatches();
+    return;
+  }
+
+  /* Filter by selected competition */
+  function matchFilter(e){ return CURR_COMP==='ALL' || e._comp===CURR_COMP; }
+
+  var todayF    = ALL_TODAY.filter(matchFilter);
+  var upcomingF = ALL_UPCOMING.filter(matchFilter).slice(0,40);
+  var recentF   = ALL_RECENT.filter(matchFilter).slice(0,40);
+
+  /* If filter selected but no data for that comp — show helpful message */
+  if(CURR_COMP !== 'ALL' && todayF.length===0 && upcomingF.length===0 && recentF.length===0){
+    var compName = CURR_COMP;
+    LEAGUES.forEach(function(lg){ if(lg.comp===CURR_COMP) compName=lg.name; });
+    el.innerHTML='<div style="text-align:center;padding:2rem 1rem;color:var(--t2)">'
+      +'<div style="font-size:1.8rem;margin-bottom:.6rem">📅</div>'
+      +'<div style="font-family:var(--fb);font-size:.85rem;color:var(--t);margin-bottom:.4rem">No upcoming fixtures</div>'
+      +'<div style="font-size:.72rem;opacity:.7">'+compName+' — no scheduled matches found.<br>Try selecting All or another competition.</div>'
+      +'</div>';
+    return;
+  }
 
   var html = '';
 
   /* ── LIVE NOW ── */
   var live = todayF.filter(isLive);
   if(live.length){
-    html += '<div class="ls-comp-header"><span class="ls-live-dot"></span> Live Now</div>';
+    html += '<div class="ls-comp-header"><span class="ls-live-dot"></span> Live Now ('+live.length+')</div>';
     html += buildCompGroup(live, true);
   }
 
-  /* ── TODAY — grouped by competition ── */
-  var todayNotLive = todayF.filter(function(e){ return !isLive(e); });
-  if(todayNotLive.length){
+  /* ── TODAY ── */
+  var todayNonLive = todayF.filter(function(e){ return !isLive(e); });
+  if(todayNonLive.length){
     html += '<div class="ls-date-header">📅 Today</div>';
-    html += buildCompGroup(todayNotLive, true);
+    html += buildCompGroup(todayNonLive, true);
   }
 
-  /* ── UPCOMING — grouped by date then competition ── */
+  /* ── UPCOMING — grouped by date ── */
   if(upcomingF.length){
-    var byDate = {};
+    var byDate={};
     upcomingF.forEach(function(e){
-      var dk=e.dateEvent||''; if(!byDate[dk]) byDate[dk]=[];
+      var dk=e.dateEvent||'TBD';
+      if(!byDate[dk]) byDate[dk]=[];
       byDate[dk].push(e);
     });
-    var dates=Object.keys(byDate).sort();
-    dates.forEach(function(dk){
-      var label=formatDateShort(dk);
-      html+='<div class="ls-date-header">🗓 '+label+'</div>';
+    Object.keys(byDate).sort().forEach(function(dk){
+      html+='<div class="ls-date-header">🗓 '+formatDateShort(dk)+'</div>';
       html+=buildCompGroup(byDate[dk],false);
     });
   }
 
-  /* ── RECENT RESULTS — grouped by date then competition ── */
+  /* ── RECENT RESULTS — grouped by date ── */
   if(recentF.length){
     var byDate2={};
     recentF.forEach(function(e){
-      var dk=e.dateEvent||''; if(!byDate2[dk]) byDate2[dk]=[];
+      var dk=e.dateEvent||'TBD';
+      if(!byDate2[dk]) byDate2[dk]=[];
       byDate2[dk].push(e);
     });
-    var dates2=Object.keys(byDate2).sort().reverse();
-    dates2.forEach(function(dk){
+    Object.keys(byDate2).sort().reverse().forEach(function(dk){
       html+='<div class="ls-date-header" style="color:var(--bl)">📋 '+formatDateShort(dk)+' — Results</div>';
       html+=buildResultGroup(byDate2[dk]);
     });
   }
 
+  /* If "All" but still no html — shouldn't happen but guard it */
   if(!html){
-    /* No data at all — show loading or trigger fetch */
-    if(!DATA_LOADED && ALL_UPCOMING.length===0 && ALL_RECENT.length===0){
-      html='<div style="text-align:center;padding:2.5rem 1rem;color:var(--t2)">'
-        +'<div class="spin" style="margin:0 auto 1rem;width:28px;height:28px;border-width:2.5px"></div>'
-        +'<div style="font-family:var(--fb);font-size:.82rem;margin-bottom:.4rem">Fetching fixtures...</div>'
-        +'<div style="font-size:.7rem;opacity:.6">TheSportsDB · 12 leagues · Auto-updating</div>'
-        +'</div>';
-      fetchAllMatches();
-    } else {
-      html='<div style="text-align:center;padding:1.5rem;color:var(--t2);font-size:.8rem">No matches for this filter.</div>';
-    }
+    html='<div style="text-align:center;padding:1.5rem;color:var(--t2);font-size:.8rem">'
+      +'No fixtures loaded yet — refreshing...'
+      +'</div>';
+    setTimeout(fetchAllMatches, 1000);
   }
 
   el.innerHTML=html;
