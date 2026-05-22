@@ -13,8 +13,19 @@
 <meta name="apple-mobile-web-app-title" content="Copa">
 <title>Copa — Global Football Super App</title>
 
-<!-- Pi SDK — loads in head per Pi Core Team requirement -->
+<!-- ① Pi SDK — MUST load first -->
 <script src="https://sdk.minepi.com/pi-sdk.js"></script>
+<!-- ② Pi.init() — immediately after SDK -->
+<script>
+(function(){
+  try {
+    if(typeof Pi!=='undefined'){
+      Pi.init({version:'2.0',sandbox:false});
+      window.__piReady=true;
+    } else { window.__piReady=false; }
+  } catch(e){ window.__piReady=false; }
+})();
+</script>
 
 <script src="https://cdn.jsdelivr.net/npm/qrcode/build/qrcode.min.js"></script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -58,7 +69,7 @@
       <div class="lsb-sep"></div>
       <div class="lsb-item"><span class="lsb-val" id="lstMatches">0</span> Today</div>
       <div class="lsb-sep"></div>
-      <div class="lsb-item"><span class="lsb-val" id="lstUsers">—</span> Users</div>
+      <div class="lsb-item"><span class="lsb-val">12</span> Leagues</div>
       <div class="lsb-sep"></div>
       <div class="lsb-item"><span class="lsb-dot green"></span> Secure</div>
     </div>
@@ -103,11 +114,11 @@
     </div>
 
     <div class="land-footer-links">
-      <span id="ftPrivacy">Privacy Policy</span>
-      <span style="color:var(--t3)">·</span>
-      <span id="ftTerms">Terms of Service</span>
-      <span style="color:var(--t3)">·</span>
-      <span id="ftPowered">Powered by Pi Network</span>
+      <span>Privacy Policy</span>
+      <span>·</span>
+      <span>Terms of Service</span>
+      <span>·</span>
+      <span>Powered by Pi Network</span>
     </div>
 
   </div>
@@ -436,14 +447,14 @@
       <div class="settings-card">
         <div class="setting-row">
           <span>Language</span>
-          <select class="setting-sel" onchange="setLang(this.value, null)">
-            <option value="en">🌐 English</option>
-            <option value="ar">🇸🇦 العربية</option>
-            <option value="fr">🇫🇷 Français</option>
-            <option value="es">🇪🇸 Español</option>
-            <option value="pt">🇵🇹 Português</option>
-            <option value="id">🇮🇩 Indonesia</option>
-            <option value="tr">🇹🇷 Türkçe</option>
+          <select class="setting-sel" onchange="setLang(this.value,null)">
+            <option value="en">English</option>
+            <option value="ar">العربية</option>
+            <option value="fr">Français</option>
+            <option value="es">Español</option>
+            <option value="pt">Português</option>
+            <option value="id">Indonesia</option>
+            <option value="tr">Türkçe</option>
           </select>
         </div>
         <div class="setting-row">
