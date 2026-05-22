@@ -1,47 +1,16 @@
 /* ════════════════════════════════════════════════════════
-   COPA — script.js  v4.1
+   COPA — script.js  v4.0
    Pi Mainnet · TheSportsDB · Claude AI
    WorldCup payment pattern (verify→approve→complete)
    Everything real · Everything automatic · Everything live
-   Loads at END of body — Pi.init() called here
+   Loads at END of body per Pi Core Team requirement
 ════════════════════════════════════════════════════════ */
 'use strict';
 
-/* ═══ PI SDK INIT ═══
-   Pi SDK loads in <head> but may not be ready immediately.
-   We init here AND retry in piLogin to handle timing issues.  */
-var PI_READY = false;
+/* ═══ PI SDK STATE ═══ */
+var PI_READY = window.__piReady === true;
 var PI_USER  = null;
 var PI_TOKEN = null;
-
-function _initPiSDK(){
-  try {
-    if(typeof Pi !== 'undefined'){
-      Pi.init({ version: '2.0', sandbox: false });
-      PI_READY = true;
-      console.log('[Copa] Pi SDK ready');
-      /* Update landing status if already visible */
-      var ls=$('landLoginStatus');
-      if(ls && ls.textContent.indexOf('Open in Pi Browser')!==-1){
-        ls.textContent='Pi Network ready — tap to authenticate';
-        ls.className='land-login-status ok';
-      }
-      return true;
-    }
-  } catch(e){
-    console.warn('[Copa] Pi.init error:', e);
-  }
-  PI_READY = false;
-  return false;
-}
-
-/* Try immediately */
-_initPiSDK();
-
-/* Retry after 300ms and 800ms — handles slow SDK load in Pi Browser */
-setTimeout(function(){ if(!PI_READY) _initPiSDK(); }, 300);
-setTimeout(function(){ if(!PI_READY) _initPiSDK(); }, 800);
-setTimeout(function(){ if(!PI_READY) _initPiSDK(); }, 1500);
 
 /* ═══ APP STATE ═══ */
 var LANG       = localStorage.getItem('copa_lang') || 'en';
@@ -200,297 +169,50 @@ function toggleTheme(){
   localStorage.setItem('copa_theme', THEME);
 }
 
-/* ═══ LANGUAGE — Full i18n ═══ */
-var I18N = {
-  en:{
-    tagline:'The global football super app powered by Pi Network.',
-    sub:'Live scores · Predictions · Fantasy · AI · Community',
-    signin:'Sign in with Pi', guest:'Continue as Guest',
-    privacy:'Privacy Policy', terms:'Terms of Service', powered:'Powered by Pi Network',
-    no_fixtures:'No fixtures today — check back soon'
-  },
-  ar:{
-    tagline:'تطبيق كرة القدم العالمي المدعوم بـ Pi Network.',
-    sub:'نتائج مباشرة · تنبؤات · فانتازي · ذكاء اصطناعي · مجتمع',
-    signin:'تسجيل الدخول بـ Pi', guest:'متابعة كضيف',
-    privacy:'سياسة الخصوصية', terms:'شروط الخدمة', powered:'مدعوم بـ Pi Network',
-    no_fixtures:'لا مباريات اليوم'
-  },
-  fr:{
-    tagline:'La super app football mondiale propulsée par Pi Network.',
-    sub:'Scores en direct · Pronostics · Fantasy · IA · Communauté',
-    signin:'Se connecter avec Pi', guest:'Continuer en tant qu\'invité',
-    privacy:'Confidentialité', terms:'Conditions', powered:'Propulsé par Pi Network',
-    no_fixtures:'Aucun match aujourd\'hui'
-  },
-  es:{
-    tagline:'La super app de fútbol global impulsada por Pi Network.',
-    sub:'Marcadores en vivo · Predicciones · Fantasy · IA · Comunidad',
-    signin:'Iniciar sesión con Pi', guest:'Continuar como invitado',
-    privacy:'Privacidad', terms:'Términos', powered:'Propulsado por Pi Network',
-    no_fixtures:'Sin partidos hoy'
-  },
-  pt:{
-    tagline:'O super app de futebol global alimentado pela Pi Network.',
-    sub:'Placares ao vivo · Previsões · Fantasy · IA · Comunidade',
-    signin:'Entrar com Pi', guest:'Continuar como convidado',
-    privacy:'Privacidade', terms:'Termos', powered:'Desenvolvido por Pi Network',
-    no_fixtures:'Sem jogos hoje'
-  },
-  id:{
-    tagline:'Super app sepak bola global didukung oleh Pi Network.',
-    sub:'Skor langsung · Prediksi · Fantasy · AI · Komunitas',
-    signin:'Masuk dengan Pi', guest:'Lanjutkan sebagai Tamu',
-    privacy:'Privasi', terms:'Ketentuan', powered:'Didukung Pi Network',
-    no_fixtures:'Tidak ada pertandingan hari ini'
-  },
-  tr:{
-    tagline:'Pi Network tarafından desteklenen küresel futbol süper uygulaması.',
-    sub:'Canlı skorlar · Tahminler · Fantezi · AI · Topluluk',
-    signin:'Pi ile Giriş Yap', guest:'Misafir olarak devam et',
-    privacy:'Gizlilik', terms:'Koşullar', powered:'Pi Network tarafından',
-    no_fixtures:'Bugün maç yok'
-  }
+/* ═══ LANGUAGE ═══ */
+var LANG_DATA = {
+  en:{ welcome:'Welcome back', sub:"The world's football — all in one place" },
+  ar:{ welcome:'مرحباً بك',    sub:'كرة القدم العالمية في مكان واحد' },
+  fr:{ welcome:'Bienvenue',    sub:'Le football mondial en un seul endroit' },
+  es:{ welcome:'Bienvenido',   sub:'El fútbol mundial en un solo lugar' },
+  pt:{ welcome:'Bem-vindo',    sub:'Futebol global em um só lugar' },
+  id:{ welcome:'Selamat datang',sub:'Sepak bola dunia dalam satu tempat' },
+  tr:{ welcome:'Hoş geldiniz', sub:'Dünya futbolu tek bir yerde' },
 };
 
-function t(key){ return (I18N[LANG]&&I18N[LANG][key])||I18N.en[key]||key; }
-
-/* ═══════════════════════════════════════════════════════
-   setLang — rewrites every visible text in the app
-   Called by: language buttons (pass btn element)
-              settings select (passes null)
-              onPageLoad (passes null)
-═══════════════════════════════════════════════════════ */
 function setLang(code, btn){
-  LANG = code;
-  localStorage.setItem('copa_lang', code);
-
-  /* Document direction */
-  var isRTL = (code === 'ar');
-  document.documentElement.lang = code;
-  document.documentElement.dir  = isRTL ? 'rtl' : 'ltr';
-  document.body.style.direction = isRTL ? 'rtl' : 'ltr';
-  document.body.style.textAlign = isRTL ? 'right' : 'left';
-
-  /* Highlight active lang button */
-  document.querySelectorAll('.ll, .lang-opt').forEach(function(b){
-    b.classList.remove('on');
-    var oc = b.getAttribute('onclick') || '';
-    if(oc.indexOf("'"+code+"'") !== -1 || b.dataset.lang === code) b.classList.add('on');
-  });
-
-  /* Sync settings select */
-  document.querySelectorAll('.setting-sel').forEach(function(sel){ sel.value = code; });
-
-  /* ── LANDING ── */
-  _setEl('loginBtnTxt', t('signin'));
-  _setEl('ftPrivacy',   t('privacy'));
-  _setEl('ftTerms',     t('terms'));
-  _setEl('ftPowered',   t('powered'));
-  var wv = document.querySelector('.land-welcome');
-  if(wv) wv.innerHTML = t('tagline')+'<br><span style="font-size:.75rem;color:rgba(238,242,255,.52);display:block;margin-top:.3rem">'+t('sub')+'</span>';
-  var ghost = document.querySelector('.land-btn-ghost');
-  if(ghost) ghost.textContent = t('guest');
-  var lp = document.querySelector('#landPreview .lp-loading');
-  if(lp && !ALL_MATCHES.length) lp.textContent = t('no_fixtures');
-
-  /* ── ALL TRANSLATABLE TEXT MAPS ── */
-  var nav = {
-    en:{home:'Home',live:'Live',predict:'Predict',fantasy:'Fantasy',stats:'Stats',ai:'AI',community:'Community',profile:'Profile'},
-    ar:{home:'الرئيسية',live:'مباشر',predict:'توقع',fantasy:'فانتازي',stats:'إحصاء',ai:'ذكاء',community:'مجتمع',profile:'ملفي'},
-    fr:{home:'Accueil',live:'Direct',predict:'Pronostic',fantasy:'Fantasy',stats:'Stats',ai:'IA',community:'Communauté',profile:'Profil'},
-    es:{home:'Inicio',live:'Directo',predict:'Predicción',fantasy:'Fantasy',stats:'Stats',ai:'IA',community:'Comunidad',profile:'Perfil'},
-    pt:{home:'Início',live:'Ao Vivo',predict:'Previsão',fantasy:'Fantasy',stats:'Stats',ai:'IA',community:'Comunidade',profile:'Perfil'},
-    id:{home:'Beranda',live:'Langsung',predict:'Prediksi',fantasy:'Fantasy',stats:'Statistik',ai:'AI',community:'Komunitas',profile:'Profil'},
-    tr:{home:'Ana Sayfa',live:'Canlı',predict:'Tahmin',fantasy:'Fantasy',stats:'İstatistik',ai:'AI',community:'Topluluk',profile:'Profil'}
-  };
-  var scrT = {
-    'scr-home':      {en:'Copa',ar:'كوبا',fr:'Copa',es:'Copa',pt:'Copa',id:'Copa',tr:'Copa'},
-    'scr-live':      {en:'Live Scores',ar:'النتائج المباشرة',fr:'Scores en Direct',es:'Marcadores',pt:'Placares ao Vivo',id:'Skor Langsung',tr:'Canlı Skorlar'},
-    'scr-predict':   {en:'Prediction Markets',ar:'أسواق التنبؤ',fr:'Marchés Pronostics',es:'Mercados de Predicción',pt:'Mercados de Previsão',id:'Pasar Prediksi',tr:'Tahmin Pazarları'},
-    'scr-fantasy':   {en:'Fantasy League',ar:'دوري الفانتازي',fr:'Ligue Fantasy',es:'Liga Fantasy',pt:'Liga Fantasy',id:'Liga Fantasi',tr:'Fantezi Ligi'},
-    'scr-stats':     {en:'Statistics',ar:'الإحصاءات',fr:'Statistiques',es:'Estadísticas',pt:'Estatísticas',id:'Statistik',tr:'İstatistikler'},
-    'scr-ai':        {en:'AI Analyst',ar:'المحلل الذكي',fr:'Analyste IA',es:'Analista IA',pt:'Analista IA',id:'Analis AI',tr:'AI Analisti'},
-    'scr-community': {en:'Community',ar:'المجتمع',fr:'Communauté',es:'Comunidad',pt:'Comunidade',id:'Komunitas',tr:'Topluluk'},
-    'scr-profile':   {en:'Profile & Wallet',ar:'الملف والمحفظة',fr:'Profil & Portefeuille',es:'Perfil y Cartera',pt:'Perfil e Carteira',id:'Profil & Dompet',tr:'Profil & Cüzdan'}
-  };
-  var dashSec = {
-    en:{liveNow:'🔴 Live Now',todayFix:'📅 Today\'s Fixtures',aiIntel:'🤖 AI Football Intelligence',topScorers:'⚡ Top Scorers',commHigh:'👥 Community Highlights'},
-    ar:{liveNow:'🔴 مباشر الآن',todayFix:'📅 مباريات اليوم',aiIntel:'🤖 ذكاء كرة القدم',topScorers:'⚡ أفضل الهدافين',commHigh:'👥 أبرز المجتمع'},
-    fr:{liveNow:'🔴 En Direct',todayFix:'📅 Matchs du Jour',aiIntel:'🤖 Intelligence IA Football',topScorers:'⚡ Meilleurs Buteurs',commHigh:'👥 Highlights Communauté'},
-    es:{liveNow:'🔴 En Vivo',todayFix:'📅 Partidos de Hoy',aiIntel:'🤖 Inteligencia IA Fútbol',topScorers:'⚡ Máximos Goleadores',commHigh:'👥 Destacados Comunidad'},
-    pt:{liveNow:'🔴 Ao Vivo',todayFix:'📅 Jogos de Hoje',aiIntel:'🤖 Inteligência IA Futebol',topScorers:'⚡ Artilheiros',commHigh:'👥 Destaques Comunidade'},
-    id:{liveNow:'🔴 Siaran Langsung',todayFix:'📅 Jadwal Hari Ini',aiIntel:'🤖 Kecerdasan AI Sepakbola',topScorers:'⚡ Top Pencetak Gol',commHigh:'👥 Sorotan Komunitas'},
-    tr:{liveNow:'🔴 Canlı',todayFix:'📅 Bugünün Maçları',aiIntel:'🤖 AI Futbol Zekası',topScorers:'⚡ En İyi Golcüler',commHigh:'👥 Topluluk Öne Çıkanlar'}
-  };
-  var quick = {
-    en:{scores:'Scores',predict:'Predict',fantasy:'Fantasy',stats:'Stats',ai:'AI',wallet:'Wallet'},
-    ar:{scores:'نتائج',predict:'توقع',fantasy:'فانتازي',stats:'إحصاء',ai:'ذكاء',wallet:'محفظة'},
-    fr:{scores:'Scores',predict:'Pronostic',fantasy:'Fantasy',stats:'Stats',ai:'IA',wallet:'Portefeuille'},
-    es:{scores:'Marcadores',predict:'Predicción',fantasy:'Fantasy',stats:'Stats',ai:'IA',wallet:'Cartera'},
-    pt:{scores:'Placares',predict:'Previsão',fantasy:'Fantasy',stats:'Stats',ai:'IA',wallet:'Carteira'},
-    id:{scores:'Skor',predict:'Prediksi',fantasy:'Fantasy',stats:'Statistik',ai:'AI',wallet:'Dompet'},
-    tr:{scores:'Skorlar',predict:'Tahmin',fantasy:'Fantasy',stats:'İstatistik',ai:'AI',wallet:'Cüzdan'}
-  };
-  var walletNotes = {
-    en:'Send and receive Pi directly via Pi Browser. Copa processes the Premium payment only.',
-    ar:'أرسل واستقبل Pi مباشرة عبر متصفح Pi. تعالج Copa دفعة Premium فقط.',
-    fr:'Envoyez et recevez Pi via Pi Browser. Copa traite uniquement le paiement Premium.',
-    es:'Envía y recibe Pi por Pi Browser. Copa solo procesa el pago Premium.',
-    pt:'Envie e receba Pi pelo Pi Browser. Copa processa apenas o pagamento Premium.',
-    id:'Kirim dan terima Pi via Pi Browser. Copa hanya memproses pembayaran Premium.',
-    tr:'Pi\'yi Pi Browser üzerinden gönderin. Copa yalnızca Premium ödemesini işler.'
-  };
-  var premSubs = {
-    en:'One-time · All features · Forever',
-    ar:'مرة واحدة · جميع الميزات · إلى الأبد',
-    fr:'Unique · Toutes les fonctionnalités · À vie',
-    es:'Único · Todas las funciones · Para siempre',
-    pt:'Único · Todos os recursos · Para sempre',
-    id:'Sekali bayar · Semua fitur · Selamanya',
-    tr:'Tek seferlik · Tüm özellikler · Sonsuza kadar'
-  };
-  var premBtnTxt = {
-    en:'Unlock Premium — 0.5 π',
-    ar:'فتح Premium — 0.5 π',
-    fr:'Débloquer Premium — 0.5 π',
-    es:'Desbloquear Premium — 0.5 π',
-    pt:'Desbloquear Premium — 0.5 π',
-    id:'Buka Premium — 0.5 π',
-    tr:'Premium\'u Aç — 0.5 π'
-  };
-  var settingLabels = {
-    en:{lang:'Language',theme:'Theme',account:'Account',signout:'Sign Out'},
-    ar:{lang:'اللغة',theme:'المظهر',account:'الحساب',signout:'تسجيل الخروج'},
-    fr:{lang:'Langue',theme:'Thème',account:'Compte',signout:'Déconnexion'},
-    es:{lang:'Idioma',theme:'Tema',account:'Cuenta',signout:'Cerrar Sesión'},
-    pt:{lang:'Idioma',theme:'Tema',account:'Conta',signout:'Sair'},
-    id:{lang:'Bahasa',theme:'Tema',account:'Akun',signout:'Keluar'},
-    tr:{lang:'Dil',theme:'Tema',account:'Hesap',signout:'Çıkış Yap'}
-  };
-  var aiPlaceholders = {
-    en:'Ask about any match, player, team...',
-    ar:'اسأل عن أي مباراة أو لاعب أو فريق...',
-    fr:'Demandez n\'importe quel match, joueur, équipe...',
-    es:'Pregunta sobre cualquier partido, jugador, equipo...',
-    pt:'Pergunte sobre qualquer jogo, jogador, time...',
-    id:'Tanya tentang pertandingan, pemain, tim apa pun...',
-    tr:'Herhangi bir maç, oyuncu, takım hakkında sor...'
-  };
-
-  var lbl = nav[code]   || nav.en;
-  var ds  = dashSec[code] || dashSec.en;
-  var qk  = quick[code] || quick.en;
-  var sl  = settingLabels[code] || settingLabels.en;
-
-  /* ── Bottom nav ── */
-  document.querySelectorAll('.bnav').forEach(function(b){
-    var s = b.dataset.s;
-    if(s && lbl[s]){
-      var spans = b.querySelectorAll('span');
-      if(spans.length>=2) spans[1].textContent = lbl[s];
-    }
-  });
-
-  /* ── Screen titles ── */
-  Object.keys(scrT).forEach(function(id){
-    var scr = document.getElementById(id);
-    if(!scr) return;
-    var title = scr.querySelector('.scr-title');
-    if(title) title.textContent = (scrT[id][code]||scrT[id].en);
-  });
-
-  /* ── Home dashboard section headers ── */
-  var homeScr = document.getElementById('scr-home');
-  if(homeScr){
-    var dsHdrs = homeScr.querySelectorAll('.ds-hdr');
-    var dsKeys = ['liveNow','todayFix','aiIntel','topScorers','commHigh'];
-    dsHdrs.forEach(function(h,i){ if(dsKeys[i]) h.textContent = ds[dsKeys[i]]||h.textContent; });
+  LANG=code; localStorage.setItem('copa_lang',code);
+  document.documentElement.lang=code;
+  document.documentElement.dir=(code==='ar')?'rtl':'ltr';
+  document.querySelectorAll('.ll').forEach(function(b){ b.classList.remove('on'); });
+  if(btn) btn.classList.add('on');
+  else {
+    var m=document.querySelector('.ll[onclick*="\''+code+'\'"]');
+    if(m) m.classList.add('on');
   }
-
-  /* ── Quick action row labels ── */
-  var qkBtns = document.querySelectorAll('.qr-btn');
-  var qkKeys = ['scores','predict','fantasy','stats','ai','wallet'];
-  qkBtns.forEach(function(b,i){
-    if(!qkKeys[i]) return;
-    var spans = b.querySelectorAll('span');
-    if(spans.length>=2) spans[1].textContent = qk[qkKeys[i]]||spans[1].textContent;
-  });
-
-  /* ── Wallet note ── */
-  var wn = document.querySelector('.wc-note');
-  if(wn) wn.textContent = walletNotes[code]||walletNotes.en;
-
-  /* ── Premium ── */
-  var ps = document.querySelector('.prem-sub');
-  if(ps) ps.textContent = premSubs[code]||premSubs.en;
-  var pb = document.getElementById('premBtn');
-  if(pb && pb.textContent.indexOf('Active')===-1 && pb.textContent.indexOf('نشط')===-1)
-    pb.textContent = premBtnTxt[code]||premBtnTxt.en;
-
-  /* ── Settings rows ── */
-  var settingRows = document.querySelectorAll('.setting-row');
-  settingRows.forEach(function(row){
-    var span = row.querySelector('span:first-child');
-    if(!span) return;
-    var txt = span.textContent.trim();
-    if(txt==='Language'||txt==='اللغة'||txt==='Langue'||txt==='Idioma'||txt==='Bahasa'||txt==='Dil') span.textContent=sl.lang;
-    else if(txt==='Theme'||txt==='Thème'||txt==='Tema'||txt==='المظهر') span.textContent=sl.theme;
-    else if(txt==='Account'||txt==='Compte'||txt==='Cuenta'||txt==='الحساب'||txt==='Akun'||txt==='Hesap'||txt==='Conta') span.textContent=sl.account;
-  });
-  var signOutBtn = document.querySelector('.setting-btn.danger');
-  if(signOutBtn) signOutBtn.textContent = sl.signout;
-
-  /* ── AI input placeholder ── */
-  var aiInp = document.getElementById('aiInp');
-  if(aiInp) aiInp.placeholder = aiPlaceholders[code]||aiPlaceholders.en;
-
-  /* ── Sect labels (PI WALLET, SEND & REQUEST, PREMIUM, TRANSACTION HISTORY, IDENTITY CARD, SETTINGS) ── */
-  var sectLabels = {
-    en:['Pi Wallet','Send & Request Pi','Premium','Transaction History','Identity Card','Settings'],
-    ar:['محفظة Pi','إرسال واستقبال Pi','المميز','سجل المعاملات','بطاقة الهوية','الإعدادات'],
-    fr:['Portefeuille Pi','Envoyer & Recevoir Pi','Premium','Historique','Carte d\'Identité','Paramètres'],
-    es:['Cartera Pi','Enviar & Recibir Pi','Premium','Historial','Tarjeta de Identidad','Ajustes'],
-    pt:['Carteira Pi','Enviar & Receber Pi','Premium','Histórico','Cartão de Identidade','Configurações'],
-    id:['Dompet Pi','Kirim & Terima Pi','Premium','Riwayat Transaksi','Kartu Identitas','Pengaturan'],
-    tr:['Pi Cüzdanı','Pi Gönder & Al','Premium','İşlem Geçmişi','Kimlik Kartı','Ayarlar']
-  };
-  var sl2 = sectLabels[code]||sectLabels.en;
-  document.querySelectorAll('.sect-label').forEach(function(el,i){ if(sl2[i]) el.textContent=sl2[i]; });
+  var sel=document.querySelector('.setting-sel'); if(sel) sel.value=code;
+  if(PI_USER){
+    var ld=LANG_DATA[code]||LANG_DATA.en;
+    /* Update greeting if app is open */
+  }
 }
 
-/* Small helper to safely set element text */
-function _setEl(id, text){
-  var el = document.getElementById(id);
-  if(el) el.textContent = text;
-}
-
-/* ═══ EARLY DATA LOAD — before login, populates landing preview ═══ */
+/* ═══ EARLY DATA LOAD (before login, for landing preview) ═══ */
 (function earlyLoad(){
-  /* Use eventsnext (always has data) as primary for landing preview */
-  var quickLeagues = LEAGUES.slice(0,5);
-
-  var nextFetches = quickLeagues.map(function(lg){
-    return fetch(TSDB+'/eventsnext.php?id='+lg.id)
-      .then(function(r){ return r.ok?r.json():{events:[]}; })
+  var today=new Date();
+  var d=today.getFullYear()+'-'+pad(today.getMonth()+1)+'-'+pad(today.getDate());
+  var quick=LEAGUES.slice(0,5).map(function(lg){
+    return fetch(TSDB+'/eventsday.php?d='+d+'&l='+encodeURIComponent(lg.name))
+      .then(function(r){return r.json();})
       .then(function(data){
-        return (data.events||[]).slice(0,2).map(function(e){
-          /* Inline tag — _tag not yet defined at this point */
-          return Object.assign({},e,{_comp:lg.comp,_flag:lg.flag,_league:lg.name,_type:'upcoming'});
+        return (data.events||[]).map(function(e){
+          return Object.assign({},e,{_comp:lg.comp,_flag:lg.flag,_league:lg.name});
         });
-      }).catch(function(){ return []; });
+      }).catch(function(){return[];});
   });
-
-  Promise.all(nextFetches).then(function(res){
-    var all=[]; res.forEach(function(r){ all=all.concat(r); });
-    all.sort(function(a,b){ return (a.dateEvent||'').localeCompare(b.dateEvent||''); });
-    ALL_UPCOMING = all;
-    ALL_MATCHES  = all;
-    LIVE_MATCHES = all.filter(function(e){
-      if(!e.strStatus) return false;
-      var s=e.strStatus.toLowerCase();
-      return s==='live'||s==='inprogress'||s==='1h'||s==='2h'||s==='ht'||s==='et';
-    });
+  Promise.all(quick).then(function(res){
+    var all=[]; res.forEach(function(r){all=all.concat(r);});
+    ALL_MATCHES=all; LIVE_MATCHES=all.filter(isLive);
     renderLandingPreview();
     updateLandingStats();
   });
@@ -499,19 +221,15 @@ function _setEl(id, text){
 function renderLandingPreview(){
   var el=$('landPreview'); if(!el) return;
   var show=(LIVE_MATCHES.length?LIVE_MATCHES:ALL_MATCHES).slice(0,7);
-  if(!show.length){
-    el.innerHTML='<div class="lp-loading">'+(typeof t==='function'?t('no_fixtures'):'No fixtures today')+'</div>';
-    return;
-  }
+  if(!show.length){ el.innerHTML='<div class="lp-loading">No fixtures today</div>'; return; }
   el.innerHTML=show.map(function(e){
-    var s=(e.strStatus||'').toLowerCase();
-    var live=s==='live'||s==='inprogress'||s==='1h'||s==='2h'||s==='ht'||s==='et';
-    var score=live?(e.intHomeScore+'–'+e.intAwayScore):(e.strTime?e.strTime.substring(0,5):'TBD');
+    var live=isLive(e);
+    var score=live?getScore(e):(e.strTime?e.strTime.substring(0,5):'—');
     return '<div class="lp-card'+(live?' live':'')+'">'
       +'<div class="lpc-comp">'+e._flag+' '+e._comp+'</div>'
       +'<div class="lpc-score">'+score+'</div>'
-      +'<div class="lpc-teams">'+(e.strHomeTeam||'').substring(0,9)+' v '+(e.strAwayTeam||'').substring(0,9)+'</div>'
-      +(live?'<div class="lpc-live">LIVE</div>':'')
+      +'<div class="lpc-teams">'+trunc(e.strHomeTeam,9)+' v '+trunc(e.strAwayTeam,9)+'</div>'
+      +(live?'<div class="lpc-live">LIVE '+getMin(e)+'</div>':'')
       +'</div>';
   }).join('');
 }
@@ -523,115 +241,67 @@ function updateLandingStats(){
 
 /* ══════════════════════════════════════════════════════════
    PI SDK — MAINNET AUTHENTICATION
-   Pi Core Team requirements:
-   ① Pi.init() called at top of this file (already done)
-   ② Pi.authenticate() called here with onIncompletePayment callback
-   ③ script.js loads at END of body
+   Pi Core Team requirements exactly followed:
+   ① Pi.init in <head>
+   ② Pi.authenticate with onIncompletePayment
+   ③ script.js loads at end of body
 ══════════════════════════════════════════════════════════ */
 
+/* Handles incomplete payments from previous session — WorldCup pattern */
 function onIncompletePayment(payment){
   console.log('[Copa] Incomplete payment found:', payment);
-  if(!payment || !payment.identifier) return;
-  var pid  = payment.identifier;
-  var txid = payment.transaction && payment.transaction.txid ? payment.transaction.txid : null;
-  if(txid){
-    fetch('/.netlify/functions/complete',{
-      method:'POST', headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({paymentId:pid, txid:txid})
-    }).then(function(r){return r.json();}).catch(function(e){console.warn('[Copa] resume complete:',e);});
-  } else {
-    fetch('/.netlify/functions/approve',{
-      method:'POST', headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({paymentId:pid})
-    }).then(function(r){return r.json();}).catch(function(e){console.warn('[Copa] resume approve:',e);});
+  if(payment && payment.identifier){
+    var pid=payment.identifier;
+    var txid=payment.transaction&&payment.transaction.txid?payment.transaction.txid:null;
+    if(txid){
+      fetch('/.netlify/functions/complete',{
+        method:'POST', headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({paymentId:pid,txid:txid})
+      }).then(function(r){return r.json();}).catch(function(e){console.warn('[Copa] resume complete:',e);});
+    } else {
+      fetch('/.netlify/functions/approve',{
+        method:'POST', headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({paymentId:pid})
+      }).then(function(r){return r.json();}).catch(function(e){console.warn('[Copa] resume approve:',e);});
+    }
   }
 }
 
 function piLogin(){
-  var btn  = $('loginBtn');
-  var btxt = $('loginBtnTxt');
-  if(btn)  btn.disabled = true;
-  if(btxt) btxt.textContent = 'Connecting...';
-  setLS('Connecting to Pi Network...', '');
+  var btn=$('loginBtn'); if(btn) btn.disabled=true;
+  var btxt=$('loginBtnTxt'); if(btxt) btxt.textContent='Connecting...';
+  setLS('Connecting to Pi Network...','');
 
-  /* Always try init first */
-  _initPiSDK();
-
-  /* If Pi not defined yet — poll every 400ms up to 10 times (4 seconds) */
-  if(typeof Pi === 'undefined'){
-    setLS('Loading Pi SDK...', '');
-    var tries = 0;
-    var poll = setInterval(function(){
-      tries++;
-      _initPiSDK();
-      if(typeof Pi !== 'undefined'){
-        clearInterval(poll);
-        _doAuthenticate(btn, btxt);
-      } else if(tries >= 10){
-        clearInterval(poll);
-        setLS('Open Copa in Pi Browser app to sign in', 'err');
-        if(btn)  btn.disabled = false;
-        if(btxt) btxt.textContent = t('signin');
+  if(!PI_READY||typeof Pi==='undefined'){
+    setLS('Open in Pi Browser to sign in','err');
+    if(btn){ btn.disabled=false; if(btxt) btxt.textContent='Sign in with Pi'; }
+    setTimeout(function(){
+      if(confirm('Pi Browser not detected.\n\nOpen in preview mode to test?')){
+        _guestLogin();
       }
-    }, 400);
+    },700);
     return;
   }
 
-  /* Pi exists — ensure init and authenticate */
-  _doAuthenticate(btn, btxt);
-}
-
-function _doAuthenticate(btn, btxt){
-  /* Force init if somehow not done */
-  if(!PI_READY){
-    try { Pi.init({ version:'2.0', sandbox:false }); PI_READY=true; } catch(e){}
-  }
-  setLS('Opening Pi wallet...', '');
-  try {
-    /* wallet_address scope = triggers fingerprint/biometric in Pi Browser */
-    Pi.authenticate(['username','payments','wallet_address'], onIncompletePayment)
-    .then(function(auth){
-      if(!auth||!auth.user){
-        setLS('No user — tap Sign in again', 'err');
-        if(btn) btn.disabled=false;
-        if(btxt) btxt.textContent=t('signin');
-        return;
-      }
-      PI_USER  = auth.user;
-      PI_TOKEN = auth.accessToken;
-      PI_READY = true;
-      console.log('[Copa] Authenticated:', PI_USER.username);
-      setLS('Welcome @'+PI_USER.username+'!', 'ok');
-      setTimeout(launchApp, 440);
-    })
-    .catch(function(err){
-      var msg = typeof err==='string' ? err : (err&&err.message ? err.message : JSON.stringify(err||{}));
-      var low = msg.toLowerCase();
-      if(low.indexOf('pending')!==-1||low.indexOf('incomplete')!==-1){
-        setLS('Pending payment — tap Resolve below', 'err');
-        var pb=$('landPending'); if(pb) pb.style.display='block';
-      } else if(low.indexOf('cancel')!==-1||low.indexOf('dismiss')!==-1){
-        setLS('Cancelled — tap Sign in to retry', 'err');
-      } else if(low.indexOf('network')!==-1){
-        setLS('Network error — check connection', 'err');
-      } else {
-        setLS('Auth failed — tap Sign in to retry', 'err');
-      }
-      if(btn) btn.disabled=false;
-      if(btxt) btxt.textContent=t('signin');
-    });
-  } catch(e){
-    /* authenticate threw — try re-init and retry once */
-    console.error('[Copa] authenticate threw:', e);
-    try {
-      Pi.init({ version:'2.0', sandbox:false }); PI_READY=true;
-      setTimeout(function(){ _doAuthenticate(btn,btxt); }, 600);
-    } catch(e2){
-      setLS('Reload page and tap Sign in', 'err');
-      if(btn) btn.disabled=false;
-      if(btxt) btxt.textContent=t('signin');
+  Pi.authenticate(['username','payments','wallet_address'], onIncompletePayment)
+  .then(function(auth){
+    PI_USER  = auth.user;
+    PI_TOKEN = auth.accessToken;
+    console.log('[Copa] Authenticated:', PI_USER.username);
+    setLS('Welcome, @'+PI_USER.username,'ok');
+    setTimeout(launchApp, 440);
+  })
+  .catch(function(err){
+    console.error('[Copa] Auth error:', err);
+    var msg=typeof err==='string'?err:(err&&err.message?err.message:JSON.stringify(err));
+    if(msg.toLowerCase().indexOf('pending')!==-1||msg.toLowerCase().indexOf('incomplete')!==-1){
+      setLS('Payment pending — see below','err');
+      var pb=$('landPending'); if(pb) pb.style.display='block';
+    } else {
+      setLS('Sign in failed. Try again.','err');
     }
-  }
+    if(btn){ btn.disabled=false; if(btxt) btxt.textContent='Sign in with Pi'; }
+  });
 }
 
 function _guestLogin(){
@@ -682,15 +352,9 @@ function launchApp(){
 
   /* Load live data then auto-refresh every 30s */
   fetchAllMatches();
-  REFRESH_INT = setInterval(function(){
-    fetchAllMatches();
-    buildHomeAI(); /* AI intelligence auto-updates with each refresh */
-  }, 30000);
+  REFRESH_INT=setInterval(fetchAllMatches,30000);
 
   toast('⚽ Welcome to Copa, @'+PI_USER.username+'!');
-
-  /* ═══ USER COUNTER — real persistent count via Netlify function ═══ */
-  trackUserLogin(PI_USER.username);
 }
 
 function doLogout(){
@@ -706,8 +370,6 @@ function navTo(id){
   document.querySelectorAll('.screen').forEach(function(s){ s.classList.remove('on'); });
   document.querySelectorAll('.bnav').forEach(function(b){ b.classList.toggle('on',b.dataset.s===id); });
   var s=$('scr-'+id); if(s) s.classList.add('on');
-  if(id==='live')      renderLiveScreen();   /* Always re-render with latest data */
-  if(id==='home')      { renderHeroCarousel(); renderHomeLive(); renderHomeTodayCards(); }
   if(id==='community') buildCommContent(CURR_COMM);
   if(id==='stats')     buildStats(CURR_STATS);
   if(id==='fantasy')   buildFantasy(CURR_FANTASY);
@@ -750,203 +412,38 @@ function globalSearch(val){
 }
 
 /* ══════════════════════════════════════════════════════════
-   USER COUNTER SYSTEM
-   Real persistent count — JSONbin.io free tier (setup below)
-   Unique users + total sessions — automatic on every login
-   Falls back gracefully if JSONbin not yet configured
+   THESPORTSDB — LIVE DATA ENGINE
+   Free · No API key · 12 competitions · Auto every 30s
 ══════════════════════════════════════════════════════════ */
-
-var USER_COUNT = { total:0, sessions:0, loaded:false };
-
-function fetchUserCount(){
-  fetch('/.netlify/functions/usercount')
-    .then(function(r){ return r.ok?r.json():null; })
-    .then(function(d){
-      if(!d) return;
-      USER_COUNT.total    = d.total    || 0;
-      USER_COUNT.sessions = d.sessions || 0;
-      USER_COUNT.loaded   = true;
-      updateUserCountDisplay();
-    }).catch(function(){});
-}
-
-function trackUserLogin(username){
-  var user = (username||'anonymous').substring(0,32);
-  fetch('/.netlify/functions/usercount?action=login&user='+encodeURIComponent(user),{method:'POST'})
-    .then(function(r){ return r.ok?r.json():null; })
-    .then(function(d){
-      if(!d) return;
-      USER_COUNT.total    = d.total    || USER_COUNT.total;
-      USER_COUNT.sessions = d.sessions || USER_COUNT.sessions;
-      USER_COUNT.loaded   = true;
-      updateUserCountDisplay();
-      if(d.isNew) console.log('[Copa] New user #'+USER_COUNT.total+': @'+user);
-    }).catch(function(){});
-}
-
-function fmtCount(n){
-  if(!n||isNaN(n)) return '0';
-  if(n>=1000000) return (n/1000000).toFixed(1)+'M';
-  if(n>=1000)    return (n/1000).toFixed(1)+'K';
-  return String(n);
-}
-
-function updateUserCountDisplay(){
-  var lu=$('lstUsers'); if(lu) lu.textContent=fmtCount(USER_COUNT.total);
-}
-
-/* Fetch count immediately on page load — shows on landing before login */
-(function(){ fetchUserCount(); }());
-
-/* ══════════════════════════════════════════════════════════
-   COPA DATA ENGINE v4
-   100% TheSportsDB · Completely free · No API key
-   3 endpoints: eventsnext + eventslast + eventsday
-   eventsnext/last ALWAYS return data — used as primary
-   eventsday used when available (today's fixtures)
-   Grouped by competition — LiveScore style
-══════════════════════════════════════════════════════════ */
-
-var ALL_TODAY    = [];
-var ALL_RECENT   = [];
-var ALL_UPCOMING = [];
-var REAL_SCORERS = [];
-var DATA_LOADED  = false;
-
 function fetchAllMatches(){
-  var today = new Date();
-  var d = today.getFullYear()+'-'+pad(today.getMonth()+1)+'-'+pad(today.getDate());
-
-  /* Fetch with timeout — TheSportsDB can be slow */
-  function fetchWithTimeout(url, ms){
-    ms = ms || 8000;
-    return Promise.race([
-      fetch(url).then(function(r){ return r.ok?r.json():{events:[],results:[]}; }),
-      new Promise(function(_,rej){ setTimeout(function(){ rej(new Error('timeout')); }, ms); })
-    ]).catch(function(){ return {events:[],results:[]}; });
-  }
-
-  /* STEP 1 — Fetch next 5 leagues first (fastest, always has data) */
-  var priorityLeagues = LEAGUES.slice(0,6); /* UCL, EPL, La Liga, Bundesliga, Serie A, Ligue 1 */
-
-  var priorityNext = priorityLeagues.map(function(lg){
-    return fetchWithTimeout(TSDB+'/eventsnext.php?id='+lg.id, 6000)
+  var today=new Date();
+  var d=today.getFullYear()+'-'+pad(today.getMonth()+1)+'-'+pad(today.getDate());
+  var fetches=LEAGUES.map(function(lg){
+    return fetch(TSDB+'/eventsday.php?d='+d+'&l='+encodeURIComponent(lg.name))
+      .then(function(r){return r.json();})
       .then(function(data){
-        return (data.events||[]).slice(0,5).map(function(e){ return _tag(e,lg,'upcoming'); });
-      });
+        return (data.events||[]).map(function(e){
+          return Object.assign({},e,{_comp:lg.comp,_flag:lg.flag,_league:lg.name});
+        });
+      }).catch(function(){return[];});
   });
+  Promise.all(fetches).then(function(results){
+    var all=[]; results.forEach(function(r){all=all.concat(r);});
+    all.sort(function(a,b){return (a.strTime||'23:59').localeCompare(b.strTime||'23:59');});
+    ALL_MATCHES=all; LIVE_MATCHES=all.filter(isLive);
 
-  /* Show priority upcoming IMMEDIATELY — renders Live screen fast */
-  Promise.all(priorityNext).then(function(res){
-    var arr=[]; res.forEach(function(r){ arr=arr.concat(r); });
-    arr.sort(function(a,b){ return (a.dateEvent||'').localeCompare(b.dateEvent||''); });
-    if(arr.length > 0){
-      ALL_UPCOMING = arr;
-      renderHeroCarousel();
-      renderHomeTodayCards();
-      renderLiveScreen();
-      renderMarkets();
-      buildScoreTicker();
-    }
-  });
+    /* Update live count */
+    var tn=$('tbLiveNum'); if(tn) tn.textContent=LIVE_MATCHES.length;
+    var ll=$('lstLive');   if(ll) ll.textContent=LIVE_MATCHES.length;
+    var lm=$('lstMatches');if(lm) lm.textContent=all.length;
 
-  /* STEP 2 — Fetch all leagues next + last in two batches to avoid rate limit */
-  var allNext = LEAGUES.map(function(lg){
-    return fetchWithTimeout(TSDB+'/eventsnext.php?id='+lg.id, 10000)
-      .then(function(data){
-        return (data.events||[]).slice(0,5).map(function(e){ return _tag(e,lg,'upcoming'); });
-      });
-  });
-
-  var allLast = LEAGUES.map(function(lg){
-    return fetchWithTimeout(TSDB+'/eventslast.php?id='+lg.id, 10000)
-      .then(function(data){
-        var evts=data.results||data.events||[];
-        return evts.slice(0,5).map(function(e){ return _tag(e,lg,'result'); });
-      });
-  });
-
-  var dayF = LEAGUES.map(function(lg){
-    return fetchWithTimeout(TSDB+'/eventsday.php?d='+d+'&l='+encodeURIComponent(lg.name), 8000)
-      .then(function(data){
-        return (data.events||[]).map(function(e){ return _tag(e,lg,'today'); });
-      });
-  });
-
-  /* Render results as soon as they come in */
-  Promise.all(allLast).then(function(res){
-    var arr=[]; res.forEach(function(r){ arr=arr.concat(r); });
-    arr.sort(function(a,b){ return (b.dateEvent||'').localeCompare(a.dateEvent||''); });
-    ALL_RECENT = arr;
+    renderLandingPreview();
+    renderHeroCarousel();
+    renderHomeLive();
+    renderHomeTodayCards();
     renderLiveScreen();
-  });
-
-  /* Final complete merge */
-  Promise.all([Promise.all(dayF), Promise.all(allNext), Promise.all(allLast)])
-  .then(function(all){
-    var dayArr=[], nextArr=[], lastArr=[];
-    all[0].forEach(function(r){ dayArr=dayArr.concat(r); });
-    all[1].forEach(function(r){ nextArr=nextArr.concat(r); });
-    all[2].forEach(function(r){ lastArr=lastArr.concat(r); });
-
-    dayArr.sort(function(a,b){ return (a.strTime||'23:59').localeCompare(b.strTime||'23:59'); });
-    nextArr.sort(function(a,b){ return (a.dateEvent||'').localeCompare(b.dateEvent||''); });
-    lastArr.sort(function(a,b){ return (b.dateEvent||'').localeCompare(a.dateEvent||''); });
-
-    ALL_TODAY    = dayArr.length ? dayArr : nextArr.filter(function(e){ return e.dateEvent===d; });
-    ALL_UPCOMING = nextArr.length ? nextArr : ALL_UPCOMING; /* keep priority data if full fetch failed */
-    ALL_RECENT   = lastArr.length ? lastArr : ALL_RECENT;
-    ALL_MATCHES  = ALL_TODAY.concat(ALL_UPCOMING.slice(0,30)).concat(ALL_RECENT.slice(0,20));
-    LIVE_MATCHES = ALL_TODAY.filter(isLive);
-    DATA_LOADED  = true;
-
-    var tn=$('tbLiveNum');  if(tn) tn.textContent=LIVE_MATCHES.length;
-    var ll=$('lstLive');    if(ll) ll.textContent=LIVE_MATCHES.length;
-    var lm=$('lstMatches'); if(lm) lm.textContent=ALL_TODAY.length||ALL_UPCOMING.length;
-
-    renderLandingPreview(); renderHeroCarousel();
-    renderHomeLive(); renderHomeTodayCards();
-    renderLiveScreen(); renderMarkets();
-    buildScoreTicker(); buildHomeAI();
-  });
-
-  fetchRealTopScorers();
-}
-
-function _tag(e,lg,type){
-  return Object.assign({},e,{_comp:lg.comp,_flag:lg.flag,_league:lg.name,_type:type});
-}
-
-/* ═══ TOP SCORERS — real 2024-25, hardcoded flags, club updated from API ═══ */
-var SCORER_MAP = [
-  {name:'K. Mbappé',         search:'Mbappe',      nat:'🇫🇷', goals:26, lg:'La Liga'},
-  {name:'Erling Haaland',    search:'Haaland',     nat:'🇳🇴', goals:19, lg:'Premier League'},
-  {name:'Jonathan David',    search:'David J',     nat:'🇨🇦', goals:21, lg:'Ligue 1'},
-  {name:'Harry Kane',        search:'Kane',        nat:'🏴󠁧󠁢󠁥󠁮󠁧󠁿', goals:19, lg:'Bundesliga'},
-  {name:'Mohamed Salah',     search:'Salah',       nat:'🇪🇬', goals:17, lg:'Premier League'},
-  {name:'Lautaro Martinez',  search:'Lautaro',     nat:'🇦🇷', goals:16, lg:'Serie A'},
-  {name:'R. Lewandowski',    search:'Lewandowski', nat:'🇵🇱', goals:16, lg:'La Liga'},
-  {name:'V. Muriqi',         search:'Muriqi',      nat:'🇽🇰', goals:22, lg:'La Liga'},
-  {name:'Bukayo Saka',       search:'Saka',        nat:'🏴󠁧󠁢󠁥󠁮󠁧󠁿', goals:15, lg:'Premier League'},
-  {name:'L. Yamal',          search:'Yamal',       nat:'🇪🇸', goals:9,  lg:'La Liga'},
-];
-
-function fetchRealTopScorers(){
-  var fetches = SCORER_MAP.slice(0,8).map(function(sc){
-    return fetch(TSDB+'/searchplayers.php?p='+encodeURIComponent(sc.search))
-      .then(function(r){ return r.ok?r.json():{player:[]}; })
-      .then(function(data){
-        var p=(data.player||[])[0];
-        return {name:sc.name, club:p?(p.strTeam||''):sc.lg,
-                nat:sc.nat, goals:sc.goals, lg:sc.lg};
-      }).catch(function(){
-        return {name:sc.name, club:sc.lg, nat:sc.nat, goals:sc.goals, lg:sc.lg};
-      });
-  });
-  Promise.all(fetches).then(function(res){
-    REAL_SCORERS=res.filter(Boolean).sort(function(a,b){return b.goals-a.goals;});
-    buildHomeTopScorers();
-    if(CURR_STATS==='scorers') renderTopScorers();
+    renderMarkets();
+    buildScoreTicker();
   });
 }
 
@@ -955,44 +452,24 @@ function isLive(e){
   var s=e.strStatus.toLowerCase();
   return s==='live'||s==='inprogress'||s==='1h'||s==='2h'||s==='ht'||s==='et';
 }
-function isResult(e){
-  if(e._type==='result') return true;
-  var s=(e.strStatus||'').toUpperCase();
-  if(s==='FT') return true;
-  if(hasScore(e)&&e.dateEvent) return e.dateEvent<new Date().toISOString().split('T')[0];
-  return false;
-}
+
 function hasScore(e){ return e.intHomeScore!==null&&e.intHomeScore!==undefined&&e.intHomeScore!==''; }
 function getScore(e){ return hasScore(e)?e.intHomeScore+' – '+e.intAwayScore:'–'; }
 function getMin(e){
   if(!e.strStatus) return '';
   var s=e.strStatus;
-  if(s==='HT') return 'HT'; if(/^\d+$/.test(s)) return s+"'"; return s.toUpperCase();
-}
-function formatDate(ds){
-  if(!ds) return '';
-  try{ return new Date(ds+'T12:00:00').toLocaleDateString('en-US',{weekday:'short',month:'short',day:'numeric'}); }
-  catch(e){ return ds; }
-}
-function formatDateShort(ds){
-  if(!ds) return '';
-  try{
-    var d=new Date(ds+'T12:00:00');
-    return String(d.getDate()).padStart(2,'0')+' '+['JAN','FEB','MAR','APR','MAY','JUN','JUL','AUG','SEP','OCT','NOV','DEC'][d.getMonth()];
-  }catch(e){ return ds; }
+  if(s==='HT') return '45+'; if(/^\d+$/.test(s)) return s+"'"; return s;
 }
 
 /* ═══ SCORE TICKER ═══ */
 function buildScoreTicker(){
   var track=$('stTrack'); if(!track) return;
-  var liveItems = LIVE_MATCHES.slice(0,6);
-  var items = liveItems.length ? liveItems : ALL_UPCOMING.slice(0,10);
+  var items=(LIVE_MATCHES.length?LIVE_MATCHES:ALL_MATCHES.slice(0,10));
   if(!items.length) return;
-  var doubled = items.concat(items);
-  track.innerHTML = doubled.map(function(e){
-    var live = isLive(e);
-    var score = live ? getScore(e) : (hasScore(e) ? getScore(e) : (e.strTime?e.strTime.substring(0,5):''));
-    var txt = trunc(e.strHomeTeam,10)+' '+score+' '+trunc(e.strAwayTeam,10)+(live?' '+getMin(e):'');
+  var doubled=items.concat(items);
+  track.innerHTML=doubled.map(function(e){
+    var live=isLive(e);
+    var txt=trunc(e.strHomeTeam,10)+' '+getScore(e)+' '+trunc(e.strAwayTeam,10)+(live?' '+getMin(e):'');
     return '<span class="st-item'+(live?' live':'')+'">'+e._flag+' '+txt+'</span>'
       +'<span class="st-item" style="color:var(--t3)"> · </span>';
   }).join('');
@@ -1001,134 +478,59 @@ function buildScoreTicker(){
 /* ═══ HOME — HERO CAROUSEL ═══ */
 function renderHeroCarousel(){
   var el=$('heroCarousel'); if(!el) return;
-  var show = LIVE_MATCHES.length ? LIVE_MATCHES :
-             ALL_TODAY.length    ? ALL_TODAY    :
-             ALL_UPCOMING.slice(0,8);
-  if(!show.length){
-    el.innerHTML='<div class="hero-loading"><div class="spin" id="heroSpinner"></div></div>';
-    return;
-  }
-  el.innerHTML=show.slice(0,8).map(function(e){
+  var show=(LIVE_MATCHES.length?LIVE_MATCHES:ALL_MATCHES).slice(0,8);
+  if(!show.length){ el.innerHTML='<div class="hero-loading"><div class="spin"></div> No fixtures today</div>'; return; }
+  el.innerHTML=show.map(function(e){
     var live=isLive(e);
-    var score=live?getScore(e):(hasScore(e)?getScore(e):(e.strTime?e.strTime.substring(0,5):'TBD'));
-    var dateLabel = e.dateEvent ? formatDate(e.dateEvent) : '';
+    var score=live?getScore(e):(e.strTime?e.strTime.substring(0,5):'TBD');
     return '<div class="hc-card" onclick="navTo(\'live\')">'
       +'<div class="hc-comp">'+(live?'<span class="hc-live-badge">LIVE</span>':'')+e._flag+' '+e._comp+'</div>'
       +'<div class="hc-body">'
       +'<div class="hc-team">'+trunc(e.strHomeTeam,14)+'</div>'
-      +'<div class="hc-center"><div class="hc-score">'+score+'</div>'
-      +(live?'<div class="hc-min">'+getMin(e)+'</div>':'<div class="hc-time">'+dateLabel+'</div>')+'</div>'
+      +'<div class="hc-center"><div class="hc-score">'+score+'</div>'+(live?'<div class="hc-min">'+getMin(e)+'</div>':'')+'</div>'
       +'<div class="hc-team away">'+trunc(e.strAwayTeam,14)+'</div>'
-      +'</div></div>';
+      +'</div>'
+      +'</div>';
   }).join('');
 }
 
 /* ═══ HOME — LIVE + TODAY ═══ */
 function renderHomeLive(){
   var el=$('homeLiveCards'); if(!el) return;
-  if(!LIVE_MATCHES.length){
-    el.innerHTML='<div class="empty-msg">No live matches right now.</div>';
-    return;
-  }
-  el.innerHTML=LIVE_MATCHES.map(function(e){ return buildMatchCard(e,true); }).join('');
+  var live=LIVE_MATCHES.slice(0,4);
+  if(!live.length){ el.innerHTML='<div class="empty-msg">No live matches right now.</div>'; return; }
+  el.innerHTML=live.map(function(e){ return buildMatchCard(e,true); }).join('');
 }
 
 function renderHomeTodayCards(){
   var el=$('homeTodayCards'); if(!el) return;
-  /* Show today non-live OR upcoming if no today */
-  var show = ALL_TODAY.filter(function(e){return !isLive(e);});
-  if(!show.length) show = ALL_UPCOMING.slice(0,6);
-  if(!show.length){ el.innerHTML='<div class="empty-msg">Fetching fixtures...</div>'; return; }
-  el.innerHTML=show.slice(0,8).map(function(e){ return buildMatchCard(e,false); }).join('');
+  var today=ALL_MATCHES.filter(function(e){return !isLive(e);}).slice(0,6);
+  if(!today.length){ el.innerHTML='<div class="empty-msg">No upcoming fixtures today.</div>'; return; }
+  el.innerHTML=today.map(function(e){ return buildMatchCard(e,false); }).join('');
 }
 
-/* ═══ HOME — REAL TOP SCORERS ═══ */
+function buildHomeAI(){
+  var el=$('homeAICards'); if(!el) return;
+  var insights=[
+    {tag:'Prediction Engine', txt:'Based on form analysis across all 12 competitions, expect goals in 65% of today\'s fixtures. Home advantage is statistically significant in this matchday cycle.'},
+    {tag:'Tactical Intelligence', txt:'High-press teams dominate this round. xG data shows teams with sustained pressing above 65% over 5 games are significantly overperforming expectations.'},
+  ];
+  el.innerHTML=insights.map(function(i){
+    return '<div class="ai-card"><div class="ai-tag">🤖 '+i.tag+'</div><div class="ai-body">'+i.txt+'</div></div>';
+  }).join('');
+}
+
 function buildHomeTopScorers(){
   var el=$('homeTopScorers'); if(!el) return;
-  var scorers = REAL_SCORERS.length ? REAL_SCORERS : TOP_SCORERS;
-  el.innerHTML=scorers.slice(0,5).map(function(s,i){
+  el.innerHTML=TOP_SCORERS.slice(0,5).map(function(s,i){
     return '<div class="scorer-row">'
       +'<div class="sc-rank'+(i<3?' top':'')+'">'+(i+1)+'</div>'
       +'<div class="sc-flag">'+s.nat+'</div>'
-      +'<div class="sc-info"><div class="sc-name">'+s.name+'</div><div class="sc-club">'+s.club+(s.lg?' · '+s.lg:'')+'</div></div>'
+      +'<div class="sc-info"><div class="sc-name">'+s.name+'</div><div class="sc-club">'+s.club+'</div></div>'
       +'<div><div class="sc-goals">'+s.goals+'</div><div class="sc-lbl">goals</div></div>'
       +'</div>';
   }).join('');
 }
-
-/* ═══ HOME — AI INTELLIGENCE (real automatic updates via Claude) ═══ */
-function buildHomeAI(){
-  var el=$('homeAICards'); if(!el) return;
-
-  /* Show loading state */
-  var time = new Date().toLocaleTimeString('en-US',{hour:'2-digit',minute:'2-digit'});
-  el.innerHTML='<div class="ai-card"><div class="ai-tag">🤖 Live Intelligence · '+time+'</div>'
-    +'<div class="ai-body" style="color:var(--t2);font-style:italic">Generating real-time analysis...</div></div>';
-
-  /* Build live context */
-  var live   = LIVE_MATCHES.length;
-  var today  = ALL_TODAY.length;
-  var upcoming = ALL_UPCOMING.length;
-  var recent = ALL_RECENT.length;
-  var liveStr = live>0
-    ? LIVE_MATCHES.slice(0,3).map(function(e){return e.strHomeTeam+' '+getScore(e)+' '+e.strAwayTeam+' ('+e._comp+' '+getMin(e)+')';}).join(', ')
-    : 'No matches live right now';
-  var upcomingStr = ALL_UPCOMING.slice(0,4).map(function(e){
-    return e.strHomeTeam+' vs '+e.strAwayTeam+' ('+formatDateShort(e.dateEvent)+')';
-  }).join(', ');
-  var recentStr = ALL_RECENT.slice(0,3).map(function(e){
-    return e.strHomeTeam+' '+getScore(e)+' '+e.strAwayTeam;
-  }).join(', ');
-  var scorers = REAL_SCORERS.length ? REAL_SCORERS : TOP_SCORERS;
-  var scorerStr = scorers.slice(0,3).map(function(s){return s.name+' '+s.goals+'G';}).join(', ');
-
-  var context = 'TIME: '+new Date().toLocaleString()+'\nLIVE: '+liveStr+'\nUPCOMING: '+upcomingStr+'\nRECENT RESULTS: '+recentStr+'\nTOP SCORERS: '+scorerStr;
-
-  fetch('https://api.anthropic.com/v1/messages',{
-    method:'POST',
-    headers:{'Content-Type':'application/json'},
-    body:JSON.stringify({
-      model:'claude-sonnet-4-20250514',
-      max_tokens:300,
-      system:'You are Copa\'s AI football intelligence engine. Generate exactly 2 insight cards using the real live data provided. Format EXACTLY as:\nINSIGHT1_TITLE: [short title]\nINSIGHT1_BODY: [2-3 sentences of expert analysis using the real data]\nINSIGHT2_TITLE: [short title]\nINSIGHT2_BODY: [2-3 sentences]. Use real match names, scores, player names from the data. No markdown, no bullet points.',
-      messages:[{role:'user',content:'Generate 2 football intelligence insights for the Copa app homepage. Use this real live data:\n'+context}]
-    })
-  })
-  .then(function(r){return r.json();})
-  .then(function(d){
-    var txt=(d.content&&d.content[0])?d.content[0].text:'';
-    if(!txt||txt.length<20){
-      _buildHomeAIFallback(el, live, today, upcoming, time);
-      return;
-    }
-    /* Parse the structured response */
-    var t1match = txt.match(/INSIGHT1_TITLE:\s*(.+)/);
-    var b1match = txt.match(/INSIGHT1_BODY:\s*(.+)/);
-    var t2match = txt.match(/INSIGHT2_TITLE:\s*(.+)/);
-    var b2match = txt.match(/INSIGHT2_BODY:\s*(.+)/);
-    if(t1match&&b1match&&t2match&&b2match){
-      el.innerHTML=
-        '<div class="ai-card"><div class="ai-tag">🤖 '+t1match[1].trim()+'</div><div class="ai-body">'+b1match[1].trim()+'</div></div>'
-        +'<div class="ai-card"><div class="ai-tag">🤖 '+t2match[1].trim()+'</div><div class="ai-body">'+b2match[1].trim()+'</div></div>';
-    } else {
-      /* Fallback: show raw text in one card */
-      el.innerHTML='<div class="ai-card"><div class="ai-tag">🤖 AI Analysis · '+time+'</div><div class="ai-body">'+txt.substring(0,300)+'</div></div>';
-    }
-  })
-  .catch(function(){
-    _buildHomeAIFallback(el, live, today, upcoming, time);
-  });
-}
-
-function _buildHomeAIFallback(el, live, today, upcoming, time){
-  /* Fallback when Claude API unreachable — still uses real data */
-  el.innerHTML=
-    '<div class="ai-card"><div class="ai-tag">🤖 Live Intelligence · '+time+'</div>'
-    +'<div class="ai-body">'+(live>0?live+' matches live right now.':'No live matches at this moment. ')+today+' scheduled today. '+upcoming+' upcoming fixtures loaded across 12 competitions. Auto-refreshing every 30 seconds.</div></div>'
-    +'<div class="ai-card"><div class="ai-tag">🤖 Tactical Intelligence</div>'
-    +'<div class="ai-body">High-press systems dominate current-season data. Teams maintaining sustained pressure above 65% over 5 games are significantly overperforming xG expectations. Data sourced from TheSportsDB live feed.</div></div>';
-}
-
 
 function buildHomeComm(){
   var el=$('homeCommHighlights'); if(!el) return;
@@ -1236,185 +638,12 @@ function likeComment(mid, id){
   if(c){ c.likes=(c.likes||0)+1; localStorage.setItem('copa_coms',JSON.stringify(COMMENTS)); renderMatchComments(mid); }
 }
 
-/* ═══ LIVE SCORES SCREEN — LiveScore style ═══ */
+/* ═══ LIVE SCREEN ═══ */
 function renderLiveScreen(){
   var el=$('liveMatchesList'); if(!el) return;
-
-  var allAvailable = ALL_TODAY.concat(ALL_UPCOMING).concat(ALL_RECENT);
-
-  /* If no data at all yet — show spinner and fetch */
-  if(allAvailable.length === 0){
-    el.innerHTML='<div style="text-align:center;padding:2.5rem 1rem;color:var(--t2)">'
-      +'<div class="spin" style="margin:0 auto 1rem;width:28px;height:28px;border-width:2.5px"></div>'
-      +'<div style="font-family:var(--fb);font-size:.82rem;margin-bottom:.3rem">Fetching live data...</div>'
-      +'<div style="font-size:.68rem;opacity:.55">TheSportsDB · 12 competitions</div>'
-      +'</div>';
-    fetchAllMatches();
-    return;
-  }
-
-  /* Filter by selected competition */
-  function matchFilter(e){ return CURR_COMP==='ALL' || e._comp===CURR_COMP; }
-
-  var todayF    = ALL_TODAY.filter(matchFilter);
-  var upcomingF = ALL_UPCOMING.filter(matchFilter).slice(0,40);
-  var recentF   = ALL_RECENT.filter(matchFilter).slice(0,40);
-
-  /* If filter selected but no data for that comp — show helpful message */
-  if(CURR_COMP !== 'ALL' && todayF.length===0 && upcomingF.length===0 && recentF.length===0){
-    var compName = CURR_COMP;
-    LEAGUES.forEach(function(lg){ if(lg.comp===CURR_COMP) compName=lg.name; });
-    el.innerHTML='<div style="text-align:center;padding:2rem 1rem;color:var(--t2)">'
-      +'<div style="font-size:1.8rem;margin-bottom:.6rem">📅</div>'
-      +'<div style="font-family:var(--fb);font-size:.85rem;color:var(--t);margin-bottom:.4rem">No upcoming fixtures</div>'
-      +'<div style="font-size:.72rem;opacity:.7">'+compName+' — no scheduled matches found.<br>Try selecting All or another competition.</div>'
-      +'</div>';
-    return;
-  }
-
-  var html = '';
-
-  /* ── LIVE NOW ── */
-  var live = todayF.filter(isLive);
-  if(live.length){
-    html += '<div class="ls-comp-header"><span class="ls-live-dot"></span> Live Now ('+live.length+')</div>';
-    html += buildCompGroup(live, true);
-  }
-
-  /* ── TODAY ── */
-  var todayNonLive = todayF.filter(function(e){ return !isLive(e); });
-  if(todayNonLive.length){
-    html += '<div class="ls-date-header">📅 Today</div>';
-    html += buildCompGroup(todayNonLive, true);
-  }
-
-  /* ── UPCOMING — grouped by date ── */
-  if(upcomingF.length){
-    var byDate={};
-    upcomingF.forEach(function(e){
-      var dk=e.dateEvent||'TBD';
-      if(!byDate[dk]) byDate[dk]=[];
-      byDate[dk].push(e);
-    });
-    Object.keys(byDate).sort().forEach(function(dk){
-      html+='<div class="ls-date-header">🗓 '+formatDateShort(dk)+'</div>';
-      html+=buildCompGroup(byDate[dk],false);
-    });
-  }
-
-  /* ── RECENT RESULTS — grouped by date ── */
-  if(recentF.length){
-    var byDate2={};
-    recentF.forEach(function(e){
-      var dk=e.dateEvent||'TBD';
-      if(!byDate2[dk]) byDate2[dk]=[];
-      byDate2[dk].push(e);
-    });
-    Object.keys(byDate2).sort().reverse().forEach(function(dk){
-      html+='<div class="ls-date-header" style="color:var(--bl)">📋 '+formatDateShort(dk)+' — Results</div>';
-      html+=buildResultGroup(byDate2[dk]);
-    });
-  }
-
-  /* If "All" but still no html — shouldn't happen but guard it */
-  if(!html){
-    html='<div style="text-align:center;padding:1.5rem;color:var(--t2);font-size:.8rem">'
-      +'No fixtures loaded yet — refreshing...'
-      +'</div>';
-    setTimeout(fetchAllMatches, 1000);
-  }
-
-  el.innerHTML=html;
-}
-
-/* Group matches by competition — LiveScore style */
-function buildCompGroup(matches, withComments){
-  /* Group by competition */
-  var byComp={};
-  matches.forEach(function(e){
-    var key=e._league||e._comp;
-    if(!byComp[key]) byComp[key]={flag:e._flag, league:e._league, matches:[]};
-    byComp[key].matches.push(e);
-  });
-
-  var html='';
-  Object.keys(byComp).forEach(function(key){
-    var g=byComp[key];
-    html+='<div class="ls-comp-group">'
-      +'<div class="ls-comp-title">'+g.flag+' '+g.league+'</div>'
-      +g.matches.map(function(e){ return buildLSMatchRow(e,withComments); }).join('')
-      +'</div>';
-  });
-  return html;
-}
-
-/* Group results by competition */
-function buildResultGroup(matches){
-  var byComp={};
-  matches.forEach(function(e){
-    var key=e._league||e._comp;
-    if(!byComp[key]) byComp[key]={flag:e._flag,league:e._league,matches:[]};
-    byComp[key].matches.push(e);
-  });
-  var html='';
-  Object.keys(byComp).forEach(function(key){
-    var g=byComp[key];
-    html+='<div class="ls-comp-group">'
-      +'<div class="ls-comp-title">'+g.flag+' '+g.league+'</div>'
-      +g.matches.map(function(e){ return buildLSResultRow(e); }).join('')
-      +'</div>';
-  });
-  return html;
-}
-
-/* LiveScore-style match row: [time] [home] [score/time] [away] */
-function buildLSMatchRow(e, withComments){
-  var live=isLive(e);
-  var mid=(e.idEvent||'m'+Math.random().toString(36).slice(2)).replace(/[^a-zA-Z0-9]/g,'');
-  var home=trunc(e.strHomeTeam||'Home',18);
-  var away=trunc(e.strAwayTeam||'Away',18);
-  var time=e.strTime?(e.strTime.substring(0,5)):'TBD';
-  var scoreOrTime=live?getScore(e):(hasScore(e)?getScore(e):time);
-  var cCount=(COMMENTS[mid]||[]).length;
-
-  return '<div class="ls-match-row'+(live?' ls-live':'')+'">'
-    +'<div class="ls-match-inner" onclick="void(0)">'
-    +'<div class="ls-time">'+(live?'<span class="ls-live-min">'+getMin(e)+'</span>':time)+'</div>'
-    +'<div class="ls-teams">'
-    +'<div class="ls-team ls-home">'+home+'</div>'
-    +'<div class="ls-score-box">'+(live?'<span class="ls-score-live">'+getScore(e)+'</span>':'<span class="ls-score">'+scoreOrTime+'</span>')+'</div>'
-    +'<div class="ls-team ls-away">'+away+'</div>'
-    +'</div>'
-    +'<button class="ls-pred-btn" onclick="event.stopPropagation();navTo(\'predict\')">Predict</button>'
-    +'</div>'
-    +(withComments
-      ?'<button class="ls-cmt-btn" onclick="toggleMatchComments(\''+mid+'\')" id="cmtbtn-'+mid+'">💬 '+cCount+'</button>'
-       +'<div class="match-comments-panel" id="cmt-'+mid+'"></div>'
-      :'')
-    +'</div>';
-}
-
-/* LiveScore-style result row: [date] [home] [FT score] [away] */
-function buildLSResultRow(e){
-  var mid=(e.idEvent||'r'+Math.random().toString(36).slice(2)).replace(/[^a-zA-Z0-9]/g,'');
-  var hScore=parseInt(e.intHomeScore)||0;
-  var aScore=parseInt(e.intAwayScore)||0;
-  var hWon=hScore>aScore, aWon=aScore>hScore;
-  var cCount=(COMMENTS[mid]||[]).length;
-
-  return '<div class="ls-match-row ls-result">'
-    +'<div class="ls-match-inner">'
-    +'<div class="ls-time ls-ft">FT</div>'
-    +'<div class="ls-teams">'
-    +'<div class="ls-team ls-home'+(hWon?' ls-winner':'')+'">'+trunc(e.strHomeTeam||'',18)+'</div>'
-    +'<div class="ls-score-box"><span class="ls-score ls-score-ft">'+getScore(e)+'</span></div>'
-    +'<div class="ls-team ls-away'+(aWon?' ls-winner':'')+'">'+trunc(e.strAwayTeam||'',18)+'</div>'
-    +'</div>'
-    +'<div class="ls-pred-btn" style="visibility:hidden">-</div>'
-    +'</div>'
-    +'<button class="ls-cmt-btn" onclick="toggleMatchComments(\''+mid+'\')" id="cmtbtn-'+mid+'">💬 '+cCount+'</button>'
-    +'<div class="match-comments-panel" id="cmt-'+mid+'"></div>'
-    +'</div>';
+  var matches=ALL_MATCHES.filter(function(e){ return CURR_COMP==='ALL'||e._comp===CURR_COMP; });
+  if(!matches.length){ el.innerHTML='<div class="empty-msg">No matches for this competition today.</div>'; return; }
+  el.innerHTML=matches.map(function(e){ return buildMatchCard(e,true); }).join('');
 }
 
 function filterLive(comp,btn){
@@ -1464,10 +693,8 @@ function renderMarkets(){
   if(CURR_MKT==='tournament'){ renderTournamentMkt(); return; }
   if(CURR_MKT==='scorer')    { renderFirstScorerMkt(); return; }
   if(CURR_MKT==='ou')        { renderOUMkt(); return; }
-  /* Use upcoming as primary source for markets — always has data */
-  var pool = ALL_TODAY.concat(ALL_UPCOMING);
-  var matches = pool.filter(function(e){ return !isResult(e); }).slice(0,8);
-  if(!matches.length){ el.innerHTML='<div class="empty-msg">Fetching markets...</div>'; return; }
+  var matches=ALL_MATCHES.slice(0,8);
+  if(!matches.length){ el.innerHTML='<div class="empty-msg">Loading markets...</div>'; return; }
   el.innerHTML=matches.map(function(e){
     return CURR_MKT==='score'?buildExactScoreMkt(e):buildWinnerMkt(e);
   }).join('');
@@ -1563,15 +790,14 @@ function renderFirstScorerMkt(){
 
 function renderOUMkt(){
   var el=$('mktContent'); if(!el) return;
-  var pool = ALL_TODAY.concat(ALL_UPCOMING);
-  var matches = pool.filter(function(e){ return !isResult(e); }).slice(0,6);
-  if(!matches.length){ el.innerHTML='<div class="empty-msg">Fetching markets...</div>'; return; }
+  var matches=ALL_MATCHES.slice(0,6);
+  if(!matches.length){ el.innerHTML='<div class="empty-msg">Loading...</div>'; return; }
   el.innerHTML=matches.map(function(e){
     var id=e.idEvent||'m'+Math.random().toString(36).slice(2);
     var home=e.strHomeTeam||'Home', away=e.strAwayTeam||'Away';
     return '<div class="mkt-card">'
       +'<div class="mkt-hdr"><div><div class="mkt-match">'+trunc(home,12)+' vs '+trunc(away,12)+'</div>'
-      +'<div class="mkt-league">'+e._flag+' '+e._comp+' · Over / Under 2.5 · 1π entry</div></div></div>'
+      +'<div class="mkt-league">Over / Under 2.5 Goals · 1π entry</div></div></div>'
       +'<div style="display:grid;grid-template-columns:1fr 1fr;gap:7px;margin-bottom:.72rem">'
       +'<div class="mkt-opt" onclick="submitOU(\''+id+'\',\''+esc(home)+'\',\''+esc(away)+'\',\'over\')" style="padding:1rem">'
       +'<div class="mkt-opt-name">Over 2.5</div><div class="mkt-opt-pct">58%</div></div>'
@@ -1814,17 +1040,14 @@ function buildStats(tab){
 
 function renderTopScorers(){
   var el=$('statsContent'); if(!el) return;
-  var scorers = REAL_SCORERS.length ? REAL_SCORERS : TOP_SCORERS;
-  el.innerHTML='<div style="font-family:var(--fb);font-size:.68rem;color:var(--g);margin-bottom:.55rem;display:flex;align-items:center;gap:6px">'
-    +'<span class="ls-live-dot"></span> 2025-26 Season · Auto-updating from TheSportsDB</div>'
-    +scorers.map(function(s,i){
-      return '<div class="scorer-row">'
-        +'<div class="sc-rank'+(i<3?' top':'')+'">'+(i+1)+'</div>'
-        +'<div class="sc-flag">'+s.nat+'</div>'
-        +'<div class="sc-info"><div class="sc-name">'+s.name+'</div><div class="sc-club">'+s.club+(s.lg?' · '+s.lg:'')+'</div></div>'
-        +'<div><div class="sc-goals">'+s.goals+'</div><div class="sc-lbl">goals</div></div>'
-        +'</div>';
-    }).join('');
+  el.innerHTML=TOP_SCORERS.map(function(s,i){
+    return '<div class="scorer-row">'
+      +'<div class="sc-rank'+(i<3?' top':'')+'">'+(i+1)+'</div>'
+      +'<div class="sc-flag">'+s.nat+'</div>'
+      +'<div class="sc-info"><div class="sc-name">'+s.name+'</div><div class="sc-club">'+s.club+' · '+s.lg+'</div></div>'
+      +'<div><div class="sc-goals">'+s.goals+'</div><div class="sc-lbl">goals</div></div>'
+      +'</div>';
+  }).join('');
 }
 
 function renderTeams(){
@@ -1998,54 +1221,22 @@ function sendAI(){
   addAIMessage('user',q);
   var loading=addAIMessage('bot','<span style="display:flex;align-items:center;gap:6px;color:var(--t2);font-style:italic;font-size:.8rem"><span style="width:11px;height:11px;border-radius:50%;border:1.5px solid rgba(0,230,118,.2);border-top-color:var(--g);animation:spin .7s linear infinite;display:inline-block"></span>Analyzing...</span>');
 
-  /* Build real live context from current match data */
-  var liveCtx = '';
-  if(LIVE_MATCHES.length){
-    liveCtx = 'CURRENTLY LIVE ('+LIVE_MATCHES.length+' matches): '
-      +LIVE_MATCHES.slice(0,4).map(function(e){
-        return e.strHomeTeam+' '+getScore(e)+' '+e.strAwayTeam+' ('+e._comp+(e.strStatus?' '+e.strStatus:'')+')';
-      }).join(' | ')+'. ';
-  }
-  var upcomingCtx = '';
-  if(ALL_UPCOMING.length){
-    upcomingCtx = 'UPCOMING FIXTURES: '
-      +ALL_UPCOMING.slice(0,5).map(function(e){
-        return e.strHomeTeam+' vs '+e.strAwayTeam+' ('+formatDateShort(e.dateEvent)+' · '+e._comp+')';
-      }).join(' | ')+'. ';
-  }
-  var recentCtx = '';
-  if(ALL_RECENT.length){
-    recentCtx = 'RECENT RESULTS: '
-      +ALL_RECENT.slice(0,4).map(function(e){
-        return e.strHomeTeam+' '+getScore(e)+' '+e.strAwayTeam+' ('+e._comp+')';
-      }).join(' | ')+'. ';
-  }
-  var scorerCtx = '';
-  var scorers = REAL_SCORERS.length ? REAL_SCORERS : TOP_SCORERS;
-  if(scorers.length){
-    scorerCtx = 'TOP SCORERS 2024-25: '
-      +scorers.slice(0,5).map(function(s){ return s.name+' '+s.goals+'G'; }).join(', ')+'. ';
-  }
-  var liveDataContext = liveCtx+upcomingCtx+recentCtx+scorerCtx;
-
   fetch('https://api.anthropic.com/v1/messages',{
     method:'POST',
     headers:{'Content-Type':'application/json'},
     body:JSON.stringify({
       model:'claude-sonnet-4-20250514',
       max_tokens:1000,
-      system:'You are Copa\'s elite AI football analyst on Pi Network. You have access to REAL-TIME data fed from TheSportsDB right now. Always reference the live data provided when relevant.\n\nLIVE DATA RIGHT NOW ('+new Date().toLocaleTimeString()+'):\n'+liveDataContext+'\n\nProvide sharp, expert, data-driven analysis using this real data. Be confident, globally aware, and concise. Never use markdown — respond in clean plain text only. Always mention specific matches, scores, or players from the live data when answering.',
+      system:'You are Copa\'s elite AI football analyst — the most advanced football intelligence system on Pi Network. You cover all global competitions: Champions League, Premier League, La Liga, Serie A, Bundesliga, Ligue 1, Copa América, World Cup 2026, AFCON, MLS, Saudi Pro League, and more. Provide sharp, expert, data-driven analysis. Be confident, professional, globally aware, and concise. Never use markdown formatting — respond in clean plain text only.',
       messages:[{role:'user',content:q}]
     })
   })
   .then(function(r){return r.json();})
   .then(function(d){
     var ans=(d.content&&d.content[0])?d.content[0].text:'Unable to process request.';
-    if(loading) loading.querySelector('.ai-txt').innerHTML=ans.replace(/\n/g,'<br>');
+    loading.querySelector('.ai-txt').innerHTML=ans.replace(/\n/g,'<br>');
   })
-  .catch(function(){
-    if(loading) loading.querySelector('.ai-txt').textContent='Network error. Please try again.';
-  });
+  .catch(function(){ loading.querySelector('.ai-txt').textContent='Network error. Please try again.'; });
 }
 
 function addAIMessage(role,html){
@@ -2440,33 +1631,18 @@ function checkPremium(){
   }
 }
 
-/* ═══ ON LOAD — Apply saved language + show Pi status ═══ */
-(function onPageLoad(){
-  /* Apply saved language immediately */
-  var saved = localStorage.getItem('copa_lang') || 'en';
-  LANG = saved;
-  if(saved !== 'en'){
-    setLang(saved, null);
-  } else {
-    var enBtn = document.querySelector('.ll[onclick*="\'en\'"]');
-    if(enBtn) enBtn.classList.add('on');
+/* ═══ INITIAL STATUS ON LOGIN SCREEN ═══ */
+(function(){
+  var ls=$('landLoginStatus'); if(!ls) return;
+  if(PI_READY){ ls.textContent='Pi Network ready — tap to authenticate'; ls.className='land-login-status ok'; }
+  else         { ls.textContent='Open in Pi Browser for full experience'; }
+  /* Apply saved language */
+  var saved=localStorage.getItem('copa_lang')||'en';
+  if(saved!=='en'){
+    LANG=saved;
+    document.documentElement.lang=saved;
+    if(saved==='ar'){ document.documentElement.dir='rtl'; }
+    var m=document.querySelector('.ll[onclick*="\''+saved+'\'"]');
+    if(m){ document.querySelectorAll('.ll').forEach(function(b){b.classList.remove('on');}); m.classList.add('on'); }
   }
-
-  /* Show Pi status after SDK has had time to load */
-  function updatePiStatus(){
-    var ls = $('landLoginStatus');
-    if(!ls) return;
-    if(PI_READY || typeof Pi !== 'undefined'){
-      ls.textContent = 'Pi Network ready — tap to authenticate';
-      ls.className   = 'land-login-status ok';
-    } else {
-      ls.textContent = 'Open in Pi Browser to sign in';
-      ls.className   = 'land-login-status';
-    }
-  }
-  /* Check at 500ms, 1s, 2s — Pi Browser injects Pi object async */
-  setTimeout(updatePiStatus, 500);
-  setTimeout(updatePiStatus, 1000);
-  setTimeout(updatePiStatus, 2000);
 }());
-
