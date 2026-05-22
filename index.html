@@ -1,0 +1,508 @@
+<!DOCTYPE html>
+<html lang="en" dir="ltr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no">
+<meta name="theme-color" content="#04060E">
+<meta name="description" content="Copa — Global Football Super App powered by Pi Network. Live scores, predictions, fantasy, statistics, community.">
+<meta http-equiv="X-Frame-Options" content="ALLOWALL">
+<meta http-equiv="Content-Security-Policy" content="frame-ancestors *; default-src * 'unsafe-inline' 'unsafe-eval' data: blob:; script-src * 'unsafe-inline' 'unsafe-eval'; connect-src *;">
+<meta name="pi-app-id" content="copa_pi">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Copa">
+<title>Copa — Global Football Super App</title>
+
+<!-- ① Pi SDK — MUST load first -->
+<script src="https://sdk.minepi.com/pi-sdk.js"></script>
+<!-- ② Pi.init() — immediately after SDK -->
+<script>
+(function(){
+  try {
+    if(typeof Pi!=='undefined'){
+      Pi.init({version:'2.0',sandbox:false});
+      window.__piReady=true;
+    } else { window.__piReady=false; }
+  } catch(e){ window.__piReady=false; }
+})();
+</script>
+
+<script src="https://cdn.jsdelivr.net/npm/qrcode/build/qrcode.min.js"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="manifest" href="/manifest.json">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<!-- ══════════════════════════════════════════════
+     LANDING SCREEN
+══════════════════════════════════════════════ -->
+<div id="landingScreen">
+
+  <!-- Animated background -->
+  <div class="land-bg">
+    <div class="land-orb orb1"></div>
+    <div class="land-orb orb2"></div>
+    <div class="land-orb orb3"></div>
+    <div class="land-particles" id="landParticles"></div>
+  </div>
+
+  <div class="land-inner">
+
+    <!-- Logo -->
+    <div class="land-logo-wrap">
+      <div class="land-ball-ring"></div>
+      <div class="land-logo">COPA</div>
+      <div class="land-powered">Powered by Copa.pi</div>
+    </div>
+
+    <!-- Welcome text -->
+    <div class="land-welcome">
+      The global football super app powered by Pi Network.<br>
+      Live scores · Predictions · Fantasy · AI · Community
+    </div>
+
+    <!-- Live status bar -->
+    <div class="land-status-bar" id="landStatusBar">
+      <div class="lsb-item"><span class="lsb-dot live"></span><span class="lsb-val" id="lstLive">0</span> Live</div>
+      <div class="lsb-sep"></div>
+      <div class="lsb-item"><span class="lsb-val" id="lstMatches">0</span> Today</div>
+      <div class="lsb-sep"></div>
+      <div class="lsb-item"><span class="lsb-val">12</span> Leagues</div>
+      <div class="lsb-sep"></div>
+      <div class="lsb-item"><span class="lsb-dot green"></span> Secure</div>
+    </div>
+
+    <!-- Live preview cards -->
+    <div class="land-preview" id="landPreview">
+      <div class="lp-loading">Fetching live matches...</div>
+    </div>
+
+    <!-- Actions -->
+    <div class="land-actions">
+      <button class="land-btn-primary" id="loginBtn" onclick="piLogin()">
+        <span class="lbp-ico">π</span>
+        <span id="loginBtnTxt">Sign in with Pi</span>
+      </button>
+      <button class="land-btn-ghost" onclick="_guestLogin()">
+        Continue as Guest
+      </button>
+    </div>
+
+    <div class="land-login-status" id="landLoginStatus"></div>
+
+    <!-- Pending payment box -->
+    <div class="land-pending" id="landPending">
+      <div class="lpd-title">Payment Incomplete</div>
+      <div class="lpd-desc">A previous payment needs to be resolved before continuing.</div>
+      <button class="lpd-btn" onclick="clearPending()">Resolve &amp; Continue</button>
+    </div>
+
+    <!-- Language + theme -->
+    <div class="land-bottom-row">
+      <div class="land-langs">
+        <button class="ll on" onclick="setLang('en',this)">EN</button>
+        <button class="ll" onclick="setLang('ar',this)">AR</button>
+        <button class="ll" onclick="setLang('fr',this)">FR</button>
+        <button class="ll" onclick="setLang('es',this)">ES</button>
+        <button class="ll" onclick="setLang('pt',this)">PT</button>
+        <button class="ll" onclick="setLang('id',this)">ID</button>
+        <button class="ll" onclick="setLang('tr',this)">TR</button>
+      </div>
+      <button class="land-theme-toggle" onclick="toggleTheme()" title="Toggle theme">☀</button>
+    </div>
+
+    <div class="land-footer-links">
+      <span>Privacy Policy</span>
+      <span>·</span>
+      <span>Terms of Service</span>
+      <span>·</span>
+      <span>Powered by Pi Network</span>
+    </div>
+
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════
+     APP SHELL
+══════════════════════════════════════════════ -->
+<div id="appShell">
+
+  <!-- TOPBAR -->
+  <header class="topbar">
+    <div class="tb-left" onclick="navTo('home')">
+      <div class="tb-logo">COPA</div>
+    </div>
+    <div class="tb-center">
+      <div class="tb-live-pill" id="tbLivePill">
+        <span class="tlp-dot"></span>
+        <span id="tbLiveNum">0</span> Live
+      </div>
+    </div>
+    <div class="tb-right">
+      <button class="tb-search" onclick="openSearch()">🔍</button>
+      <button class="tb-notif" onclick="navTo('community')" id="tbNotif">🔔</button>
+      <div class="tb-av" id="tbAv" onclick="navTo('profile')">?</div>
+    </div>
+  </header>
+
+  <!-- SCORE TICKER -->
+  <div class="score-ticker"><div class="st-track" id="stTrack"></div></div>
+
+  <!-- MAIN CONTENT AREA -->
+  <main class="app-body">
+
+    <!-- ═════════════════════════════
+         1. HOME DASHBOARD
+    ═════════════════════════════ -->
+    <section class="screen on" id="scr-home">
+
+      <!-- Live Match Hero -->
+      <div class="hero-carousel" id="heroCarousel">
+        <div class="hero-loading"><div class="spin"></div></div>
+      </div>
+
+      <!-- Quick Actions Row -->
+      <div class="quick-row">
+        <div class="qr-btn" onclick="navTo('live')"><span>🔴</span><span>Scores</span></div>
+        <div class="qr-btn" onclick="navTo('predict')"><span>🎯</span><span>Predict</span></div>
+        <div class="qr-btn" onclick="navTo('fantasy')"><span>⭐</span><span>Fantasy</span></div>
+        <div class="qr-btn" onclick="navTo('stats')"><span>📊</span><span>Stats</span></div>
+        <div class="qr-btn" onclick="navTo('ai')"><span>🤖</span><span>AI</span></div>
+        <div class="qr-btn" onclick="navTo('profile')"><span>💳</span><span>Wallet</span></div>
+      </div>
+
+      <!-- Sections -->
+      <div class="dash-section">
+        <div class="ds-hdr"><span class="ds-dot live-dot"></span>Live Now</div>
+        <div id="homeLiveCards"><div class="blk-load"><div class="spin"></div></div></div>
+      </div>
+
+      <div class="dash-section">
+        <div class="ds-hdr">📅 Today's Fixtures</div>
+        <div id="homeTodayCards"><div class="blk-load"><div class="spin"></div></div></div>
+      </div>
+
+      <div class="dash-section">
+        <div class="ds-hdr">🤖 AI Football Intelligence</div>
+        <div id="homeAICards"></div>
+      </div>
+
+      <div class="dash-section">
+        <div class="ds-hdr">⚡ Top Scorers</div>
+        <div id="homeTopScorers"></div>
+      </div>
+
+      <div class="dash-section">
+        <div class="ds-hdr">👥 Community Highlights</div>
+        <div id="homeCommHighlights"></div>
+      </div>
+
+    </section>
+
+    <!-- ═════════════════════════════
+         2. LIVE MATCHES
+    ═════════════════════════════ -->
+    <section class="screen" id="scr-live">
+      <div class="scr-title">Live Scores</div>
+
+      <div class="comp-pills" id="compPillsLive">
+        <button class="cp on" onclick="filterLive('ALL',this)">All</button>
+        <button class="cp" onclick="filterLive('UCL',this)">Champions League</button>
+        <button class="cp" onclick="filterLive('EPL',this)">Premier League</button>
+        <button class="cp" onclick="filterLive('LIGA',this)">La Liga</button>
+        <button class="cp" onclick="filterLive('BUN',this)">Bundesliga</button>
+        <button class="cp" onclick="filterLive('SA',this)">Serie A</button>
+        <button class="cp" onclick="filterLive('L1',this)">Ligue 1</button>
+        <button class="cp" onclick="filterLive('COPA',this)">Copa América</button>
+        <button class="cp" onclick="filterLive('WC',this)">World Cup</button>
+        <button class="cp" onclick="filterLive('MLS',this)">MLS</button>
+        <button class="cp" onclick="filterLive('SPL',this)">Saudi Pro</button>
+        <button class="cp" onclick="filterLive('AFCON',this)">AFCON</button>
+      </div>
+
+      <div id="liveMatchesList"><div class="blk-load"><div class="spin"></div></div></div>
+    </section>
+
+    <!-- ═════════════════════════════
+         3. PREDICT
+    ═════════════════════════════ -->
+    <section class="screen" id="scr-predict">
+      <div class="scr-title">Prediction Markets</div>
+
+      <!-- Pool Hero -->
+      <div class="pool-hero">
+        <div class="ph-l">
+          <div class="ph-label">Prize Pool</div>
+          <div class="ph-val" id="phVal">0 π</div>
+          <div class="ph-sub" id="phSub">0 predictions entered</div>
+        </div>
+        <div class="ph-r">
+          <div class="ph-label">Auto-paid</div>
+          <div class="ph-val" style="font-size:1.1rem">After FT</div>
+          <div class="ph-sub">Per match result</div>
+        </div>
+      </div>
+
+      <!-- Market type tabs -->
+      <div class="mkt-tabs" id="mktTabs">
+        <button class="mkt-tab on" onclick="setMktTab('winner',this)">Winner</button>
+        <button class="mkt-tab" onclick="setMktTab('score',this)">Score</button>
+        <button class="mkt-tab" onclick="setMktTab('tournament',this)">Tournament</button>
+        <button class="mkt-tab" onclick="setMktTab('scorer',this)">First Scorer</button>
+        <button class="mkt-tab" onclick="setMktTab('ou',this)">Over/Under</button>
+      </div>
+
+      <div id="mktContent"><div class="blk-load"><div class="spin"></div></div></div>
+
+      <div class="scr-subtitle" style="margin-top:1.2rem">Your Predictions</div>
+      <div id="myPredsList"><div class="empty-msg">No predictions yet.</div></div>
+    </section>
+
+    <!-- ═════════════════════════════
+         4. FANTASY
+    ═════════════════════════════ -->
+    <section class="screen" id="scr-fantasy">
+      <div class="scr-title">Fantasy League</div>
+
+      <div class="fantasy-hero">
+        <div class="fh-info">
+          <div class="fh-team" id="fhTeamName">My Squad</div>
+          <div class="fh-pts" id="fhPts">0 pts</div>
+          <div class="fh-rank" id="fhRank">Global rank: —</div>
+        </div>
+        <div class="fh-prize">
+          <div class="fhp-label">Weekly Prize</div>
+          <div class="fhp-val">50 π</div>
+        </div>
+      </div>
+
+      <div class="tab-row">
+        <button class="tab-btn on" onclick="setFantasyTab('squad',this)">My Squad</button>
+        <button class="tab-btn" onclick="setFantasyTab('players',this)">Players</button>
+        <button class="tab-btn" onclick="setFantasyTab('rankings',this)">Rankings</button>
+        <button class="tab-btn" onclick="setFantasyTab('transfers',this)">Transfers</button>
+      </div>
+
+      <div id="fantasyContent"><div class="blk-load"><div class="spin"></div></div></div>
+    </section>
+
+    <!-- ═════════════════════════════
+         5. STATISTICS
+    ═════════════════════════════ -->
+    <section class="screen" id="scr-stats">
+      <div class="scr-title">Statistics</div>
+
+      <div class="search-bar">
+        <input class="search-inp" id="statsSearchInp" type="text"
+          placeholder="Search team, player, or competition..."
+          oninput="onStatsSearch(this.value)">
+      </div>
+
+      <div class="tab-row">
+        <button class="tab-btn on" onclick="setStatsTab('scorers',this)">Scorers</button>
+        <button class="tab-btn" onclick="setStatsTab('teams',this)">Teams</button>
+        <button class="tab-btn" onclick="setStatsTab('h2h',this)">H2H</button>
+        <button class="tab-btn" onclick="setStatsTab('leagues',this)">Leagues</button>
+        <button class="tab-btn" onclick="setStatsTab('xg',this)">xG</button>
+      </div>
+
+      <div id="statsContent"><div class="blk-load"><div class="spin"></div></div></div>
+    </section>
+
+    <!-- ═════════════════════════════
+         6. AI / NEWS
+    ═════════════════════════════ -->
+    <section class="screen" id="scr-ai">
+      <div class="scr-title">AI Analyst</div>
+
+      <div class="tab-row">
+        <button class="tab-btn on" onclick="setAITab('chat',this)">AI Chat</button>
+        <button class="tab-btn" onclick="setAITab('reports',this)">Match Reports</button>
+        <button class="tab-btn" onclick="setAITab('preview',this)">Previews</button>
+        <button class="tab-btn" onclick="setAITab('transfers',this)">Transfers</button>
+      </div>
+
+      <!-- AI Chat -->
+      <div id="aiChatPanel">
+        <div class="ai-sugs-row" id="aiSugsRow"></div>
+        <div class="ai-chat-window" id="aiChatWindow">
+          <div class="ai-msg bot">
+            <div class="ai-av">⚽</div>
+            <div class="ai-txt">I'm Copa's AI football analyst — the most advanced football intelligence on Pi Network. Ask me anything about matches, tactics, history, predictions, or any competition globally.</div>
+          </div>
+        </div>
+        <div class="ai-input-row">
+          <input class="ai-inp" id="aiInp" placeholder="Ask about any match, player, team..."
+            onkeydown="if(event.key==='Enter')sendAI()">
+          <button class="ai-send-btn" onclick="sendAI()">→</button>
+        </div>
+      </div>
+
+      <!-- Other tabs -->
+      <div id="aiOtherPanel" style="display:none"></div>
+    </section>
+
+    <!-- ═════════════════════════════
+         7. COMMUNITY
+    ═════════════════════════════ -->
+    <section class="screen" id="scr-community">
+      <div class="scr-title">Community</div>
+
+      <div class="tab-row">
+        <button class="tab-btn on" onclick="setCommTab('feed',this)">Feed</button>
+        <button class="tab-btn" onclick="setCommTab('leaderboard',this)">Leaderboard</button>
+        <button class="tab-btn" onclick="setCommTab('clubs',this)">Fan Clubs</button>
+        <button class="tab-btn" onclick="setCommTab('quiz',this)">Quiz</button>
+        <button class="tab-btn" onclick="setCommTab('badges',this)">Badges</button>
+      </div>
+
+      <div id="commContent"></div>
+    </section>
+
+    <!-- ═════════════════════════════
+         8. PROFILE & WALLET
+    ═════════════════════════════ -->
+    <section class="screen" id="scr-profile">
+      <div class="scr-title">Profile &amp; Wallet</div>
+
+      <!-- Profile Card -->
+      <div class="profile-card">
+        <div class="pc-av" id="pcAv">⚽</div>
+        <div class="pc-info">
+          <div class="pc-name" id="pcName">—</div>
+          <div class="pc-id"   id="pcId">—</div>
+          <div class="pc-tags" id="pcTags"></div>
+        </div>
+      </div>
+
+      <!-- Stats grid -->
+      <div class="pf-stats" id="pfStats"></div>
+
+      <!-- Pi Wallet -->
+      <div class="sect-label">Pi Wallet</div>
+      <div class="wallet-card">
+        <div class="wc-top">
+          <div>
+            <div class="wc-bal-label">Balance</div>
+            <div class="wc-bal">π</div>
+          </div>
+          <div class="wc-id-wrap" id="wcIdWrap">—</div>
+        </div>
+        <div class="wc-note">Send and receive Pi directly via Pi Browser. Copa processes the Premium payment only.</div>
+      </div>
+
+      <!-- Send / Request Pi -->
+      <div class="sect-label">Send &amp; Request Pi</div>
+      <div class="pi-actions-card">
+        <div class="tab-row" style="margin-bottom:.85rem">
+          <button class="tab-btn on" onclick="setPiActionTab('send',this)">Send Pi</button>
+          <button class="tab-btn" onclick="setPiActionTab('request',this)">Request Pi</button>
+          <button class="tab-btn" onclick="setPiActionTab('history',this)">History</button>
+        </div>
+        <div id="piActionContent"></div>
+      </div>
+
+      <!-- Premium -->
+      <div class="sect-label">Premium</div>
+      <div class="prem-card" id="premCard">
+        <div class="prem-glow"></div>
+        <div class="prem-top">
+          <div>
+            <div class="prem-title">Copa Premium</div>
+            <div class="prem-sub">One-time · All features · Forever</div>
+          </div>
+          <div class="prem-price">0.5 π</div>
+        </div>
+        <div class="prem-feats">
+          <div class="pf-item">Advanced xG &amp; tactical data</div>
+          <div class="pf-item">Unlimited AI match analysis</div>
+          <div class="pf-item">Priority leaderboard placement</div>
+          <div class="pf-item">Exclusive prediction markets</div>
+          <div class="pf-item">Ad-free experience</div>
+          <div class="pf-item">All future features included</div>
+        </div>
+        <button class="prem-btn" id="premBtn" onclick="payPremium()">Unlock Premium — 0.5 π</button>
+        <div class="prem-status" id="premStatus"></div>
+      </div>
+
+      <!-- Transaction history -->
+      <div class="sect-label">Transaction History</div>
+      <div id="txHistList"><div class="empty-msg">No transactions yet.</div></div>
+
+      <!-- QR Identity -->
+      <div class="sect-label">Identity Card</div>
+      <div class="qr-card">
+        <div class="qr-canvas-wrap" id="qrCanvasWrap"></div>
+        <div class="qr-id-label" id="qrIdLabel">—</div>
+        <div class="qr-btns">
+          <button class="qr-btn" onclick="shareQR()">Share</button>
+          <button class="qr-btn" onclick="dlQR()">Save</button>
+        </div>
+      </div>
+
+      <!-- Security settings -->
+      <div class="sect-label">Settings</div>
+      <div class="settings-card">
+        <div class="setting-row">
+          <span>Language</span>
+          <select class="setting-sel" onchange="setLang(this.value,null)">
+            <option value="en">English</option>
+            <option value="ar">العربية</option>
+            <option value="fr">Français</option>
+            <option value="es">Español</option>
+            <option value="pt">Português</option>
+            <option value="id">Indonesia</option>
+            <option value="tr">Türkçe</option>
+          </select>
+        </div>
+        <div class="setting-row">
+          <span>Theme</span>
+          <button class="setting-btn" onclick="toggleTheme()">Toggle</button>
+        </div>
+        <div class="setting-row">
+          <span>Account</span>
+          <button class="setting-btn danger" onclick="doLogout()">Sign Out</button>
+        </div>
+      </div>
+
+    </section>
+
+  </main>
+
+  <!-- BOTTOM NAVIGATION — 8 tabs -->
+  <nav class="bottom-nav" id="bottomNav" style="display:none">
+    <button class="bnav on" data-s="home"      onclick="bnTap(this)"><span>🏠</span><span>Home</span></button>
+    <button class="bnav"    data-s="live"       onclick="bnTap(this)"><span>🔴</span><span>Live</span></button>
+    <button class="bnav"    data-s="predict"    onclick="bnTap(this)"><span>🎯</span><span>Predict</span></button>
+    <button class="bnav"    data-s="fantasy"    onclick="bnTap(this)"><span>⭐</span><span>Fantasy</span></button>
+    <button class="bnav"    data-s="stats"      onclick="bnTap(this)"><span>📊</span><span>Stats</span></button>
+    <button class="bnav"    data-s="ai"         onclick="bnTap(this)"><span>🤖</span><span>AI</span></button>
+    <button class="bnav"    data-s="community"  onclick="bnTap(this)"><span>👥</span><span>Community</span></button>
+    <button class="bnav"    data-s="profile"    onclick="bnTap(this)"><span>👤</span><span>Profile</span></button>
+  </nav>
+
+</div><!-- end appShell -->
+
+<!-- SEARCH OVERLAY -->
+<div class="search-overlay" id="searchOverlay">
+  <div class="so-inner">
+    <input class="so-inp" id="soInp" placeholder="Search matches, teams, players..."
+      oninput="globalSearch(this.value)">
+    <button class="so-close" onclick="closeSearch()">✕</button>
+  </div>
+  <div id="soResults"></div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<!-- ③ script.js at END of body — Pi Core Team requirement -->
+<script src="script.js"></script>
+<script>
+  if('serviceWorker' in navigator){
+    navigator.serviceWorker.register('/sw.js').catch(function(){});
+  }
+</script>
+</body>
+</html>
