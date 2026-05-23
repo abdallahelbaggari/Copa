@@ -479,25 +479,44 @@ function _setEl(id, text){
   if(el) el.textContent = text;
 }
 
-/* ═══ EARLY DATA LOAD — 2 leagues only, before login ═══ */
+/* ═══ EARLY LOAD — football-data.org next 3 days, before login ═══ */
 (function earlyLoad(){
-  var quick = [LEAGUES[1], LEAGUES[2]]; /* EPL + La Liga only */
-  var fetches = quick.map(function(lg){
-    return fetch(TSDB+'/eventsnext.php?id='+lg.id)
+  var today = _today();
+  var next3 = new Date(); next3.setDate(next3.getDate()+3);
+  var next3str = next3.getFullYear()+'-'+pad(next3.getMonth()+1)+'-'+pad(next3.getDate());
+
+  fetch(FD_BASE+'/matches?dateFrom='+today+'&dateTo='+next3str, {
+    headers:{'X-Auth-Token': FD_KEY}
+  })
+  .then(function(r){ return r.ok?r.json():{matches:[]}; })
+  .then(function(data){
+    var matches=(data.matches||[]).slice(0,10).map(function(m){
+      var comp = FD_LEAGUES.find(function(l){
+        return m.competition&&(m.competition.code===l.fd);
+      })||{comp:'INT',flag:'⚽',name:m.competition?m.competition.name:'International'};
+      return _fdTag(m,comp);
+    });
+    if(matches.length){
+      ALL_MATCHES  = matches;
+      ALL_UPCOMING = matches.filter(function(e){ return e._type==='upcoming'; });
+      ALL_TODAY    = matches.filter(function(e){ return e._type==='today'; });
+      LIVE_MATCHES = ALL_TODAY.filter(function(e){ return e.strStatus==='live'; });
+      renderLandingPreview();
+      updateLandingStats();
+    }
+  })
+  .catch(function(){
+    /* Fallback — TheSportsDB EPL only */
+    var lg={id:'4328',comp:'EPL',flag:'🏴󠁧󠁢󠁥󠁮󠁧󠁿',name:'Premier League'};
+    fetch(TSDB+'/eventsnext.php?id='+lg.id)
       .then(function(r){ return r.ok?r.json():{events:[]}; })
-      .then(function(data){
-        return (data.events||[]).slice(0,2).map(function(e){
+      .then(function(d){
+        var all=(d.events||[]).slice(0,6).map(function(e){
           return Object.assign({},e,{_comp:lg.comp,_flag:lg.flag,_league:lg.name,_type:'upcoming'});
         });
-      }).catch(function(){ return []; });
-  });
-  Promise.all(fetches).then(function(res){
-    var all=[]; res.forEach(function(r){ all=all.concat(r); });
-    all.sort(function(a,b){ return (a.dateEvent||'').localeCompare(b.dateEvent||''); });
-    ALL_UPCOMING = all;
-    ALL_MATCHES  = all;
-    renderLandingPreview();
-    updateLandingStats();
+        ALL_MATCHES=all; ALL_UPCOMING=all;
+        renderLandingPreview(); updateLandingStats();
+      }).catch(function(){});
   });
 }());
 
@@ -820,228 +839,350 @@ var REAL_SCORERS = [];
 var DATA_LOADED  = false;
 
 /* ══════════════════════════════════════════════════════════
-   COPA PERFORMANCE ENGINE v5
-   Pi Browser optimized — lazy, cached, sequential
-   
-   Phase 1 (on login):    2 leagues × eventsnext → renders in ~1s
-   Phase 2 (background):  remaining leagues → fills in silently
-   Phase 3 (on-demand):   eventslast only when Live tab opened
-   Cache: 5-min TTL per league, prevents duplicate calls
-   Refresh: every 60s live-only, full every 5min
+   COPA DATA ENGINE v6
+   PRIMARY:  football-data.org (real, live, reliable)
+   FALLBACK: TheSportsDB (free, extended leagues)
+   Cache: 5-min TTL · Rate-limit aware · Pi Browser optimized
 ══════════════════════════════════════════════════════════ */
 
-var CACHE = {};          /* key → {data, ts} */
-var CACHE_TTL = 300000;  /* 5 minutes */
-var PHASE     = 0;       /* 0=idle 1=phase1done 2=full */
-var FETCH_LOCK= false;   /* prevent overlapping full fetches */
+var FD_KEY    = 'a3d26a60696b4a328744162b122e09c7';
+var FD_BASE   = 'https://api.football-data.org/v4';
+var TSDB      = 'https://www.thesportsdb.com/api/v1/json/3';
+var CACHE     = {};
+var CACHE_TTL = 300000; /* 5 min */
+var FETCH_LOCK= false;
+var RESULTS_LOADED = false;
+var FD_REMAINING   = 10; /* rate limit tracker — 10/min free */
 
-/* Single cached fetch — prevents duplicate network calls */
-function cachedFetch(url, ttl){
+/* football-data.org competition codes + TheSportsDB IDs */
+var FD_LEAGUES = [
+  {fd:'PL',  tsdb:'4328', name:'Premier League',       comp:'EPL',  flag:'🏴󠁧󠁢󠁥󠁮󠁧󠁿'},
+  {fd:'PD',  tsdb:'4335', name:'La Liga',              comp:'LIGA', flag:'🇪🇸'},
+  {fd:'BL1', tsdb:'4331', name:'Bundesliga',           comp:'BUN',  flag:'🇩🇪'},
+  {fd:'SA',  tsdb:'4332', name:'Serie A',              comp:'SA',   flag:'🇮🇹'},
+  {fd:'FL1', tsdb:'4334', name:'Ligue 1',              comp:'L1',   flag:'🇫🇷'},
+  {fd:'CL',  tsdb:'4480', name:'Champions League',     comp:'UCL',  flag:'⭐'},
+];
+
+/* TheSportsDB-only leagues (not on football-data.org free tier) */
+var TSDB_ONLY = [
+  {id:'4346', name:'Copa America',          comp:'COPA', flag:'🌎'},
+  {id:'4347', name:'FIFA World Cup',        comp:'WC',   flag:'🏆'},
+  {id:'4424', name:'MLS',                   comp:'MLS',  flag:'🇺🇸'},
+  {id:'4406', name:'Saudi Pro League',      comp:'SPL',  flag:'🇸🇦'},
+  {id:'4429', name:'AFCON',                 comp:'AFCON',flag:'🌍'},
+  {id:'4399', name:'AFC Asian Cup',         comp:'AFC',  flag:'🌏'},
+];
+
+/* ─── Cached fetch with rate-limit header tracking ─── */
+function cachedFetch(url, headers, ttl){
   ttl = ttl || CACHE_TTL;
   var now = Date.now();
-  if(CACHE[url] && (now - CACHE[url].ts) < ttl){
+  if(CACHE[url] && (now-CACHE[url].ts) < ttl){
     return Promise.resolve(CACHE[url].data);
   }
+  var opts = headers ? {headers:headers} : {};
   return Promise.race([
-    fetch(url).then(function(r){ return r.ok?r.json():{events:[],results:[]}; }),
-    new Promise(function(_,rej){
-      setTimeout(function(){ rej(new Error('timeout')); }, 7000);
-    })
+    fetch(url, opts).then(function(r){
+      /* Track football-data.org rate limit */
+      if(r.headers && r.headers.get('X-Requests-Available-Minute')){
+        FD_REMAINING = parseInt(r.headers.get('X-Requests-Available-Minute'))||10;
+      }
+      return r.ok ? r.json() : {matches:[],events:[],results:[]};
+    }),
+    new Promise(function(_,rej){ setTimeout(function(){ rej(new Error('timeout')); },8000); })
   ])
   .then(function(data){
-    CACHE[url] = {data:data, ts:Date.now()};
+    CACHE[url]={data:data,ts:Date.now()};
     return data;
   })
-  .catch(function(){ return CACHE[url]?CACHE[url].data:{events:[],results:[]}; });
+  .catch(function(){ return CACHE[url]?CACHE[url].data:{matches:[],events:[],results:[]}; });
 }
 
-/* ─── PHASE 1: 3 top leagues next events only — fires immediately on login ─── */
-function fetchPhase1(){
-  var top3 = LEAGUES.slice(1,4); /* EPL, La Liga, Bundesliga — most reliable */
-  return Promise.all(top3.map(function(lg){
-    return cachedFetch(TSDB+'/eventsnext.php?id='+lg.id)
-      .then(function(d){ return (d.events||[]).slice(0,4).map(function(e){return _tag(e,lg,'upcoming');}); });
-  }))
-  .then(function(res){
-    var arr=[]; res.forEach(function(r){ arr=arr.concat(r); });
-    arr.sort(function(a,b){ return (a.dateEvent||'').localeCompare(b.dateEvent||''); });
-    if(arr.length){
-      ALL_UPCOMING = arr;
-      ALL_MATCHES  = arr;
-      PHASE = 1;
-      /* Render immediately with phase 1 data */
-      renderHeroCarousel();
-      renderHomeTodayCards();
-      renderLiveScreen();
-      renderMarkets();
-      buildScoreTicker();
-      updateLandingStats();
+/* ─── Convert football-data.org match to Copa format ─── */
+function _fdTag(m, lg){
+  var utc    = m.utcDate||'';
+  var date   = utc.split('T')[0]||'';
+  var hour   = utc ? new Date(utc).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit',hour12:false}) : '';
+  var status = m.status||'';
+  var copaStatus = {
+    'SCHEDULED':'','TIMED':'','IN_PLAY':'live','PAUSED':'HT',
+    'FINISHED':'FT','POSTPONED':'PPD','CANCELLED':'CAN','SUSPENDED':'SUS'
+  }[status]||status;
+  var hscore = m.score&&m.score.fullTime&&m.score.fullTime.home!=null ? String(m.score.fullTime.home) : '';
+  var ascore = m.score&&m.score.fullTime&&m.score.fullTime.away!=null ? String(m.score.fullTime.away) : '';
+  /* Live score */
+  if(status==='IN_PLAY'||status==='PAUSED'){
+    if(m.score&&m.score.halfTime){
+      hscore = m.score.halfTime.home!=null ? String(m.score.halfTime.home) : '0';
+      ascore = m.score.halfTime.away!=null ? String(m.score.halfTime.away) : '0';
     }
-    return arr;
-  });
+  }
+  var type = status==='FINISHED'?'result': (date===_today()?'today':'upcoming');
+  return {
+    idEvent:      'fd_'+m.id,
+    strHomeTeam:  m.homeTeam&&m.homeTeam.shortName ? m.homeTeam.shortName : (m.homeTeam&&m.homeTeam.name?m.homeTeam.name:'TBD'),
+    strAwayTeam:  m.awayTeam&&m.awayTeam.shortName ? m.awayTeam.shortName : (m.awayTeam&&m.awayTeam.name?m.awayTeam.name:'TBD'),
+    intHomeScore: hscore,
+    intAwayScore: ascore,
+    strStatus:    copaStatus,
+    strTime:      hour,
+    dateEvent:    date,
+    strVenue:     m.venue||'',
+    strRound:     m.matchday?'MD '+m.matchday:'',
+    _comp:        lg.comp,
+    _flag:        lg.flag,
+    _league:      lg.name,
+    _type:        type,
+    _src:         'fd'
+  };
 }
 
-/* ─── PHASE 2: Remaining leagues next events (background) ─── */
-function fetchPhase2(){
-  if(FETCH_LOCK) return Promise.resolve();
-  FETCH_LOCK = true;
-  var remaining = LEAGUES.slice(4); /* Ligue 1, Copa, WC, MLS, SPL, AFCON, AFC */
-  return Promise.all(remaining.map(function(lg){
-    return cachedFetch(TSDB+'/eventsnext.php?id='+lg.id)
-      .then(function(d){ return (d.events||[]).slice(0,3).map(function(e){return _tag(e,lg,'upcoming');}); });
-  }))
-  .then(function(res){
-    var arr=[]; res.forEach(function(r){ arr=arr.concat(r); });
-    /* Merge with phase 1 data */
-    var merged = ALL_UPCOMING.concat(arr);
-    merged.sort(function(a,b){ return (a.dateEvent||'').localeCompare(b.dateEvent||''); });
-    /* Dedupe by idEvent */
-    var seen={};
-    ALL_UPCOMING = merged.filter(function(e){
-      if(seen[e.idEvent]) return false;
-      seen[e.idEvent]=1; return true;
-    });
-    ALL_MATCHES = ALL_TODAY.concat(ALL_UPCOMING.slice(0,30)).concat(ALL_RECENT.slice(0,20));
-    DATA_LOADED = true;
-    PHASE = 2;
-    FETCH_LOCK = false;
-    /* Silent update — no spinner flash */
-    renderLiveScreen();
-    renderMarkets();
-    buildScoreTicker();
-    buildHomeAI();
-    updateLandingStats();
-  })
-  .catch(function(){ FETCH_LOCK=false; });
-}
-
-/* ─── PHASE 3: Results — only when Live tab opened ─── */
-var RESULTS_LOADED = false;
-function fetchResults(){
-  if(RESULTS_LOADED) return;
-  RESULTS_LOADED = true;
-  var top6 = LEAGUES.slice(0,6);
-  Promise.all(top6.map(function(lg){
-    return cachedFetch(TSDB+'/eventslast.php?id='+lg.id)
-      .then(function(d){
-        var evts=d.results||d.events||[];
-        return evts.slice(0,4).map(function(e){ return _tag(e,lg,'result'); });
-      });
-  }))
-  .then(function(res){
-    var arr=[]; res.forEach(function(r){ arr=arr.concat(r); });
-    arr.sort(function(a,b){ return (b.dateEvent||'').localeCompare(a.dateEvent||''); });
-    ALL_RECENT = arr;
-    ALL_MATCHES = ALL_TODAY.concat(ALL_UPCOMING.slice(0,30)).concat(ALL_RECENT.slice(0,20));
-    renderLiveScreen(); /* Re-render with results now included */
-  });
-}
-
-/* ─── MAIN ENTRY — called on login and every refresh ─── */
-function fetchAllMatches(){
-  var today = new Date();
-  var d = today.getFullYear()+'-'+pad(today.getMonth()+1)+'-'+pad(today.getDate());
-
-  /* Phase 1 first → renders immediately */
-  fetchPhase1().then(function(){
-    /* Phase 2 after short delay — don't compete with Phase 1 rendering */
-    setTimeout(fetchPhase2, 800);
-  });
-
-  /* Today's matches — low priority, fire after phases */
-  setTimeout(function(){
-    var dayLeagues = LEAGUES.slice(1,5); /* top 4 leagues */
-    Promise.all(dayLeagues.map(function(lg){
-      return cachedFetch(TSDB+'/eventsday.php?d='+d+'&l='+encodeURIComponent(lg.name), 60000)
-        .then(function(data){
-          return (data.events||[]).map(function(e){ return _tag(e,lg,'today'); });
-        });
-    }))
-    .then(function(res){
-      var arr=[]; res.forEach(function(r){ arr=arr.concat(r); });
-      if(arr.length){
-        arr.sort(function(a,b){ return (a.strTime||'23:59').localeCompare(b.strTime||'23:59'); });
-        ALL_TODAY    = arr;
-        LIVE_MATCHES = arr.filter(isLive);
-        ALL_MATCHES  = ALL_TODAY.concat(ALL_UPCOMING.slice(0,30)).concat(ALL_RECENT.slice(0,20));
-        var tn=$('tbLiveNum'); if(tn) tn.textContent=LIVE_MATCHES.length;
-        var ll=$('lstLive');   if(ll) ll.textContent=LIVE_MATCHES.length;
-        var lm=$('lstMatches');if(lm) lm.textContent=arr.length;
-        renderHomeLive();
-        renderHomeTodayCards();
-        buildScoreTicker();
-        if(LIVE_MATCHES.length) renderHeroCarousel();
-      }
-    });
-  }, 1500);
-
-  /* Scorers — lowest priority, fire last */
-  setTimeout(fetchRealTopScorers, 2000);
+function _today(){
+  var d=new Date();
+  return d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate());
 }
 
 function _tag(e,lg,type){
   return Object.assign({},e,{_comp:lg.comp,_flag:lg.flag,_league:lg.name,_type:type});
 }
 
-/* ─── LIVE REFRESH — every 60s, only fetches live-match leagues ─── */
+/* ════════════════════════════════════════════
+   PHASE 1 — football-data.org today + upcoming
+   Fires on login → renders in ~1 second
+════════════════════════════════════════════ */
+function fetchPhase1(){
+  var fdHeaders = {'X-Auth-Token': FD_KEY};
+  var today = _today();
+
+  /* Single call: all matches today across all competitions */
+  return cachedFetch(FD_BASE+'/matches?dateFrom='+today+'&dateTo='+today, fdHeaders, 60000)
+  .then(function(data){
+    var todayMatches = (data.matches||[]);
+
+    /* Map to Copa format */
+    var tagged = todayMatches.map(function(m){
+      var comp = FD_LEAGUES.find(function(l){
+        return m.competition && (m.competition.code===l.fd||m.competition.name===l.name);
+      }) || {comp:'INT',flag:'⚽',name:m.competition?m.competition.name:'International'};
+      return _fdTag(m, comp);
+    });
+
+    /* Separate today vs upcoming */
+    ALL_TODAY    = tagged.filter(function(e){ return e._type==='today'||e._type==='result'||(e._type==='upcoming'&&e.dateEvent===today); });
+    LIVE_MATCHES = ALL_TODAY.filter(isLive);
+
+    /* Also fetch next 7 days for upcoming section */
+    var nextWeek = new Date(); nextWeek.setDate(nextWeek.getDate()+7);
+    var nextWeekStr = nextWeek.getFullYear()+'-'+pad(nextWeek.getMonth()+1)+'-'+pad(nextWeek.getDate());
+
+    return cachedFetch(FD_BASE+'/matches?dateFrom='+today+'&dateTo='+nextWeekStr, fdHeaders, 120000);
+  })
+  .then(function(data){
+    var allMatches = (data.matches||[]);
+    var today2 = _today();
+
+    var upcoming = allMatches.filter(function(m){
+      var d = (m.utcDate||'').split('T')[0];
+      return d > today2 && (m.status==='SCHEDULED'||m.status==='TIMED');
+    }).map(function(m){
+      var comp = FD_LEAGUES.find(function(l){
+        return m.competition && (m.competition.code===l.fd||m.competition.name===l.name);
+      }) || {comp:'INT',flag:'⚽',name:m.competition?m.competition.name:'International'};
+      return _fdTag(m, comp);
+    });
+
+    upcoming.sort(function(a,b){ return (a.dateEvent||'').localeCompare(b.dateEvent||''); });
+    ALL_UPCOMING = upcoming;
+    ALL_MATCHES  = ALL_TODAY.concat(ALL_UPCOMING.slice(0,40));
+    DATA_LOADED  = true;
+    PHASE = 1;
+
+    /* Update counters */
+    var tn=$('tbLiveNum'); if(tn) tn.textContent=LIVE_MATCHES.length;
+    var ll=$('lstLive');   if(ll) ll.textContent=LIVE_MATCHES.length;
+    var lm=$('lstMatches');if(lm) lm.textContent=ALL_TODAY.length||ALL_UPCOMING.length;
+
+    /* Render immediately */
+    renderHeroCarousel();
+    renderHomeLive();
+    renderHomeTodayCards();
+    renderLiveScreen();
+    renderMarkets();
+    buildScoreTicker();
+    updateLandingStats();
+
+    return allMatches;
+  })
+  .catch(function(err){
+    console.warn('[Copa] football-data.org Phase1 failed, using TheSportsDB:', err);
+    return fetchPhase1Fallback();
+  });
+}
+
+/* PHASE 1 FALLBACK — TheSportsDB if football-data.org fails */
+function fetchPhase1Fallback(){
+  var top3 = [{id:'4328',comp:'EPL',flag:'🏴󠁧󠁢󠁥󠁮󠁧󠁿',name:'Premier League'},
+               {id:'4335',comp:'LIGA',flag:'🇪🇸',name:'La Liga'},
+               {id:'4331',comp:'BUN',flag:'🇩🇪',name:'Bundesliga'}];
+  return Promise.all(top3.map(function(lg){
+    return cachedFetch(TSDB+'/eventsnext.php?id='+lg.id)
+      .then(function(d){ return (d.events||[]).slice(0,5).map(function(e){ return _tag(e,lg,'upcoming'); }); });
+  })).then(function(res){
+    var arr=[]; res.forEach(function(r){ arr=arr.concat(r); });
+    arr.sort(function(a,b){ return (a.dateEvent||'').localeCompare(b.dateEvent||''); });
+    if(arr.length){ ALL_UPCOMING=arr; ALL_MATCHES=arr; DATA_LOADED=true; }
+    renderHeroCarousel(); renderHomeTodayCards(); renderLiveScreen(); renderMarkets(); buildScoreTicker();
+  });
+}
+
+/* ════════════════════════════════════════════
+   PHASE 2 — Recent results (football-data.org)
+   Fires when Live tab opened
+════════════════════════════════════════════ */
+function fetchResults(){
+  if(RESULTS_LOADED) return;
+  RESULTS_LOADED = true;
+  var fdHeaders = {'X-Auth-Token': FD_KEY};
+  var yesterday = new Date(); yesterday.setDate(yesterday.getDate()-7);
+  var from = yesterday.getFullYear()+'-'+pad(yesterday.getMonth()+1)+'-'+pad(yesterday.getDate());
+  var today = _today();
+
+  cachedFetch(FD_BASE+'/matches?dateFrom='+from+'&dateTo='+today+'&status=FINISHED', fdHeaders, 120000)
+  .then(function(data){
+    var results = (data.matches||[]).map(function(m){
+      var comp = FD_LEAGUES.find(function(l){
+        return m.competition&&(m.competition.code===l.fd||m.competition.name===l.name);
+      }) || {comp:'INT',flag:'⚽',name:m.competition?m.competition.name:'International'};
+      return _fdTag(m, comp);
+    });
+    results.sort(function(a,b){ return (b.dateEvent||'').localeCompare(a.dateEvent||''); });
+    ALL_RECENT  = results;
+    ALL_MATCHES = ALL_TODAY.concat(ALL_UPCOMING.slice(0,40)).concat(ALL_RECENT.slice(0,30));
+    renderLiveScreen();
+  })
+  .catch(function(){
+    /* Fallback to TheSportsDB results */
+    var top6 = FD_LEAGUES.slice(0,4);
+    Promise.all(top6.map(function(lg){
+      return cachedFetch(TSDB+'/eventslast.php?id='+lg.tsdb)
+        .then(function(d){
+          var e=d.results||d.events||[];
+          return e.slice(0,5).map(function(ev){ return _tag(ev,lg,'result'); });
+        });
+    })).then(function(res){
+      var arr=[]; res.forEach(function(r){ arr=arr.concat(r); });
+      arr.sort(function(a,b){ return (b.dateEvent||'').localeCompare(a.dateEvent||''); });
+      ALL_RECENT = arr;
+      ALL_MATCHES= ALL_TODAY.concat(ALL_UPCOMING.slice(0,40)).concat(ALL_RECENT.slice(0,30));
+      renderLiveScreen();
+    });
+  });
+
+  /* Also load TheSportsDB-only leagues in background */
+  setTimeout(function(){
+    Promise.all(TSDB_ONLY.map(function(lg){
+      return cachedFetch(TSDB+'/eventsnext.php?id='+lg.id)
+        .then(function(d){
+          return (d.events||[]).slice(0,4).map(function(e){ return _tag(e,lg,'upcoming'); });
+        });
+    })).then(function(res){
+      var arr=[]; res.forEach(function(r){ arr=arr.concat(r); });
+      arr.sort(function(a,b){ return (a.dateEvent||'').localeCompare(b.dateEvent||''); });
+      /* Merge with existing upcoming */
+      ALL_UPCOMING = ALL_UPCOMING.concat(arr);
+      ALL_UPCOMING.sort(function(a,b){ return (a.dateEvent||'').localeCompare(b.dateEvent||''); });
+      ALL_MATCHES = ALL_TODAY.concat(ALL_UPCOMING.slice(0,50)).concat(ALL_RECENT.slice(0,30));
+      renderLiveScreen();
+    });
+  }, 2000);
+}
+
+/* ════════════════════════════════════════════
+   MAIN ENTRY + LIVE REFRESH
+════════════════════════════════════════════ */
+function fetchAllMatches(){
+  /* Phase 1 → renders in ~1s */
+  fetchPhase1().then(function(){
+    /* Load scorers in background */
+    setTimeout(fetchRealTopScorers, 1500);
+  });
+}
+
 function startLiveRefresh(){
   if(REFRESH_INT) clearInterval(REFRESH_INT);
   REFRESH_INT = setInterval(function(){
-    /* Only refetch today's matches for live updates — not all leagues */
-    var today = new Date();
-    var d = today.getFullYear()+'-'+pad(today.getMonth()+1)+'-'+pad(today.getDate());
-    /* Invalidate today's cache entries */
+    /* Invalidate today cache */
     Object.keys(CACHE).forEach(function(k){
-      if(k.indexOf('eventsday')!==-1) delete CACHE[k];
+      if(k.indexOf('/matches?dateFrom')!==-1&&k.indexOf('dateTo')!==-1) delete CACHE[k];
     });
-    /* Quick phase 1 refresh for live scores */
-    var top3 = LEAGUES.slice(1,4);
-    Promise.all(top3.map(function(lg){
-      return cachedFetch(TSDB+'/eventsnext.php?id='+lg.id, 30000) /* 30s TTL for live */
-        .then(function(d){ return (d.events||[]).slice(0,4).map(function(e){return _tag(e,lg,'upcoming');}); });
-    })).then(function(res){
-      var arr=[]; res.forEach(function(r){ arr=arr.concat(r); });
-      if(arr.length){
-        /* Merge without replacing full data */
-        var ids={};
-        arr.forEach(function(e){ ids[e.idEvent]=e; });
-        ALL_UPCOMING = ALL_UPCOMING.map(function(e){ return ids[e.idEvent]||e; });
-        LIVE_MATCHES = ALL_TODAY.filter(isLive);
+    /* Refresh today's matches only — respects rate limit */
+    if(FD_REMAINING > 2){
+      var fdHeaders = {'X-Auth-Token': FD_KEY};
+      var today = _today();
+      cachedFetch(FD_BASE+'/matches?dateFrom='+today+'&dateTo='+today, fdHeaders, 30000)
+      .then(function(data){
+        var matches = (data.matches||[]);
+        if(!matches.length) return;
+        var tagged = matches.map(function(m){
+          var comp = FD_LEAGUES.find(function(l){
+            return m.competition&&(m.competition.code===l.fd);
+          }) || {comp:'INT',flag:'⚽',name:m.competition?m.competition.name:'INT'};
+          return _fdTag(m, comp);
+        });
+        ALL_TODAY    = tagged;
+        LIVE_MATCHES = tagged.filter(isLive);
+        ALL_MATCHES  = ALL_TODAY.concat(ALL_UPCOMING.slice(0,40)).concat(ALL_RECENT.slice(0,30));
+        /* Update live counters */
         var tn=$('tbLiveNum'); if(tn) tn.textContent=LIVE_MATCHES.length;
-        buildScoreTicker();
-        buildHomeAI(); /* AI refreshes every 60s */
-        /* Only re-render live screen if user is on it */
+        var ll=$('lstLive');   if(ll) ll.textContent=LIVE_MATCHES.length;
+        /* Only re-render if on live screen */
         var ls=$('scr-live'); if(ls&&ls.classList.contains('on')) renderLiveScreen();
-      }
-    });
-  }, 60000); /* 60 seconds — optimal for Pi Browser */
+        renderHomeLive();
+        buildScoreTicker();
+        buildHomeAI();
+      });
+    }
+  }, 60000); /* 60 seconds */
 }
 
-/* ─── TOP SCORERS — cached, fires once ─── */
+/* ─── TOP SCORERS ─── */
 function fetchRealTopScorers(){
-  if(REAL_SCORERS.length) return; /* already loaded */
-  /* Use hardcoded data immediately, update clubs from API in background */
+  if(REAL_SCORERS.length) return;
+  /* Show immediately from hardcoded data */
   REAL_SCORERS = SCORER_MAP.map(function(sc){
     return {name:sc.name,club:sc.lg,nat:sc.nat,goals:sc.goals,lg:sc.lg};
-  });
-  REAL_SCORERS.sort(function(a,b){ return b.goals-a.goals; });
+  }).sort(function(a,b){ return b.goals-a.goals; });
   buildHomeTopScorers();
   if(CURR_STATS==='scorers') renderTopScorers();
 
-  /* Update clubs from API silently */
-  SCORER_MAP.slice(0,5).forEach(function(sc, i){
-    setTimeout(function(){
-      cachedFetch(TSDB+'/searchplayers.php?p='+encodeURIComponent(sc.search))
-        .then(function(d){
-          var p=(d.player||[])[0];
-          if(p&&p.strTeam&&REAL_SCORERS[i]){
-            REAL_SCORERS[i].club = p.strTeam;
-            buildHomeTopScorers();
-          }
-        });
-    }, i * 600); /* stagger 600ms apart */
-  });
+  /* Try football-data.org scorers for top leagues */
+  var fdHeaders = {'X-Auth-Token': FD_KEY};
+  cachedFetch(FD_BASE+'/competitions/PL/scorers?limit=10', fdHeaders, 3600000)
+  .then(function(data){
+    if(!data.scorers||!data.scorers.length) return;
+    var scorers = data.scorers.map(function(s){
+      return {
+        name:  s.player ? (s.player.name||'') : '',
+        club:  s.team   ? (s.team.shortName||s.team.name||'') : '',
+        nat:   '🏴󠁧󠁢󠁥󠁮󠁧󠁿',
+        goals: s.goals||0,
+        lg:    'Premier League'
+      };
+    }).filter(function(s){ return s.name&&s.goals>0; });
+    if(scorers.length>=3){
+      /* Merge EPL scorers with our known data */
+      scorers.forEach(function(s){
+        var existing = REAL_SCORERS.find(function(r){ return r.name.toLowerCase().indexOf(s.name.split(' ').pop().toLowerCase())!==-1; });
+        if(existing) existing.goals = s.goals;
+      });
+      REAL_SCORERS.sort(function(a,b){ return b.goals-a.goals; });
+      buildHomeTopScorers();
+      if(CURR_STATS==='scorers') renderTopScorers();
+    }
+  }).catch(function(){});
 }
+
 
 
 function isLive(e){
