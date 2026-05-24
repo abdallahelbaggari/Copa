@@ -8,7 +8,6 @@
 
 [functions]
   node_bundler = "zisi"
-  included_files = ["netlify/functions/**"]
 
 [[headers]]
   for = "/*"
@@ -35,16 +34,13 @@
     Cache-Control = "no-cache"
 
 [[redirects]]
-  from   = "/?sandbox=true"
-  to     = "/index.html"
+  from   = "/.netlify/functions/*"
+  to     = "/.netlify/functions/:splat"
   status = 200
-
-[[redirects]]
-  from   = "/?sandbox=false"
-  to     = "/index.html"
-  status = 200
+  force  = true
 
 [[redirects]]
   from   = "/*"
   to     = "/index.html"
   status = 200
+  force  = false
