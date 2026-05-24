@@ -74,7 +74,7 @@ var REFRESH_INT   = null;
 /* TheSportsDB — completely free, no API key */
 var TSDB    = 'https://www.thesportsdb.com/api/v1/json/3';
 
-/* Copa proxy — routes football-data.org through Netlify (bypasses CORS) */
+/* Copa proxy — Netlify function bypasses CORS */
 var FD_PROXY = '/.netlify/functions/fixtures';
 
 /* football-data.org competitions */
