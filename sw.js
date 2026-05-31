@@ -1,0 +1,5 @@
+var C='copa-v4';
+var CORE=['/','/index.html','/style.css','/script.js','/manifest.json'];
+self.addEventListener('install',function(e){e.waitUntil(caches.open(C).then(function(c){return c.addAll(CORE);}).then(function(){return self.skipWaiting();}));});
+self.addEventListener('activate',function(e){e.waitUntil(caches.keys().then(function(k){return Promise.all(k.filter(function(n){return n!==C;}).map(function(n){return caches.delete(n);}));}).then(function(){return self.clients.claim();}));});
+self.addEventListener('fetch',function(e){var u=new URL(e.request.url);if(['api.','sdk.minepi','fonts.','cdn.','netlify/functions','thesportsdb','anthropic'].some(function(n){return u.href.indexOf(n)!==-1;})){e.respondWith(fetch(e.request).catch(function(){}));return;}e.respondWith(caches.match(e.request).then(function(c){return c||fetch(e.request).then(function(r){var cl=r.clone();caches.open(C).then(function(cache){cache.put(e.request,cl);});return r;}).catch(function(){return caches.match('/index.html');});}));});
