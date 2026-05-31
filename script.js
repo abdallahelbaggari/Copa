@@ -75,7 +75,7 @@ var REFRESH_INT   = null;
 var TSDB    = 'https://www.thesportsdb.com/api/v1/json/3';
 
 /* Copa proxy — Netlify function bypasses CORS */
-var FD_PROXY = '/.netlify/functions/fixtures';
+var FD_PROXY = '/functions/fixtures';
 
 /* football-data.org competitions */
 var FD_LEAGUES = [
@@ -664,12 +664,12 @@ function onIncompletePayment(payment){
   var pid  = payment.identifier;
   var txid = payment.transaction && payment.transaction.txid ? payment.transaction.txid : null;
   if(txid){
-    fetch('/.netlify/functions/complete',{
+    fetch('/functions/complete',{
       method:'POST', headers:{'Content-Type':'application/json'},
       body:JSON.stringify({paymentId:pid, txid:txid})
     }).then(function(r){return r.json();}).catch(function(e){console.warn('[Copa] resume complete:',e);});
   } else {
-    fetch('/.netlify/functions/approve',{
+    fetch('/functions/approve',{
       method:'POST', headers:{'Content-Type':'application/json'},
       body:JSON.stringify({paymentId:pid})
     }).then(function(r){return r.json();}).catch(function(e){console.warn('[Copa] resume approve:',e);});
@@ -889,7 +889,7 @@ function globalSearch(val){
 var USER_COUNT = { total:0, sessions:0, loaded:false };
 
 function fetchUserCount(){
-  fetch('/.netlify/functions/usercount')
+  fetch('/functions/usercount')
     .then(function(r){ return r.ok?r.json():null; })
     .then(function(d){
       if(!d) return;
@@ -902,7 +902,7 @@ function fetchUserCount(){
 
 function trackUserLogin(username){
   var user = (username||'anonymous').substring(0,32);
-  fetch('/.netlify/functions/usercount?action=login&user='+encodeURIComponent(user),{method:'POST'})
+  fetch('/functions/usercount?action=login&user='+encodeURIComponent(user),{method:'POST'})
     .then(function(r){ return r.ok?r.json():null; })
     .then(function(d){
       if(!d) return;
@@ -1645,7 +1645,7 @@ function filterLive(comp,btn){
    ✅ verify → check approved → check tx verified → check double-complete → verify txid → verify amount → complete
 ══════════════════════════════════════════════════════════ */
 function _piApprove(pid, expectedAmount){
-  return fetch('/.netlify/functions/approve',{
+  return fetch('/functions/approve',{
     method:'POST',
     headers:{'Content-Type':'application/json'},
     body:JSON.stringify({paymentId:pid, expectedAmount:expectedAmount})
@@ -1656,7 +1656,7 @@ function _piApprove(pid, expectedAmount){
 }
 
 function _piComplete(pid, txid, expectedAmount){
-  return fetch('/.netlify/functions/complete',{
+  return fetch('/functions/complete',{
     method:'POST',
     headers:{'Content-Type':'application/json'},
     body:JSON.stringify({paymentId:pid, txid:txid, expectedAmount:expectedAmount})
