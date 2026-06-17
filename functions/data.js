@@ -117,8 +117,9 @@ function groupMatches(matches) {
 /* ── FIXTURES ── */
 async function getFixtures(league, FD_KEY) {
   const leagueMap = {
-    PL:'PL', PD:'PD', SA:'SA', BL1:'BL1', FL1:'FL1',
-    CL:'CL', WC:'WC', EC:'EC', EL:'EL', PPL:'PPL', DED:'DED',
+    WC:'WC', PL:'PL', PD:'PD', SA:'SA', BL1:'BL1', FL1:'FL1',
+    CL:'CL', EC:'EC', EL:'EL', PPL:'PPL', DED:'DED',
+    ELC:'ELC', BSA:'BSA',
   };
   const fdCode = leagueMap[league] || 'WC';
 
@@ -185,8 +186,9 @@ async function getFixtures(league, FD_KEY) {
 /* ── STANDINGS ── */
 async function getStandings(league, FD_KEY) {
   const leagueMap = {
-    PL:'PL', PD:'PD', SA:'SA', BL1:'BL1', FL1:'FL1',
-    CL:'CL', WC:'WC', EL:'EL', PPL:'PPL', DED:'DED',
+    WC:'WC', PL:'PL', PD:'PD', SA:'SA', BL1:'BL1', FL1:'FL1',
+    CL:'CL', EC:'EC', EL:'EL', PPL:'PPL', DED:'DED',
+    ELC:'ELC', BSA:'BSA',
   };
   const fdCode = leagueMap[league] || 'WC';
   const fd = await fdFetch(`competitions/${fdCode}/standings`, FD_KEY);
@@ -244,7 +246,11 @@ async function getStandings(league, FD_KEY) {
 
 /* ── SCORERS ── */
 async function getScorers(league, FD_KEY) {
-  const leagueMap = { PL:'PL', PD:'PD', SA:'SA', BL1:'BL1', FL1:'FL1', CL:'CL', WC:'WC' };
+  const leagueMap = {
+    WC:'WC', PL:'PL', PD:'PD', SA:'SA', BL1:'BL1', FL1:'FL1',
+    CL:'CL', EC:'EC', EL:'EL', PPL:'PPL', DED:'DED',
+    ELC:'ELC', BSA:'BSA',
+  };
   const fdCode = leagueMap[league] || 'WC';
   const fd = await fdFetch(`competitions/${fdCode}/scorers?limit=20`, FD_KEY);
   if (fd?.scorers?.length) {
@@ -299,15 +305,18 @@ async function getLive(FD_KEY) {
 /* ── LEAGUES ── */
 function getLeagues() {
   return { source:'static', leagues:[
-    { code:'WC',  name:'World Cup 2026',   flag:'🌍', country:'World', active:true },
-    { code:'PL',  name:'Premier League',   flag:'🏴󠁧󠁢󠁥󠁮󠁧󠁿', country:'England' },
-    { code:'PD',  name:'La Liga',           flag:'🇪🇸', country:'Spain' },
-    { code:'SA',  name:'Serie A',           flag:'🇮🇹', country:'Italy' },
-    { code:'BL1', name:'Bundesliga',        flag:'🇩🇪', country:'Germany' },
-    { code:'FL1', name:'Ligue 1',           flag:'🇫🇷', country:'France' },
-    { code:'CL',  name:'Champions League',  flag:'🇪🇺', country:'Europe' },
-    { code:'EL',  name:'Europa League',     flag:'🇪🇺', country:'Europe' },
-    { code:'MLS', name:'MLS',               flag:'🇺🇸', country:'USA' },
+    { code:'WC',  name:'World Cup 2026',       flag:'🌍', country:'World', active:true },
+    { code:'PL',  name:'Premier League',         flag:'🏴󠁧󠁢󠁥󠁮󠁧󠁿', country:'England' },
+    { code:'PD',  name:'La Liga',                 flag:'🇪🇸', country:'Spain' },
+    { code:'SA',  name:'Serie A',                 flag:'🇮🇹', country:'Italy' },
+    { code:'BL1', name:'Bundesliga',              flag:'🇩🇪', country:'Germany' },
+    { code:'FL1', name:'Ligue 1',                 flag:'🇫🇷', country:'France' },
+    { code:'CL',  name:'Champions League',        flag:'🇪🇺', country:'Europe' },
+    { code:'ELC', name:'Championship',            flag:'🏴󠁧󠁢󠁥󠁮󠁧󠁿', country:'England' },
+    { code:'BSA', name:'Brasileirao Serie A',     flag:'🇧🇷', country:'Brazil' },
+    { code:'PPL', name:'Primeira Liga',           flag:'🇵🇹', country:'Portugal' },
+    { code:'DED', name:'Eredivisie',              flag:'🇳🇱', country:'Netherlands' },
+    { code:'EC',  name:'European Championship',   flag:'🇪🇺', country:'Europe' },
   ]};
 }
 
