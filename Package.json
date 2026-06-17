@@ -1,6 +1,0 @@
-{
-  "name": "copa-pi",
-  "version": "1.0.0",
-  "description": "Copa.pi — Global Football Super App on Pi Network",
-  "engines": { "node": "18" }
-}
