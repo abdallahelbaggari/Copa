@@ -589,65 +589,15 @@ function escHtml(s) {
   return (s||'').toString().replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 }
 
-function fmtDate(d) {
-  if (!d) return '';
-  try {
-    var dt = new Date(d);
-    return dt.toLocaleDateString('en-GB',{day:'numeric',month:'short'}) + ' ' +
-      dt.toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'});
-  } catch(e) { return d; }
-}
+
 
 /* ── HOME / LIVE SCORES ── */
 var homeLeague = 'PL';
-function homeSetLeague(league, btn) {
-  homeLeague = league;
-  document.querySelectorAll('#home-league-tabs .ltab').forEach(function(b){ b.classList.remove('on'); });
-  if (btn) btn.classList.add('on');
-  homeLoad(league);
-}
 
-function homeLoad(league) {
-  var el = document.getElementById('home-matches');
-  el.innerHTML = '<div class="loading-center"><div class="spin"></div></div>';
-  fetch('/data?type=fixtures&league='+league)
-    .then(function(r){ return r.json(); })
-    .then(function(data){ renderMatches(data.matches||[], el); })
-    .catch(function(){ el.innerHTML = '<div class="loading-center">⚽ No matches found</div>'; });
-}
 
-function renderMatches(matches, container) {
-  if (!matches.length) {
-    container.innerHTML = '<div class="loading-center">⚽ No matches available</div>';
-    return;
-  }
-  container.innerHTML = matches.map(function(m){
-    var isLive  = m.status==='LIVE'||m.status==='IN_PLAY'||m.status==='PAUSED';
-    var isDone  = m.status==='FINISHED';
-    var score   = m.score;
-    var homeS   = score?.fullTime?.home;
-    var awayS   = score?.fullTime?.away;
-    var scoreStr = (homeS!==null&&homeS!==undefined) ? homeS+' - '+awayS : 'vs';
-    return '<div class="match-card" onclick="openMatch('+JSON.stringify(JSON.stringify(m))+')">'
-      +'<div class="match-meta">'
-      +(isLive?'<span class="match-live-badge">🔴 LIVE</span>':'<span></span>')
-      +'<span>'+fmtDate(m.utcDate)+'</span>'
-      +(isDone?'<span style="color:var(--t3);font-size:.4rem">FT</span>':'<span></span>')
-      +'</div>'
-      +'<div class="match-body">'
-      +'<div class="match-team">'
-      +(m.homeCrest?'<img class="match-crest" src="'+m.homeCrest+'" onerror="this.style.display=\'none\'">'
-        :'<div style="width:32px;height:32px;border-radius:50%;background:var(--bg3);display:flex;align-items:center;justify-content:center;font-size:1rem">⚽</div>')
-      +'<div class="match-name">'+escHtml(m.homeTeam)+'</div></div>'
-      +'<div>'+(isDone||isLive?'<div class="match-score">'+scoreStr+'</div>':'<div class="match-vs">vs</div>')
-      +'</div>'
-      +'<div class="match-team">'
-      +(m.awayCrest?'<img class="match-crest" src="'+m.awayCrest+'" onerror="this.style.display=\'none\'">'
-        :'<div style="width:32px;height:32px;border-radius:50%;background:var(--bg3);display:flex;align-items:center;justify-content:center;font-size:1rem">⚽</div>')
-      +'<div class="match-name">'+escHtml(m.awayTeam)+'</div></div>'
-      +'</div></div>';
-  }).join('');
-}
+
+
+
 
 /* ── MATCH DETAIL ── */
 var currentMatch = null;
@@ -1398,6 +1348,92 @@ function _doSendPi(to, amt, memo) {
       toast('Payment error - try again');
     }
   });
+}
+
+function fmtDate(d) {
+  if (!d) return '';
+  try {
+    var dt = new Date(d);
+    var now = new Date();
+    var diff = dt - now;
+    var mins = Math.round(diff / 60000);
+    if (diff > 0 && mins < 120) return 'in ' + mins + 'm';
+    if (diff < 0 && mins > -120) return Math.abs(mins) + 'm ago';
+    return dt.toLocaleDateString('en-GB', { day:'numeric', month:'short' })
+      + ' ' + dt.toLocaleTimeString('en-GB', { hour:'2-digit', minute:'2-digit' });
+  } catch(e) { return d; }
+}
+
+function homeSetLeague(league, btn) {
+  homeLeague = league;
+  document.querySelectorAll('#home-league-tabs .ltab').forEach(function(b){
+    b.classList.remove('on');
+  });
+  if (btn) btn.classList.add('on');
+  homeLoad(league);
+}
+
+function homeLoad(league) {
+  var el = document.getElementById('home-matches');
+  if (!el) return;
+  el.innerHTML = '<div class="loading-center"><div class="spin"></div><span>Loading...</span></div>';
+  fetch('/data?type=fixtures&league=' + (league||'PL'))
+    .then(function(r){ return r.json(); })
+    .then(function(data){
+      if (!data.matches || !data.matches.length) {
+        fetch('/data?type=live')
+          .then(function(r){ return r.json(); })
+          .then(function(live){
+            if (live.matches && live.matches.length) {
+              renderMatches(live.matches, el, 'Live Now');
+            } else {
+              el.innerHTML = '<div class="loading-center">No upcoming matches</div>';
+            }
+          })
+          .catch(function(){ el.innerHTML = '<div class="loading-center">No matches found</div>'; });
+        return;
+      }
+      renderMatches(data.matches, el, '');
+    })
+    .catch(function(){
+      el.innerHTML = '<div class="loading-center" onclick="homeLoad(\'' + (league||'PL') + '\')">Failed — tap to retry</div>';
+    });
+}
+
+function renderMatches(matches, container, label) {
+  if (!matches.length) {
+    container.innerHTML = '<div class="loading-center">No matches</div>';
+    return;
+  }
+  var html = '';
+  if (label) {
+    html += '<div style="font-family:var(--dm);font-size:.44rem;color:var(--t3);padding:.3rem .85rem .1rem">' + escHtml(label) + '</div>';
+  }
+  matches.forEach(function(m) {
+    var isLive = m.status==='LIVE' || m.status==='IN_PLAY' || m.status==='PAUSED' || m.status==='in progress';
+    var isDone = m.status==='FINISHED' || m.status==='FT' || m.status==='post';
+    var score  = m.score;
+    var homeS  = score && score.fullTime ? score.fullTime.home : (m.homeScore !== undefined ? m.homeScore : null);
+    var awayS  = score && score.fullTime ? score.fullTime.away : (m.awayScore !== undefined ? m.awayScore : null);
+    var showScore = (homeS !== null && homeS !== undefined) && (awayS !== null && awayS !== undefined);
+    var scoreStr = showScore ? homeS + ' - ' + awayS : 'vs';
+    var crestStyle = 'width:32px;height:32px;background:var(--bg3);border-radius:50%;display:flex;align-items:center;justify-content:center';
+    html += '<div class="match-card">'
+      + '<div class="match-meta">'
+      + (isLive ? '<span class="match-live-badge">LIVE' + (m.minute ? ' ' + m.minute + "'" : '') + '</span>'
+                : '<span style="font-size:.42rem;color:var(--t3)">' + fmtDate(m.utcDate || m.date) + '</span>')
+      + (isDone ? '<span style="font-size:.4rem;color:var(--t3)">FT</span>' : '<span></span>')
+      + '</div><div class="match-body">'
+      + '<div class="match-team">'
+      + (m.homeCrest ? '<img class="match-crest" src="' + m.homeCrest + '" loading="lazy" onerror="this.style.display=\'none\'">' : '<div style="' + crestStyle + '">&#x26BD;</div>')
+      + '<div class="match-name">' + escHtml(m.homeTeam) + '</div></div>'
+      + '<div>' + (showScore || isLive ? '<div class="match-score">' + scoreStr + '</div>' : '<div class="match-vs">vs</div>') + '</div>'
+      + '<div class="match-team">'
+      + (m.awayCrest ? '<img class="match-crest" src="' + m.awayCrest + '" loading="lazy" onerror="this.style.display=\'none\'">' : '<div style="' + crestStyle + '">&#x26BD;</div>')
+      + '<div class="match-name">' + escHtml(m.awayTeam) + '</div></div>'
+      + '</div></div>';
+  });
+  container.innerHTML = html;
 }
 </script>
 </body>
