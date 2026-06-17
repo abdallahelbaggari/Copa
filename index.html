@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1">
 <meta name="theme-color" content="#00061a">
-<title>Copa — copa.pi — Football Super App on Pi</title>
+<title>Copa</title>
 <script src="https://sdk.minepi.com/pi-sdk.js"></script>
 <style>
 /* ── TOKENS ── */
@@ -244,16 +244,31 @@ a{text-decoration:none;color:inherit}
 </style>
 </head>
 <body>
-<div id="app">
-
-<!-- SPLASH -->
-<div id="splash">
-  <div class="logo">⚽</div>
-  <div class="app-name">Copa</div>
-  <div class="tagline">copa.pi · Football Super App on Pi</div>
-  <div class="spin" id="splash-spin"></div>
-  <div class="pi-badge">MAINNET · PI EXCLUSIVE</div>
+<div id="login" style="display:flex;flex-direction:column;min-height:100vh;background:var(--bg1)">
+  <div style="height:4px;background:linear-gradient(90deg,#7c3aed,#00d4ff,#ffd700)"></div>
+  <div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:2rem 1.5rem;text-align:center">
+    <div style="font-family:var(--dm);font-size:.54rem;color:var(--c1);letter-spacing:.14em;text-transform:uppercase;margin-bottom:.75rem">&#x26BD; Football. Live. Connected.</div>
+    <div style="font-family:var(--df);font-size:4.5rem;letter-spacing:.12em;line-height:1;color:var(--t1);margin-bottom:.5rem;text-shadow:0 0 40px rgba(0,212,255,.3)">Copa</div>
+    <div style="font-size:.72rem;color:var(--t2);margin-bottom:1.4rem;line-height:1.55">Football Super App on Pi Network</div>
+    <div style="display:flex;flex-wrap:wrap;gap:.38rem;justify-content:center;margin-bottom:1.2rem">
+      <span style="font-family:var(--dm);font-size:.48rem;color:var(--t2);background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);border-radius:99px;padding:.22rem .6rem">&#x26BD; Live Scores</span>
+      <span style="font-family:var(--dm);font-size:.48rem;color:var(--t2);background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);border-radius:99px;padding:.22rem .6rem">&#x1F4CA; Tables</span>
+      <span style="font-family:var(--dm);font-size:.48rem;color:var(--t2);background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);border-radius:99px;padding:.22rem .6rem">&#x1F9E0; Predict</span>
+      <span style="font-family:var(--dm);font-size:.48rem;color:var(--t2);background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);border-radius:99px;padding:.22rem .6rem">&#x1F4F0; News</span>
+      <span style="font-family:var(--dm);font-size:.48rem;color:var(--t2);background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);border-radius:99px;padding:.22rem .6rem">&#x1F4F8; Images</span>
+      <span style="font-family:var(--dm);font-size:.48rem;color:var(--t2);background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);border-radius:99px;padding:.22rem .6rem">&#x1F4B8; Pi Pay</span>
+    </div>
+  </div>
+  <div style="padding:1rem 1.5rem 2.5rem">
+    <button id="loginBtn" onclick="piLogin()" style="width:100%;padding:.85rem;background:var(--c1);border:none;border-radius:12px;font-family:var(--df);font-size:1rem;font-weight:700;color:#000;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:.5rem;transition:opacity .15s">
+      <span style="font-size:1.2rem">&#x03C0;</span>
+      <span id="signin-txt">Sign In with Pi</span>
+    </button>
+    <div id="lmsg" style="font-family:var(--dm);font-size:.52rem;color:var(--t3);text-align:center;margin-top:.6rem;min-height:.9rem"></div>
+    <div style="font-family:var(--dm);font-size:.44rem;color:var(--t3);text-align:center;margin-top:.75rem;line-height:1.6">Pi SDK Exclusive &#xB7; Mainnet &#xB7; sandbox:false</div>
+  </div>
 </div>
+<div id="app" style="display:none">
 
 <!-- MAIN -->
 <div id="main">
@@ -558,29 +573,9 @@ function onIncompletePayment(payment) {
 
 
 /* ── NAVIGATION ── */
-function goS(id, btn) {
-  document.querySelectorAll('.scr').forEach(function(s){ s.classList.remove('on'); });
-  var el = document.getElementById('s-'+id);
-  if (el) el.classList.add('on');
-  document.querySelectorAll('.nav-btn').forEach(function(b){ b.classList.remove('on'); });
-  if (btn) btn.classList.add('on');
-  /* Lazy init */
-  if (id==='standings' && !document.getElementById('standings-body').children.length)
-    standingsLoad('PL');
-  if (id==='scorers' && !document.getElementById('scorers-body').children.length)
-    scorersLoad('PL');
-  if (id==='predict' && !document.getElementById('predict-body').children.length)
-    predictLoad('PL');
-  if (id==='news' && !document.getElementById('news-body').innerHTML.trim())
-    newsLoad();
-  if (id==='images' && !IMG.allImages.length)
-    imgLoadPage();
-}
 
-function hideSplash() {
-  var s = document.getElementById('splash');
-  if (s) { s.style.opacity='0'; s.style.transition='opacity .3s'; setTimeout(function(){ s.style.display='none'; },300); }
-}
+
+
 
 /* ── UTILITIES ── */
 function toast(msg, dur) {
@@ -982,18 +977,6 @@ if ('IntersectionObserver' in window) {
 document.addEventListener('keydown',function(e){ if(e.key==='Escape') imgCloseLightbox(); });
 
 /* ── INIT ── */
-window.addEventListener('load', function() {
-  /* Check Copa Pass */
-  if (localStorage.getItem('copa_pass')==='1') copaPassActive=true;
-  renderTxHistory();
-  /* Pi login */
-  piLogin();
-  /* Auto-refresh live data */
-  setInterval(function(){
-    var activeScr = document.querySelector('.scr.on');
-    if (activeScr && activeScr.id==='s-home') homeLoad(homeLeague);
-  }, 60000);
-});
 
 
 /* ================================================================
@@ -1012,41 +995,7 @@ var copaScore   = JSON.parse(localStorage.getItem('copa_score') || '{"points":0,
 var predictions = JSON.parse(localStorage.getItem('copa_preds') || '{}');
 
 /* ── PI LOGIN — EXACT WORLDCUP PATTERN ── */
-function piLogin() {
-  var btn    = document.getElementById('loginBtn');
-  var splash = document.getElementById('splash');
 
-  if (typeof Pi === 'undefined') {
-    /* Outside Pi Browser — demo mode */
-    piUser = { username: 'Pioneer' };
-    hideSplash();
-    homeLoad('PL');
-    toast('Demo mode — open in Pi Browser for real Pi!');
-    return;
-  }
-
-  /* MAINNET — sandbox:false */
-  Pi.init({ version: '2.0', sandbox: false });
-
-  Pi.authenticate(['username', 'payments'], onIncompletePayment)
-    .then(function(auth) {
-      piUser = auth.user;
-      console.log('[Copa] Authenticated:', piUser.username);
-      localStorage.setItem('copa_user', JSON.stringify(piUser));
-      /* Update UI */
-      document.getElementById('user-chip').textContent = '\uD83D\uDFE2 ' + piUser.username;
-      document.getElementById('more-user').textContent = '@' + piUser.username;
-      hideSplash();
-      homeLoad('PL');
-      renderCopaPassStatus();
-      renderTxHistory();
-    })
-    .catch(function(err) {
-      console.error('[Copa] Auth error:', err);
-      hideSplash();
-      homeLoad('PL');
-    });
-}
 
 /* ── INCOMPLETE PAYMENT — EXACT WORLDCUP PATTERN ── */
 function onIncompletePayment(payment) {
@@ -1086,20 +1035,20 @@ function onIncompletePayment(payment) {
 
 /* ── COPA PASS — EXACT WORLDCUP buyPrem PATTERN ── */
 function buyCopaPass() {
-  if (isCopaPass) { toast('\uD83C\uDFC6 Copa Pass already active!'); return; }
+  if (isCopaPass) { toast('🏆 Copa Pass already active!'); return; }
 
   var btn = document.getElementById('copa-pass-btn');
   if (btn) { btn.textContent = 'Processing...'; btn.disabled = true; }
 
   if (typeof Pi === 'undefined') {
     toast('Open in Pi Browser');
-    if (btn) { btn.textContent = 'Get Copa Pass \u2014 1\u03C0'; btn.disabled = false; }
+    if (btn) { btn.textContent = 'Get Copa Pass — 1π'; btn.disabled = false; }
     return;
   }
 
   Pi.createPayment({
     amount:   1,
-    memo:     'Copa Pass \u2014 copa.pi Premium',
+    memo:     'Copa Pass — copa.pi Premium',
     metadata: { type: 'copa_pass', app: 'copa.pi', network: 'mainnet' }
   }, {
     onReadyForServerApproval: function(paymentId) {
@@ -1134,27 +1083,27 @@ function buyCopaPass() {
         console.log('[Copa] Pass complete response:', JSON.stringify(d));
         isCopaPass = true;
         localStorage.setItem('copa_pass', '1');
-        addTx('Copa Pass 1\u03C0 txid:' + txid.slice(0,12) + '...');
+        addTx('Copa Pass 1π txid:' + txid.slice(0,12) + '...');
         showPaymentStatus('success', 'Copa Pass activated!');
         renderCopaPassStatus();
-        toast('\uD83C\uDFC6 Copa Pass activated!');
+        toast('🏆 Copa Pass activated!');
       })
       .catch(function(err) {
         console.error('[Copa] Pass complete error:', err);
         showPaymentStatus('failed', 'Error — try again');
-        if (btn) { btn.textContent = 'Get Copa Pass \u2014 1\u03C0'; btn.disabled = false; }
+        if (btn) { btn.textContent = 'Get Copa Pass — 1π'; btn.disabled = false; }
       });
     },
     onCancel: function() {
-      if (btn) { btn.textContent = 'Get Copa Pass \u2014 1\u03C0'; btn.disabled = false; }
+      if (btn) { btn.textContent = 'Get Copa Pass — 1π'; btn.disabled = false; }
       showPaymentStatus('cancelled');
       toast('Payment cancelled');
     },
     onError: function(err) {
       console.error('[Copa] Pass error:', err);
-      if (btn) { btn.textContent = 'Get Copa Pass \u2014 1\u03C0'; btn.disabled = false; }
-      showPaymentStatus('failed', 'Payment error \u2014 try again');
-      toast('Payment error \u2014 try again');
+      if (btn) { btn.textContent = 'Get Copa Pass — 1π'; btn.disabled = false; }
+      showPaymentStatus('failed', 'Payment error — try again');
+      toast('Payment error — try again');
     }
   });
 }
@@ -1207,9 +1156,9 @@ function _doSendPi(to, amt, memo) {
       })
       .then(function(d) {
         console.log('[Copa] Send complete response:', JSON.stringify(d));
-        addTx(amt + '\u03C0 sent to @' + to + ' txid:' + txid.slice(0,8) + '...');
-        showPaymentStatus('success', amt + '\u03C0 sent to @' + to + '!');
-        toast(amt + '\u03C0 sent!');
+        addTx(amt + 'π sent to @' + to + ' txid:' + txid.slice(0,8) + '...');
+        showPaymentStatus('success', amt + 'π sent to @' + to + '!');
+        toast(amt + 'π sent!');
         /* Clear inputs */
         var tEl = document.getElementById('copa-send-to');
         var aEl = document.getElementById('copa-send-amt');
@@ -1218,7 +1167,7 @@ function _doSendPi(to, amt, memo) {
       })
       .catch(function(err) {
         console.error('[Copa] Send error:', err);
-        addTx(amt + '\u03C0 sent to @' + to);
+        addTx(amt + 'π sent to @' + to);
         toast('Sent!');
       });
     },
@@ -1228,8 +1177,8 @@ function _doSendPi(to, amt, memo) {
     },
     onError: function(err) {
       console.error('[Copa] Send error:', err);
-      showPaymentStatus('failed', 'Payment error \u2014 try again');
-      toast('Payment error \u2014 try again');
+      showPaymentStatus('failed', 'Payment error — try again');
+      toast('Payment error — try again');
     }
   });
 }
@@ -1238,7 +1187,7 @@ function _doSendPi(to, amt, memo) {
 function requestPi() {
   if (!piUser) { toast('Login required'); return; }
   var amt = parseFloat((document.getElementById('copa-req-amt') || {}).value) || 1;
-  var msg = 'Send ' + amt + '\u03C0 to copa.pi/' + piUser.username;
+  var msg = 'Send ' + amt + 'π to copa.pi/' + piUser.username;
   if (navigator.share) {
     navigator.share({ title: 'Pay me on Copa.pi', text: msg, url: window.location.href })
       .catch(function(){});
@@ -1255,11 +1204,11 @@ function showPaymentStatus(status, message) {
   if (!pst) return;
   var configs = {
     idle:       { icon:'\uD83D\uDCB3', text:'',                         color:'var(--t3)',   show:false },
-    approving:  { icon:'\uD83D\uDD04', text:'Approving...',             color:'var(--c1)',   show:true  },
-    completing: { icon:'\u23F3',       text:'Completing...',            color:'var(--gold)', show:true  },
-    success:    { icon:'\u2705',       text:message||'Payment complete!',color:'var(--grn)', show:true  },
-    failed:     { icon:'\u274C',       text:message||'Payment failed',  color:'var(--red)',  show:true  },
-    cancelled:  { icon:'\u21A9\uFE0F', text:'Cancelled',                color:'var(--t3)',   show:true  },
+    approving:  { icon:'🔄', text:'Approving...',             color:'var(--c1)',   show:true  },
+    completing: { icon:'⏳',       text:'Completing...',            color:'var(--gold)', show:true  },
+    success:    { icon:'✅',       text:message||'Payment complete!',color:'var(--grn)', show:true  },
+    failed:     { icon:'❌',       text:message||'Payment failed',  color:'var(--red)',  show:true  },
+    cancelled:  { icon:'↩️', text:'Cancelled',                color:'var(--t3)',   show:true  },
   };
   var cfg = configs[status] || configs.idle;
   pst.style.display = cfg.show ? 'flex' : 'none';
@@ -1288,7 +1237,7 @@ function renderTxHistory() {
       + 'padding:.45rem 0;border-bottom:1px solid rgba(255,255,255,.05)">'
       + '<div><div style="font-size:.54rem;color:var(--t1)">' + escHtml(tx.t) + '</div>'
       + '<div style="font-size:.42rem;color:var(--t3)">' + escHtml(tx.d) + '</div></div>'
-      + '<span style="font-size:.5rem;color:var(--gold)">\u03C0</span>'
+      + '<span style="font-size:.5rem;color:var(--gold)">π</span>'
       + '</div>';
   }).join('');
 }
@@ -1298,13 +1247,154 @@ function renderCopaPassStatus() {
   var btn   = document.getElementById('copa-pass-btn');
   var badge = document.getElementById('copa-pass-badge');
   if (isCopaPass) {
-    if (btn)   { btn.textContent = '\uD83C\uDFC6 Copa Pass Active'; btn.disabled = true; btn.style.opacity = '.75'; }
+    if (btn)   { btn.textContent = '🏆 Copa Pass Active'; btn.disabled = true; btn.style.opacity = '.75'; }
     if (badge) { badge.style.display = 'flex'; }
   } else {
-    if (btn)   { btn.textContent = 'Get Copa Pass \u2014 1\u03C0'; btn.disabled = false; btn.style.opacity = '1'; }
+    if (btn)   { btn.textContent = 'Get Copa Pass — 1π'; btn.disabled = false; btn.style.opacity = '1'; }
     if (badge) { badge.style.display = 'none'; }
   }
 }
+
+function predictLoad(league) {
+  var el = document.getElementById('predict-body');
+  if (!el) return;
+  el.innerHTML = '<div class="loading-center"><div class="spin"></div></div>';
+  fetch('/data?type=fixtures&league=' + league)
+    .then(function(r){ return r.json(); })
+    .then(function(data){
+      var upcoming = (data.matches||[])
+        .filter(function(m){ return m.status==='SCHEDULED'||m.status==='TIMED'; })
+        .slice(0,10);
+      if (!upcoming.length) {
+        el.innerHTML = '<div class="loading-center">No upcoming matches</div>';
+        return;
+      }
+      el.innerHTML = '';
+      upcoming.forEach(function(m){
+        var saved = predictions['p_'+m.id] || '';
+        var card = document.createElement('div');
+        card.className = 'predict-card';
+        var hdr = document.createElement('div');
+        hdr.className = 'predict-match';
+        hdr.innerHTML =
+          '<div style="text-align:center;font-size:.54rem">'+escHtml(m.homeTeam)+'</div>'
+          +'<div style="font-size:.44rem;color:var(--t3)">'+fmtDate(m.utcDate)+'</div>'
+          +'<div style="text-align:center;font-size:.54rem">'+escHtml(m.awayTeam)+'</div>';
+        var btns = document.createElement('div');
+        btns.className = 'predict-btns';
+        btns.id = 'pb_'+m.id;
+        [['home','1 Home'],['draw','X Draw'],['away','2 Away']].forEach(function(pair){
+          var b = document.createElement('div');
+          b.className = 'predict-btn'+(saved===pair[0]?' selected':'');
+          b.textContent = pair[1];
+          b.setAttribute('data-mid', m.id);
+          b.setAttribute('data-out', pair[0]);
+          b.onclick = function(){
+            makePrediction(this.getAttribute('data-mid'), this.getAttribute('data-out'));
+          };
+          btns.appendChild(b);
+        });
+        card.appendChild(hdr);
+        card.appendChild(btns);
+        el.appendChild(card);
+      });
+    })
+    .catch(function(){
+      el.innerHTML = '<div class="loading-center">Failed to load</div>';
+    });
+}
+
+function makePrediction(matchId, outcome) {
+  predictions['p_'+matchId] = outcome;
+  localStorage.setItem('copa_preds', JSON.stringify(predictions));
+  var container = document.getElementById('pb_'+matchId);
+  if (container) {
+    Array.from(container.children).forEach(function(b){ b.classList.remove('selected'); });
+    var idx = outcome==='home'?0:outcome==='draw'?1:2;
+    if (container.children[idx]) container.children[idx].classList.add('selected');
+  }
+  copaScore.points += 5;
+  copaScore.streak += 1;
+  localStorage.setItem('copa_score', JSON.stringify(copaScore));
+  var badge = document.getElementById('predict-score-badge');
+  if (badge) badge.textContent = 'pts: '+copaScore.points+'  streak: '+copaScore.streak;
+  toast('Predicted! (+5 pts)');
+}
+
+function piLogin() {
+  var btn     = document.getElementById('loginBtn');
+  var btnText = document.getElementById('signin-txt');
+  var lmsg    = document.getElementById('lmsg');
+  if (btn)     btn.disabled = true;
+  if (btnText) btnText.textContent = 'Authenticating...';
+  if (lmsg)    lmsg.textContent = 'Connecting to Pi Network...';
+  if (typeof Pi === 'undefined') {
+    piUser = { username: 'Pioneer' };
+    localStorage.setItem('copa_user', JSON.stringify(piUser));
+    launchApp();
+    toast('Demo mode — open in Pi Browser for real Pi!');
+    return;
+  }
+  /* MAINNET */
+  Pi.init({ version: '2.0', sandbox: false });
+  Pi.authenticate(['username', 'payments'], onIncompletePayment)
+    .then(function(auth) {
+      piUser = auth.user;
+      console.log('[Copa] Auth OK:', piUser.username);
+      localStorage.setItem('copa_user', JSON.stringify(piUser));
+      launchApp();
+    })
+    .catch(function(err) {
+      console.error('[Copa] Auth error:', err);
+      if (btn)     btn.disabled = false;
+      if (btnText) btnText.textContent = 'Sign In with Pi';
+      if (lmsg)    lmsg.textContent = 'Try again or open in Pi Browser';
+    });
+}
+
+function launchApp() {
+  var loginEl = document.getElementById('login');
+  var appEl   = document.getElementById('app');
+  if (loginEl) loginEl.style.display = 'none';
+  if (appEl) {
+    appEl.style.display       = 'flex';
+    appEl.style.flexDirection = 'column';
+    appEl.style.height        = '100vh';
+  }
+  if (piUser) {
+    var u     = piUser.username || 'Pioneer';
+    var chip  = document.getElementById('user-chip');
+    var moreU = document.getElementById('more-user');
+    if (chip)  chip.textContent  = '@' + u;
+    if (moreU) moreU.textContent = '@' + u;
+  }
+  if (localStorage.getItem('copa_pass') === '1') isCopaPass = true;
+  renderCopaPassStatus();
+  renderTxHistory();
+  homeLoad('PL');
+  setInterval(function(){
+    var active = document.querySelector('.scr.on');
+    if (active && active.id === 's-home') homeLoad(homeLeague);
+  }, 60000);
+  toast('Welcome ' + (piUser ? '@' + piUser.username : 'Pioneer') + '!');
+}
+
+function goS(id, btn) {
+  document.querySelectorAll('.scr').forEach(function(s){ s.classList.remove('on'); });
+  var el = document.getElementById('s-' + id);
+  if (el) el.classList.add('on');
+  document.querySelectorAll('.nav-btn').forEach(function(b){ b.classList.remove('on'); });
+  if (btn) btn.classList.add('on');
+  if (id==='standings' && !document.getElementById('standings-body').children.length) standingsLoad('PL');
+  if (id==='scorers'   && !document.getElementById('scorers-body').children.length)   scorersLoad('PL');
+  if (id==='predict'   && !document.getElementById('predict-body').children.length)   predictLoad('PL');
+  if (id==='news'      && !document.getElementById('news-body').innerHTML.trim())      newsLoad();
+  if (id==='images'    && !IMG.allImages.length)                                       imgLoadPage();
+}
+
+window.addEventListener('load', function() {
+  piLogin();
+});
 </script>
 </body>
 </html>
