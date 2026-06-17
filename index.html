@@ -23,12 +23,11 @@ a{text-decoration:none;color:inherit}
 
 /* ── LAYOUT ── */
 #app{height:100vh;display:flex;flex-direction:column;overflow:hidden}
-#main{flex:1;overflow-y:auto;overflow-x:hidden;-webkit-overflow-scrolling:touch;
-  padding-bottom:var(--nav-h)}
+#main{flex:1;overflow:hidden;position:relative}
 
 /* ── SCREENS ── */
-.scr{display:none;min-height:100%;animation:fadeIn .18s ease}
-.scr.on{display:block}
+.scr{display:none;flex-direction:column;height:100%;overflow:hidden;animation:fadeIn .18s ease}
+.scr.on{display:flex}
 @keyframes fadeIn{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:none}}
 
 /* ── SPLASH ── */
@@ -284,6 +283,49 @@ a{text-decoration:none;color:inherit}
   .md-tab.on{color:var(--c1);border-bottom-color:var(--c1)}
   .md-pane{padding:.4rem 0}
 
+
+  .scr-scroll{flex:1;overflow-y:auto;overflow-x:hidden;-webkit-overflow-scrolling:touch;padding-bottom:calc(var(--nav-h) + .5rem)}
+  .scr-scroll::-webkit-scrollbar{display:none}
+  .results-accordion{margin:.3rem .6rem;border-radius:10px;overflow:hidden;border:1px solid var(--bd);background:var(--bg2)}
+  .results-accordion-hdr{display:flex;align-items:center;justify-content:space-between;padding:.5rem .75rem;cursor:pointer}
+  .results-title{font-family:var(--dm);font-size:.5rem;font-weight:700;color:var(--t2);letter-spacing:.06em;text-transform:uppercase}
+  .results-count{font-family:var(--dm);font-size:.44rem;background:rgba(255,255,255,.1);border-radius:99px;padding:.1rem .4rem;color:var(--t3)}
+  .results-body{display:none;border-top:1px solid var(--bd)}
+  .results-body.open{display:block}
+  .chevron{font-size:.55rem;color:var(--t3);transition:transform .2s;display:inline-block}
+  .chevron.open{transform:rotate(180deg)}
+  .news-feed{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;padding-bottom:calc(var(--nav-h)+1rem)}
+  .news-feed::-webkit-scrollbar{display:none}
+  .news-card2{background:var(--bg2);margin:.3rem .5rem;border-radius:12px;overflow:hidden;cursor:pointer;border:1px solid var(--bd)}
+  .news-card2:active{opacity:.88}
+  .news-card2-img{width:100%;height:175px;object-fit:cover;display:block;background:var(--bg3)}
+  .news-card2-body{padding:.55rem .7rem .7rem}
+  .news-card2-meta{display:flex;align-items:center;justify-content:space-between;margin-bottom:.3rem}
+  .news-tag{font-family:var(--dm);font-size:.42rem;color:var(--c1);background:rgba(0,212,255,.08);border-radius:99px;padding:.1rem .4rem}
+  .news-ago{font-family:var(--dm);font-size:.42rem;color:var(--t3)}
+  .news-card2-title{font-family:var(--df);font-size:.82rem;line-height:1.3;color:var(--t1);margin-bottom:.25rem}
+  .news-card2-summary{font-family:var(--dm);font-size:.52rem;color:var(--t2);line-height:1.5;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+  .news-breaking{background:var(--red);color:#fff;font-family:var(--dm);font-size:.38rem;font-weight:700;padding:.1rem .3rem;border-radius:3px;margin-right:.25rem}
+  .nfbar{display:flex;gap:.3rem;overflow-x:auto;padding:.4rem .5rem;scrollbar-width:none;border-bottom:1px solid var(--bd);flex-shrink:0}
+  .nfbar::-webkit-scrollbar{display:none}
+  .nfbtn{flex-shrink:0;font-family:var(--dm);font-size:.5rem;padding:.28rem .65rem;background:rgba(255,255,255,.06);border:1px solid var(--bd);border-radius:99px;color:var(--t3);cursor:pointer;white-space:nowrap}
+  .nfbtn.on{background:var(--c1);border-color:var(--c1);color:#000;font-weight:700}
+  .img-feed{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;padding-bottom:calc(var(--nav-h)+1rem)}
+  .img-feed::-webkit-scrollbar{display:none}
+  .img-post{background:var(--bg2);margin:.3rem .5rem;border-radius:12px;overflow:hidden;border:1px solid var(--bd)}
+  .img-post-hdr{display:flex;align-items:center;gap:.45rem;padding:.45rem .6rem}
+  .img-post-avatar{width:30px;height:30px;border-radius:50%;background:linear-gradient(135deg,var(--c1),var(--c2));display:flex;align-items:center;justify-content:center;font-size:.7rem;flex-shrink:0}
+  .img-post-source{font-family:var(--dm);font-size:.52rem;color:var(--t1);font-weight:600}
+  .img-post-time{font-family:var(--dm);font-size:.42rem;color:var(--t3)}
+  .img-post-img{width:100%;display:block;object-fit:cover;background:var(--bg3);min-height:200px;cursor:pointer}
+  .img-post-caption{padding:.4rem .6rem .5rem;font-family:var(--dm);font-size:.52rem;color:var(--t2);line-height:1.45}
+  .img-post-actions{display:flex;gap:.4rem;padding:.1rem .6rem .55rem}
+  .img-act{font-family:var(--dm);font-size:.48rem;color:var(--t3);cursor:pointer;padding:.18rem .4rem;border-radius:6px;background:rgba(255,255,255,.04)}
+  .img-act:active{background:rgba(255,255,255,.12);color:var(--c1)}
+  .skel-post{background:var(--bg2);margin:.3rem .5rem;border-radius:12px;border:1px solid var(--bd);overflow:hidden}
+  .skel-hdr{height:44px}.skel-img{height:220px}
+  .skel-hdr,.skel-img{background:linear-gradient(90deg,rgba(255,255,255,.04) 0%,rgba(255,255,255,.08) 50%,rgba(255,255,255,.04) 100%);background-size:200% 100%;animation:shimmer 1.4s infinite}
+
 </style>
 </head>
 <body>
@@ -338,9 +380,9 @@ a{text-decoration:none;color:inherit}
       <button class="ltab" onclick="homeSetLeague('PPL',this)">🇵🇹 Liga Portugal</button>
       <button class="ltab" onclick="homeSetLeague('DED',this)">🇳🇱 Eredivisie</button>
       <button class="ltab" onclick="homeSetLeague('EC',this)">🇪🇺 Euro</button>
-    </div>
+    </div><div class="scr-scroll" id="home-scroll">
     <div id="home-matches"><div class="loading-center"><div class="spin"></div><span>Loading matches...</span></div></div>
-  </section>
+  </div></section>
   <!-- Match Detail Panel -->
   <div id="match-detail-panel" style="display:none;position:fixed;inset:0;background:var(--bg1);z-index:100;overflow-y:auto;padding-bottom:var(--nav-h)"></div>
 
@@ -359,9 +401,9 @@ a{text-decoration:none;color:inherit}
       <button class="ltab" onclick="standingsSetLeague('FL1',this)">🇫🇷 Ligue 1</button>
       <button class="ltab" onclick="standingsSetLeague('CL',this)">🇪🇺 UCL</button>
       <button class="ltab" onclick="standingsSetLeague('BSA',this)">🇧🇷 Brasileirao</button>
-    </div>
+    </div><div class="scr-scroll">
     <div id="standings-body"><div class="loading-center"><div class="spin"></div></div></div>
-  </section>
+  </div></section>
 
   <!-- SCORERS -->
   <section class="scr" id="s-scorers">
@@ -376,9 +418,9 @@ a{text-decoration:none;color:inherit}
       <button class="ltab" onclick="scorersSetLeague('CL',this)">🇪🇺 UCL</button>
       <button class="ltab" onclick="scorersSetLeague('BL1',this)">🇩🇪 Bundesliga</button>
       <button class="ltab" onclick="scorersSetLeague('BSA',this)">🇧🇷 BSA</button>
-    </div>
+    </div><div class="scr-scroll">
     <div id="scorers-body"><div class="loading-center"><div class="spin"></div></div></div>
-  </section>
+  </div></section>
 
   <!-- PREDICT -->
   <section class="scr" id="s-predict">
@@ -393,64 +435,59 @@ a{text-decoration:none;color:inherit}
       <button class="ltab" onclick="predictSetLeague('CL',this)">🇪🇺 UCL</button>
       <button class="ltab" onclick="predictSetLeague('SA',this)">🇮🇹 Serie A</button>
       <button class="ltab" onclick="predictSetLeague('BSA',this)">🇧🇷 BSA</button>
-    </div>
+    </div><div class="scr-scroll">
     <div id="predict-body"><div class="loading-center"><div class="spin"></div></div></div>
-  </section>
+  </div></section>
 
   <!-- NEWS -->
   <section class="scr" id="s-news">
-    <div class="scr-hdr">
-      <div><div class="scr-hdr-title">📰 NEWS</div><div class="scr-hdr-sub">Live football news · All sources</div></div>
-      <button onclick="newsRefresh()" style="color:var(--t3);font-size:1rem">↺</button>
+    <div class="scr-hdr" style="flex-shrink:0">
+      <div><div class="scr-hdr-title">&#x1F4F0; NEWS</div><div class="scr-hdr-sub">Live &#xB7; Auto-updating &#xB7; All sources</div></div>
+      <button onclick="newsRefresh()" style="color:var(--t3);font-size:1.1rem;padding:.25rem">&#x21BA;</button>
     </div>
-    <div class="league-tabs">
-      <button class="ltab on" onclick="newsSetFilter('all',this)">🌍 All</button>
-      <button class="ltab" onclick="newsSetFilter('transfers',this)">💸 Transfers</button>
-      <button class="ltab" onclick="newsSetFilter('results',this)">⚽ Results</button>
-      <button class="ltab" onclick="newsSetFilter('injuries',this)">🏥 Injuries</button>
+    <div class="nfbar">
+      <button class="nfbtn on" onclick="newsSetFilter('all',this)">&#x1F30D; All</button>
+      <button class="nfbtn" onclick="newsSetFilter('wc',this)">&#x1F3C6; World Cup</button>
+      <button class="nfbtn" onclick="newsSetFilter('transfers',this)">&#x1F4B8; Transfers</button>
+      <button class="nfbtn" onclick="newsSetFilter('results',this)">&#x26BD; Results</button>
+      <button class="nfbtn" onclick="newsSetFilter('injuries',this)">&#x1FA7A; Injuries</button>
     </div>
-    <div id="news-body"></div>
-    <div id="news-scroll-trigger" style="height:60px"></div>
+    <div class="news-feed" id="news-body"></div>
+    <div id="news-scroll-trigger" style="height:1px;flex-shrink:0"></div>
   </section>
 
   <!-- IMAGES -->
   <section class="scr" id="s-images">
-    <div class="scr-hdr">
-      <div><div class="scr-hdr-title">📸 IMAGES</div><div class="scr-hdr-sub">AI-curated football photography</div></div>
-      <button onclick="imgRefresh()" id="img-refresh-btn" style="background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.15);border-radius:50%;color:rgba(255,255,255,.7);width:32px;height:32px;font-size:.9rem">↺</button>
+    <div class="scr-hdr" style="flex-shrink:0">
+      <div><div class="scr-hdr-title">&#x1F4F8; IMAGES</div><div class="scr-hdr-sub">Football photography &#xB7; Infinite scroll</div></div>
+      <button onclick="imgRefresh()" id="img-refresh-btn" style="background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.15);border-radius:50%;color:rgba(255,255,255,.7);width:32px;height:32px;font-size:.9rem">&#x21BA;</button>
     </div>
-    <div class="img-cats">
-      <button class="img-cat on" onclick="imgSetCat('all',this)">🌍 All</button>
-      <button class="img-cat" onclick="imgSetCat('matches',this)">⚽ Matches</button>
-      <button class="img-cat" onclick="imgSetCat('players',this)">⭐ Players</button>
-      <button class="img-cat" onclick="imgSetCat('stadiums',this)">🏟 Stadiums</button>
-      <button class="img-cat" onclick="imgSetCat('fans',this)">🎉 Fans</button>
-      <button class="img-cat" onclick="imgSetCat('trophies',this)">🏆 Trophies</button>
+    <div class="nfbar">
+      <button class="nfbtn on" onclick="imgSetCat('all',this)">&#x1F30D; All</button>
+      <button class="nfbtn" onclick="imgSetCat('matches',this)">&#x26BD; Matches</button>
+      <button class="nfbtn" onclick="imgSetCat('players',this)">&#x2B50; Players</button>
+      <button class="nfbtn" onclick="imgSetCat('stadiums',this)">&#x1F3DF; Stadiums</button>
+      <button class="nfbtn" onclick="imgSetCat('fans',this)">&#x1F389; Fans</button>
+      <button class="nfbtn" onclick="imgSetCat('trophies',this)">&#x1F3C6; Trophies</button>
     </div>
-    <div style="padding:.25rem .85rem .4rem;font-size:.46rem;color:var(--t3);display:flex;justify-content:space-between">
-      <span id="img-count">Loading...</span>
-      <span id="img-source-tags"></span>
+    <div class="img-feed" id="img-grid"></div>
+    <div id="img-skeletons" style="display:none">
+      <div class="skel-post"><div class="skel-hdr"></div><div class="skel-img"></div></div>
+      <div class="skel-post"><div class="skel-hdr"></div><div class="skel-img"></div></div>
+      <div class="skel-post"><div class="skel-hdr"></div><div class="skel-img"></div></div>
     </div>
-    <div class="img-grid" id="img-grid"></div>
-    <div id="img-skeletons" style="display:none;columns:2;column-gap:.4rem;padding:0 .5rem">
-      <div class="img-skeleton" style="height:130px;margin-bottom:.4rem"></div>
-      <div class="img-skeleton" style="height:180px;margin-bottom:.4rem"></div>
-      <div class="img-skeleton" style="height:110px;margin-bottom:.4rem"></div>
-      <div class="img-skeleton" style="height:160px;margin-bottom:.4rem"></div>
-    </div>
-    <div id="img-scroll-trigger" style="height:80px"></div>
-    <!-- Lightbox -->
+    <div id="img-scroll-trigger" style="height:1px;flex-shrink:0"></div>
     <div class="img-lightbox" id="img-lightbox">
       <div class="img-lb-backdrop" onclick="imgCloseLightbox()"></div>
       <div class="img-lb-sheet">
-        <button class="img-lb-close" onclick="imgCloseLightbox()">✕</button>
+        <button class="img-lb-close" onclick="imgCloseLightbox()">&#x2715;</button>
         <img class="img-lb-img" id="img-lb-img" src="" alt="">
         <div class="img-lb-info">
           <div class="img-lb-caption" id="img-lb-caption"></div>
           <div class="img-lb-meta" id="img-lb-meta"></div>
           <div class="img-lb-actions">
-            <button class="img-lb-btn" onclick="imgDownload()">⬇ Save</button>
-            <button class="img-lb-btn" onclick="imgShare()">⬆ Share</button>
+            <button class="img-lb-btn" onclick="imgDownload()">&#x2B07; Save</button>
+            <button class="img-lb-btn" onclick="imgShare()">&#x2B06; Share</button>
           </div>
         </div>
       </div>
@@ -583,6 +620,8 @@ a{text-decoration:none;color:inherit}
 <div id="toast"></div>
 
 <script>
+<script>
+
 /* ================================================================
    COPA.pi — JavaScript Engine
    MAINNET · sandbox:false · Cloudflare Pages
@@ -803,58 +842,13 @@ var newsLoading = false;
 var newsHasMore = true;
 var newsFilter = 'all';
 
-function newsSetFilter(filter, btn) {
-  newsFilter = filter;
-  newsPage = 1;
-  newsHasMore = true;
-  document.querySelectorAll('#s-news .ltab').forEach(function(b){ b.classList.remove('on'); });
-  if (btn) btn.classList.add('on');
-  document.getElementById('news-body').innerHTML = '';
-  newsLoad();
-}
 
-function newsRefresh() {
-  newsPage = 1;
-  newsHasMore = true;
-  document.getElementById('news-body').innerHTML = '';
-  newsLoad();
-}
 
-function newsLoad() {
-  if (newsLoading || !newsHasMore) return;
-  newsLoading = true;
-  fetch('/news?page='+newsPage+'&filter='+newsFilter)
-    .then(function(r){ return r.json(); })
-    .then(function(data){
-      newsHasMore = data.hasMore !== false;
-      newsPage++;
-      renderNews(data.articles||[]);
-    })
-    .catch(function(){
-      document.getElementById('news-body').innerHTML += '<div class="loading-center">Failed to load news</div>';
-    })
-    .finally(function(){ newsLoading = false; });
-}
 
-function renderNews(articles) {
-  var el = document.getElementById('news-body');
-  if (!el) return;
-  articles.forEach(function(a){
-    var card = document.createElement('div');
-    card.className = 'news-card';
-    card.onclick = function(){ if(a.url) window.open(a.url); };
-    var isNew = (Date.now() - new Date(a.date).getTime()) < 1800000; /* 30 min */
-    card.innerHTML =
-      (a.image?'<img class="news-thumb" src="'+a.image+'" alt="" loading="lazy" onerror="this.style.display=\'none\'">':'')
-      +'<div class="news-body">'
-      +'<div class="news-title">'
-      +(isNew?'<span class="news-breaking">NEW</span>':'')
-      +escHtml(a.title||'')+'</div>'
-      +'<div class="news-meta"><span class="news-src">'+escHtml(a.source||'')+'</span> · '+fmtDate(a.date)+'</div>'
-      +'</div>';
-    el.appendChild(card);
-  });
-}
+
+
+
+
 
 /* News infinite scroll */
 if ('IntersectionObserver' in window) {
@@ -876,70 +870,13 @@ var imgLazyObs = 'IntersectionObserver' in window
     },{ rootMargin:'300px' })
   : { observe:function(){}, unobserve:function(){} };
 
-function imgSetCat(cat, btn) {
-  IMG.category=cat; IMG.page=1; IMG.hasMore=true; IMG.allImages=[];
-  document.querySelectorAll('.img-cat').forEach(function(b){ b.classList.remove('on'); });
-  if(btn) btn.classList.add('on');
-  document.getElementById('img-grid').innerHTML='';
-  imgLoadPage();
-}
 
-function imgRefresh() {
-  var prefix=IMG.category+'_';
-  Object.keys(IMG.cache).forEach(function(k){ if(k.startsWith(prefix)) delete IMG.cache[k]; });
-  IMG.page=1; IMG.hasMore=true; IMG.allImages=[];
-  document.getElementById('img-grid').innerHTML='';
-  var btn=document.getElementById('img-refresh-btn');
-  if(btn) btn.style.transform='rotate(360deg)';
-  setTimeout(function(){ if(btn) btn.style.transform=''; }, 600);
-  imgLoadPage();
-}
 
-function imgLoadPage() {
-  if(IMG.loading||!IMG.hasMore) return;
-  var key=IMG.category+'_'+IMG.page;
-  if(IMG.cache[key]){ imgRender(IMG.cache[key]); IMG.page++; return; }
-  IMG.loading=true;
-  document.getElementById('img-skeletons').style.display='block';
-  fetch('/images?category='+IMG.category+'&page='+IMG.page)
-    .then(function(r){ return r.json(); })
-    .then(function(data){
-      IMG.cache[key]=data.images||[];
-      IMG.hasMore=data.hasMore!==false;
-      imgRender(data.images||[]);
-      IMG.page++;
-      /* Source tags */
-      var srcs=document.getElementById('img-source-tags');
-      if(srcs && data.sources){
-        srcs.innerHTML=Object.keys(data.sources).filter(function(k){ return data.sources[k]; })
-          .map(function(k){ return '<span style="background:rgba(255,255,255,.06);border-radius:99px;padding:.08rem .35rem;font-size:.4rem;color:var(--t3);margin-left:.2rem">'+k+'</span>'; }).join('');
-      }
-    })
-    .catch(function(){ document.getElementById('img-grid').innerHTML+='<div style="grid-column:1/-1;text-align:center;padding:1rem;font-size:.54rem;color:var(--t3)">Images unavailable</div>'; })
-    .finally(function(){ IMG.loading=false; document.getElementById('img-skeletons').style.display='none'; });
-}
 
-function imgRender(images) {
-  var grid=document.getElementById('img-grid');
-  images.forEach(function(img){
-    IMG.allImages.push(img);
-    var idx=IMG.allImages.length-1;
-    var card=document.createElement('div'); card.className='img-card';
-    card.onclick=(function(i){ return function(){ imgOpen(i); }; })(idx);
-    var el=document.createElement('img');
-    el.setAttribute('data-src', img.thumb||img.url);
-    el.src=''; el.alt=img.caption||''; el.loading='lazy';
-    el.style.minHeight=(80+Math.floor(Math.random()*100))+'px';
-    el.onerror=function(){ card.style.display='none'; };
-    var src=document.createElement('div'); src.className='img-card-src';
-    src.textContent=(img.source||'').slice(0,8);
-    card.appendChild(el); card.appendChild(src);
-    grid.appendChild(card);
-    imgLazyObs.observe(el);
-  });
-  var cnt=document.getElementById('img-count');
-  if(cnt) cnt.textContent=IMG.allImages.length+' images';
-}
+
+
+
+
 
 function imgOpen(i) {
   var img=IMG.allImages[i]; if(!img) return;
@@ -1468,99 +1405,11 @@ function homeLoad(league) {
     });
 }
 
-function renderHome(data, el) {
-  var g = data.groups || {};
-  var html = '';
-  var competition = data.competition || '';
-  if (competition) {
-    html += '<div style="font-family:var(--dm);font-size:.5rem;color:var(--c1);'
-      + 'padding:.4rem .85rem .1rem;letter-spacing:.06em;text-transform:uppercase">'
-      + escHtml(competition) + '</div>';
-  }
 
-  if (!data.total || data.total === 0) {
-    html += '<div class="loading-center" style="flex-direction:column;gap:.5rem;padding:2rem">'
-      + '<div style="font-size:2rem">📅</div>'
-      + '<div style="font-size:.65rem">No matches scheduled</div>'
-      + '<div style="font-size:.5rem;color:var(--t3)">Try another league or check back on matchday</div>'
-      + '</div>';
-    el.innerHTML = html;
-    return;
-  }
 
-  if (g.live && g.live.length) {
-    html += renderSection('LIVE NOW', g.live, 'var(--red)', true);
-  }
-  if (g.today && g.today.length) {
-    html += renderSection('TODAY', g.today, 'var(--c1)', false);
-  }
-  if (g.upcoming && g.upcoming.length) {
-    html += renderSection('UPCOMING', g.upcoming, 'rgba(255,255,255,.3)', false);
-  }
-  if (g.recent && g.recent.length) {
-    html += renderSection('RECENT RESULTS', g.recent, 'rgba(255,255,255,.2)', false);
-  }
 
-  /* If all sections empty, show all matches */
-  if (!g.live.length && !g.today.length && !g.upcoming.length && !g.recent.length) {
-    var all = data.matches || [];
-    if (all.length) html += renderSection('MATCHES', all, 'var(--c1)', false);
-  }
 
-  el.innerHTML = html;
 
-  /* Attach onclick to each card */
-  el.querySelectorAll('.match-card').forEach(function(card) {
-    card.addEventListener('click', function() {
-      var mid = this.getAttribute('data-id');
-      if (mid) openMatchDetail(mid);
-    });
-  });
-}
-
-function renderSection(title, matches, color, isLive) {
-  var html = '<div class="match-section-hdr" style="background:' + color + '22;border-left:3px solid ' + color + '">'
-    + (isLive ? '<span class="pulse-dot"></span>' : '')
-    + '<span>' + title + '</span>'
-    + '<span style="font-size:.44rem;color:rgba(255,255,255,.4)">' + matches.length + '</span>'
-    + '</div>';
-  matches.forEach(function(m) {
-    html += renderMatchCard(m, isLive);
-  });
-  return html;
-}
-
-function renderMatchCard(m, isLive) {
-  var hasScore = m.homeScore !== null && m.homeScore !== undefined
-              && m.awayScore !== null && m.awayScore !== undefined;
-  var isFinished = m.status === 'FINISHED' || m.status === 'FT' || m.status === 'post';
-
-  var leftCol = isLive
-    ? '<div class="mc-time mc-live">' + (m.minute ? m.minute + "'" : 'LIVE') + '</div>'
-    : '<div class="mc-time">' + (isFinished ? 'FT' : fmtTime(m.utcDate)) + '</div>';
-
-  var scoreCol = hasScore
-    ? '<div class="mc-score">' + m.homeScore + '<span class="mc-sep">-</span>' + m.awayScore + '</div>'
-    : '<div class="mc-score mc-score-dash">-</div>';
-
-  return '<div class="match-card" data-id="' + m.id + '">'
-    + '<div class="mc-row">'
-    + leftCol
-    + '<div class="mc-teams">'
-    + '<div class="mc-team">'
-    + (m.homeCrest ? '<img class="mc-crest" src="' + m.homeCrest + '" loading="lazy" onerror="this.style.display=\'none\'">' : '<div class="mc-crest-ph">&#x26BD;</div>')
-    + '<span class="mc-name">' + escHtml(m.homeTeam || m.homeFull || '') + '</span>'
-    + '</div>'
-    + '<div class="mc-team">'
-    + (m.awayCrest ? '<img class="mc-crest" src="' + m.awayCrest + '" loading="lazy" onerror="this.style.display=\'none\'">' : '<div class="mc-crest-ph">&#x26BD;</div>')
-    + '<span class="mc-name">' + escHtml(m.awayTeam || m.awayFull || '') + '</span>'
-    + '</div>'
-    + '</div>'
-    + scoreCol
-    + '</div>'
-    + (m.group ? '<div class="mc-group">' + escHtml(m.group) + '</div>' : '')
-    + '</div>';
-}
 
 function fmtTime(d) {
   if (!d) return '--:--';
@@ -1763,6 +1612,349 @@ function loadH2H(matchId) {
       pane.innerHTML = '<div class="loading-center" style="color:var(--t3);font-size:.56rem">H2H unavailable</div>';
     });
 }
+
+/* ================================================================
+   COPA — PROFESSIONAL RENDER FUNCTIONS
+   Home: Live/Today/Upcoming/Results-Accordion
+   News: Full-card Facebook/X style
+   Images: Instagram post style, infinite scroll
+================================================================ */
+
+/* ── HOME ── */
+function renderHome(data, el) {
+  var g = data.groups || { live:[], today:[], upcoming:[], recent:[] };
+  var html = '';
+  if (data.competition) {
+    html += '<div style="font-family:var(--dm);font-size:.48rem;color:var(--c1);padding:.35rem .6rem .05rem;letter-spacing:.06em;text-transform:uppercase">'
+      + escHtml(data.competition) + '</div>';
+  }
+  if (!data.total) {
+    html += '<div class="loading-center" style="flex-direction:column;gap:.5rem;padding:2.5rem 1rem">'
+      + '<div style="font-size:2rem">&#x1F4C5;</div>'
+      + '<div style="font-size:.65rem">No matches scheduled</div>'
+      + '<div style="font-size:.5rem;color:var(--t3)">Season may be on break. Try World Cup or Brasileirao.</div>'
+      + '</div>';
+    el.innerHTML = html;
+    return;
+  }
+  /* LIVE */
+  if (g.live && g.live.length) {
+    html += '<div class="match-section-hdr" style="background:rgba(239,68,68,.1);border-left:3px solid var(--red)">'
+      + '<span class="pulse-dot"></span><span>LIVE NOW</span>'
+      + '<span style="font-size:.44rem;color:rgba(255,255,255,.4)">' + g.live.length + '</span></div>';
+    g.live.forEach(function(m){ html += renderMatchCard(m, true); });
+  }
+  /* TODAY */
+  if (g.today && g.today.length) {
+    html += '<div class="match-section-hdr" style="background:rgba(0,212,255,.06);border-left:3px solid var(--c1)">'
+      + '<span>TODAY</span>'
+      + '<span style="font-size:.44rem;color:rgba(255,255,255,.4)">' + g.today.length + '</span></div>';
+    g.today.forEach(function(m){ html += renderMatchCard(m, false); });
+  }
+  /* UPCOMING */
+  if (g.upcoming && g.upcoming.length) {
+    html += '<div class="match-section-hdr" style="background:rgba(255,255,255,.03);border-left:3px solid rgba(255,255,255,.2)">'
+      + '<span>UPCOMING</span>'
+      + '<span style="font-size:.44rem;color:rgba(255,255,255,.4)">' + g.upcoming.length + '</span></div>';
+    g.upcoming.forEach(function(m){ html += renderMatchCard(m, false); });
+  }
+  /* RECENT RESULTS — collapsible accordion */
+  if (g.recent && g.recent.length) {
+    var rid = 'acc_' + Date.now();
+    html += '<div class="results-accordion">'
+      + '<div class="results-accordion-hdr" onclick="toggleAccordion(\'' + rid + '\')">'
+      + '<div style="display:flex;align-items:center;gap:.4rem">'
+      + '<span class="results-title">RECENT RESULTS</span>'
+      + '<span class="results-count">' + g.recent.length + '</span>'
+      + '</div>'
+      + '<span class="chevron" id="chev_' + rid + '">&#x25BC;</span>'
+      + '</div>'
+      + '<div class="results-body" id="' + rid + '">';
+    g.recent.forEach(function(m){ html += renderMatchCard(m, false); });
+    html += '</div></div>';
+  }
+  /* Fallback - all matches */
+  if (!g.live.length && !g.today.length && !g.upcoming.length && !g.recent.length) {
+    (data.matches||[]).forEach(function(m){ html += renderMatchCard(m, false); });
+  }
+  el.innerHTML = html;
+  el.querySelectorAll('.match-card').forEach(function(card) {
+    card.addEventListener('click', function() {
+      var mid = this.getAttribute('data-id');
+      if (mid) openMatchDetail(mid);
+    });
+  });
+}
+
+function toggleAccordion(id) {
+  var body  = document.getElementById(id);
+  var chev  = document.getElementById('chev_' + id);
+  if (!body) return;
+  var isOpen = body.classList.contains('open');
+  body.classList.toggle('open', !isOpen);
+  if (chev) chev.classList.toggle('open', !isOpen);
+}
+
+function renderSection(title, matches, color, isLive) {
+  var html = '<div class="match-section-hdr" style="background:' + color + '22;border-left:3px solid ' + color + '">'
+    + (isLive ? '<span class="pulse-dot"></span>' : '')
+    + '<span>' + title + '</span>'
+    + '<span style="font-size:.44rem;color:rgba(255,255,255,.4)">' + matches.length + '</span>'
+    + '</div>';
+  matches.forEach(function(m){ html += renderMatchCard(m, isLive); });
+  return html;
+}
+
+function renderMatchCard(m, isLive) {
+  var hasScore = m.homeScore !== null && m.homeScore !== undefined
+              && m.awayScore !== null && m.awayScore !== undefined;
+  var isDone = m.status === 'FINISHED' || m.status === 'FT' || m.status === 'post';
+  var cph = 'width:20px;height:20px;display:flex;align-items:center;justify-content:center;font-size:.75rem';
+  return '<div class="match-card" data-id="' + m.id + '">'
+    + '<div class="mc-row">'
+    + (isLive
+      ? '<div class="mc-time mc-live">' + (m.minute ? m.minute + "'" : 'LIVE') + '</div>'
+      : '<div class="mc-time">' + (isDone ? 'FT' : fmtTime(m.utcDate)) + '</div>')
+    + '<div class="mc-teams">'
+    + '<div class="mc-team">'
+    + (m.homeCrest ? '<img class="mc-crest" src="' + m.homeCrest + '" loading="lazy" onerror="this.style.display=\'none\'">' : '<div style="' + cph + '">&#x26BD;</div>')
+    + '<span class="mc-name">' + escHtml(m.homeTeam || m.homeFull || '') + '</span>'
+    + '</div>'
+    + '<div class="mc-team">'
+    + (m.awayCrest ? '<img class="mc-crest" src="' + m.awayCrest + '" loading="lazy" onerror="this.style.display=\'none\'">' : '<div style="' + cph + '">&#x26BD;</div>')
+    + '<span class="mc-name">' + escHtml(m.awayTeam || m.awayFull || '') + '</span>'
+    + '</div></div>'
+    + (hasScore
+      ? '<div class="mc-score">' + m.homeScore + '<span class="mc-sep">-</span>' + m.awayScore + '</div>'
+      : '<div class="mc-score mc-score-dash">-</div>')
+    + '</div>'
+    + (m.group ? '<div class="mc-group">' + escHtml(m.group) + '</div>' : '')
+    + '</div>';
+}
+
+/* ── NEWS — Facebook/X card style ── */
+var newsPage    = 1;
+var newsLoading = false;
+var newsHasMore = true;
+var newsFilter  = 'all';
+var newsTimer   = null;
+
+function newsSetFilter(filter, btn) {
+  newsFilter = filter;
+  newsPage = 1; newsHasMore = true;
+  document.querySelectorAll('.nfbtn').forEach(function(b){ b.classList.remove('on'); });
+  if (btn) btn.classList.add('on');
+  var nb = document.getElementById('news-body');
+  if (nb) nb.innerHTML = '';
+  newsLoad();
+}
+
+function newsRefresh() {
+  newsPage = 1; newsHasMore = true;
+  var nb = document.getElementById('news-body');
+  if (nb) nb.innerHTML = '';
+  newsLoad();
+}
+
+function newsLoad() {
+  if (newsLoading || !newsHasMore) return;
+  newsLoading = true;
+  fetch('/news?page=' + newsPage + '&filter=' + newsFilter)
+    .then(function(r){ return r.json(); })
+    .then(function(data){
+      newsHasMore = data.hasMore !== false;
+      newsPage++;
+      renderNews(data.articles || []);
+    })
+    .catch(function(){
+      var nb = document.getElementById('news-body');
+      if (nb && !nb.innerHTML.trim()) {
+        nb.innerHTML = '<div class="loading-center" style="flex-direction:column;gap:.5rem;padding:2rem">'
+          + '<div>Failed to load news</div>'
+          + '<button onclick="newsRefresh()" style="background:var(--c1);border:none;border-radius:8px;color:#000;padding:.35rem .75rem;font-size:.56rem;cursor:pointer">Retry</button>'
+          + '</div>';
+      }
+    })
+    .finally(function(){ newsLoading = false; });
+}
+
+function renderNews(articles) {
+  var el = document.getElementById('news-body');
+  if (!el) return;
+  articles.forEach(function(a) {
+    var isNew = (Date.now() - new Date(a.date).getTime()) < 1800000;
+    var card  = document.createElement('div');
+    card.className = 'news-card2';
+    card.onclick = function(){ if(a.url) window.open(a.url,'_blank'); };
+    var inner = '';
+    if (a.image) {
+      inner += '<img class="news-card2-img" src="' + a.image + '" loading="lazy" onerror="this.parentNode.removeChild(this)">';
+    }
+    inner += '<div class="news-card2-body">'
+      + '<div class="news-card2-meta">'
+      + '<span class="news-tag">' + escHtml(a.source||'') + '</span>'
+      + '<span class="news-ago">' + fmtDate(a.date) + '</span>'
+      + '</div>'
+      + '<div class="news-card2-title">'
+      + (isNew ? '<span class="news-breaking">NEW</span>' : '')
+      + escHtml(a.title||'')
+      + '</div>'
+      + (a.summary ? '<div class="news-card2-summary">' + escHtml(a.summary) + '</div>' : '')
+      + '</div>';
+    card.innerHTML = inner;
+    el.appendChild(card);
+  });
+}
+
+/* ── IMAGES — Instagram post style ── */
+var IMG = { category:'all', page:1, loading:false, hasMore:true, cache:{}, allImages:[], current:null };
+
+var imgLazyObs = 'IntersectionObserver' in window
+  ? new IntersectionObserver(function(entries){
+      entries.forEach(function(e){
+        if(e.isIntersecting){
+          var el=e.target; var src=el.getAttribute('data-src');
+          if(src){ el.src=src; el.removeAttribute('data-src'); }
+          imgLazyObs.unobserve(el);
+        }
+      });
+    },{ rootMargin:'400px' })
+  : { observe:function(){}, unobserve:function(){} };
+
+function imgSetCat(cat, btn) {
+  IMG.category=cat; IMG.page=1; IMG.hasMore=true; IMG.allImages=[];
+  document.querySelectorAll('.nfbtn').forEach(function(b){ b.classList.remove('on'); });
+  if(btn) btn.classList.add('on');
+  var grid = document.getElementById('img-grid');
+  if(grid) grid.innerHTML = '';
+  imgLoadPage();
+}
+
+function imgRefresh() {
+  var prefix = IMG.category+'_';
+  Object.keys(IMG.cache).forEach(function(k){ if(k.startsWith(prefix)) delete IMG.cache[k]; });
+  IMG.page=1; IMG.hasMore=true; IMG.allImages=[];
+  var grid = document.getElementById('img-grid');
+  if(grid) grid.innerHTML = '';
+  var btn = document.getElementById('img-refresh-btn');
+  if(btn){ btn.style.transform='rotate(360deg)'; setTimeout(function(){ btn.style.transform=''; },600); }
+  imgLoadPage();
+}
+
+function imgLoadPage() {
+  if(IMG.loading || !IMG.hasMore) return;
+  var key = IMG.category + '_' + IMG.page;
+  if(IMG.cache[key]){ imgRender(IMG.cache[key]); IMG.page++; return; }
+  IMG.loading = true;
+  var sk = document.getElementById('img-skeletons');
+  if(sk) sk.style.display = 'block';
+  fetch('/images?category=' + IMG.category + '&page=' + IMG.page)
+    .then(function(r){ return r.json(); })
+    .then(function(data){
+      IMG.cache[key] = data.images || [];
+      IMG.hasMore = data.hasMore !== false;
+      imgRender(data.images || []);
+      IMG.page++;
+    })
+    .catch(function(){
+      var grid = document.getElementById('img-grid');
+      if(grid && !grid.innerHTML.trim()){
+        grid.innerHTML = '<div class="loading-center" style="padding:2rem;flex-direction:column;gap:.5rem">'
+          +'<div>Images unavailable</div>'
+          +'<button onclick="imgRefresh()" style="background:var(--c1);border:none;border-radius:8px;color:#000;padding:.35rem .75rem;font-size:.56rem;cursor:pointer">Retry</button>'
+          +'</div>';
+      }
+    })
+    .finally(function(){
+      IMG.loading = false;
+      var sk2 = document.getElementById('img-skeletons');
+      if(sk2) sk2.style.display = 'none';
+    });
+}
+
+function imgRender(images) {
+  var grid = document.getElementById('img-grid');
+  if(!grid) return;
+  var SOURCES = ['Wikimedia','Unsplash','Pixabay','Pexels','Getty'];
+  images.forEach(function(img) {
+    IMG.allImages.push(img);
+    var idx = IMG.allImages.length - 1;
+    var srcIcon = '&#x1F4F8;';
+    var post = document.createElement('div');
+    post.className = 'img-post';
+    /* Header */
+    var hdr = '<div class="img-post-hdr">'
+      + '<div class="img-post-avatar">' + srcIcon + '</div>'
+      + '<div style="flex:1;min-width:0">'
+      + '<div class="img-post-source">' + escHtml(img.source || 'Football') + '</div>'
+      + '<div class="img-post-time">' + escHtml(img.license || 'CC Licensed') + '</div>'
+      + '</div></div>';
+    /* Image */
+    var imgEl = '<img class="img-post-img" data-src="' + (img.thumb||img.url) + '" src="" alt="' + escHtml(img.caption||'') + '" loading="lazy" onerror="this.style.display=\'none\'">';
+    /* Caption */
+    var cap = img.caption ? '<div class="img-post-caption">' + escHtml(img.caption.slice(0,120)) + '</div>' : '';
+    /* Actions */
+    var acts = '<div class="img-post-actions">'
+      + '<span class="img-act" data-idx="' + idx + '" onclick="imgOpen(parseInt(this.getAttribute(\'data-idx\')))">&#x1F50D; View</span>'
+      + '<span class="img-act" data-idx="' + idx + '" onclick="imgShare2(parseInt(this.getAttribute(\'data-idx\')))">&#x2B06; Share</span>'
+      + '<span class="img-act" data-idx="' + idx + '" onclick="imgDl(parseInt(this.getAttribute(\'data-idx\')))">&#x2B07; Save</span>'
+      + '</div>';
+    post.innerHTML = hdr + imgEl + cap + acts;
+    /* Lazy load */
+    var lazyImg = post.querySelector('img');
+    if(lazyImg) imgLazyObs.observe(lazyImg);
+    grid.appendChild(post);
+  });
+}
+
+function imgOpen(i) {
+  var img = IMG.allImages[i]; if(!img) return;
+  IMG.current = i;
+  var lb  = document.getElementById('img-lightbox');
+  var lbi = document.getElementById('img-lb-img');
+  if(!lb||!lbi) return;
+  lbi.src = img.fullUrl||img.url; lbi.alt = img.caption||'';
+  document.getElementById('img-lb-caption').textContent = img.caption||'';
+  document.getElementById('img-lb-meta').textContent = (img.source||'') + (img.author?' &#xB7; '+img.author:'');
+  lb.classList.add('open');
+  document.body.style.overflow = 'hidden';
+}
+
+function imgShare2(i) {
+  var img = IMG.allImages[i]; if(!img) return;
+  if(navigator.share) navigator.share({ title:img.caption||'Copa.pi', url:img.url }).catch(function(){});
+  else if(navigator.clipboard) navigator.clipboard.writeText(img.url).then(function(){ toast('Link copied!'); });
+}
+
+function imgDl(i) {
+  var img = IMG.allImages[i]; if(!img) return;
+  var a = document.createElement('a'); a.href=img.fullUrl||img.url;
+  a.download='copa-'+Date.now()+'.jpg'; a.target='_blank';
+  document.body.appendChild(a); a.click(); document.body.removeChild(a);
+}
+
+/* Infinite scroll */
+if('IntersectionObserver' in window) {
+  new IntersectionObserver(function(entries){
+    if(entries[0].isIntersecting && !newsLoading && newsHasMore) newsLoad();
+  },{ rootMargin:'500px' }).observe(document.getElementById('news-scroll-trigger') || document.body);
+
+  new IntersectionObserver(function(entries){
+    if(entries[0].isIntersecting && !IMG.loading && IMG.hasMore) imgLoadPage();
+  },{ rootMargin:'500px' }).observe(document.getElementById('img-scroll-trigger') || document.body);
+}
+
+/* Auto-refresh news every 2 min */
+setInterval(function(){
+  var active = document.querySelector('.scr.on');
+  if(active && active.id === 's-news') {
+    newsPage=1; newsHasMore=true;
+    var nb = document.getElementById('news-body');
+    if(nb) nb.innerHTML = '';
+    newsLoad();
+  }
+}, 120000);
+
 </script>
 </body>
 </html>
