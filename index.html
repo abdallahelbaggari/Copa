@@ -327,13 +327,17 @@ a{text-decoration:none;color:inherit}
     </div>
     <div class="league-tabs" id="home-league-tabs">
       <button class="ltab on" onclick="homeSetLeague('WC',this)">🌍 World Cup</button>
-      <button class="ltab" onclick="homeSetLeague('MLS',this)">🇺🇸 MLS</button>
       <button class="ltab" onclick="homeSetLeague('PL',this)">🏴󠁧󠁢󠁥󠁮󠁧󠁿 PL</button>
       <button class="ltab" onclick="homeSetLeague('PD',this)">🇪🇸 La Liga</button>
       <button class="ltab" onclick="homeSetLeague('SA',this)">🇮🇹 Serie A</button>
       <button class="ltab" onclick="homeSetLeague('BL1',this)">🇩🇪 Bundesliga</button>
       <button class="ltab" onclick="homeSetLeague('FL1',this)">🇫🇷 Ligue 1</button>
       <button class="ltab" onclick="homeSetLeague('CL',this)">🇪🇺 UCL</button>
+      <button class="ltab" onclick="homeSetLeague('ELC',this)">🏴󠁧󠁢󠁥󠁮󠁧󠁿 Championship</button>
+      <button class="ltab" onclick="homeSetLeague('BSA',this)">🇧🇷 Brasileirao</button>
+      <button class="ltab" onclick="homeSetLeague('PPL',this)">🇵🇹 Liga Portugal</button>
+      <button class="ltab" onclick="homeSetLeague('DED',this)">🇳🇱 Eredivisie</button>
+      <button class="ltab" onclick="homeSetLeague('EC',this)">🇪🇺 Euro</button>
     </div>
     <div id="home-matches"><div class="loading-center"><div class="spin"></div><span>Loading matches...</span></div></div>
   </section>
@@ -347,13 +351,14 @@ a{text-decoration:none;color:inherit}
       <div><div class="scr-hdr-title">📊 STANDINGS</div><div class="scr-hdr-sub">Live league tables</div></div>
     </div>
     <div class="league-tabs">
-      <button class="ltab on" onclick="standingsSetLeague('PL',this)">🏴󠁧󠁢󠁥󠁮󠁧󠁿 PL</button>
+      <button class="ltab on" onclick="standingsSetLeague('WC',this)">🌍 WC</button>
+      <button class="ltab" onclick="standingsSetLeague('PL',this)">🏴󠁧󠁢󠁥󠁮󠁧󠁿 PL</button>
       <button class="ltab" onclick="standingsSetLeague('PD',this)">🇪🇸 La Liga</button>
       <button class="ltab" onclick="standingsSetLeague('SA',this)">🇮🇹 Serie A</button>
       <button class="ltab" onclick="standingsSetLeague('BL1',this)">🇩🇪 Bundesliga</button>
       <button class="ltab" onclick="standingsSetLeague('FL1',this)">🇫🇷 Ligue 1</button>
       <button class="ltab" onclick="standingsSetLeague('CL',this)">🇪🇺 UCL</button>
-      <button class="ltab" onclick="standingsSetLeague('WC',this)">🌍 World Cup</button>
+      <button class="ltab" onclick="standingsSetLeague('BSA',this)">🇧🇷 Brasileirao</button>
     </div>
     <div id="standings-body"><div class="loading-center"><div class="spin"></div></div></div>
   </section>
@@ -364,11 +369,13 @@ a{text-decoration:none;color:inherit}
       <div><div class="scr-hdr-title">👟 TOP SCORERS</div><div class="scr-hdr-sub">Golden Boot race</div></div>
     </div>
     <div class="league-tabs">
-      <button class="ltab on" onclick="scorersSetLeague('PL',this)">🏴󠁧󠁢󠁥󠁮󠁧󠁿 PL</button>
+      <button class="ltab on" onclick="scorersSetLeague('WC',this)">🌍 WC</button>
+      <button class="ltab" onclick="scorersSetLeague('PL',this)">🏴󠁧󠁢󠁥󠁮󠁧󠁿 PL</button>
       <button class="ltab" onclick="scorersSetLeague('PD',this)">🇪🇸 La Liga</button>
       <button class="ltab" onclick="scorersSetLeague('SA',this)">🇮🇹 Serie A</button>
       <button class="ltab" onclick="scorersSetLeague('CL',this)">🇪🇺 UCL</button>
-      <button class="ltab" onclick="scorersSetLeague('WC',this)">🌍 WC</button>
+      <button class="ltab" onclick="scorersSetLeague('BL1',this)">🇩🇪 Bundesliga</button>
+      <button class="ltab" onclick="scorersSetLeague('BSA',this)">🇧🇷 BSA</button>
     </div>
     <div id="scorers-body"><div class="loading-center"><div class="spin"></div></div></div>
   </section>
@@ -380,10 +387,12 @@ a{text-decoration:none;color:inherit}
       <div id="predict-score-badge" style="font-size:.6rem;color:var(--gold)"></div>
     </div>
     <div class="league-tabs">
-      <button class="ltab on" onclick="predictSetLeague('PL',this)">🏴󠁧󠁢󠁥󠁮󠁧󠁿 PL</button>
+      <button class="ltab on" onclick="predictSetLeague('WC',this)">🌍 WC</button>
+      <button class="ltab" onclick="predictSetLeague('PL',this)">🏴󠁧󠁢󠁥󠁮󠁧󠁿 PL</button>
       <button class="ltab" onclick="predictSetLeague('PD',this)">🇪🇸 La Liga</button>
       <button class="ltab" onclick="predictSetLeague('CL',this)">🇪🇺 UCL</button>
-      <button class="ltab" onclick="predictSetLeague('WC',this)">🌍 WC</button>
+      <button class="ltab" onclick="predictSetLeague('SA',this)">🇮🇹 Serie A</button>
+      <button class="ltab" onclick="predictSetLeague('BSA',this)">🇧🇷 BSA</button>
     </div>
     <div id="predict-body"><div class="loading-center"><div class="spin"></div></div></div>
   </section>
