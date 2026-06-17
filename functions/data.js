@@ -1,25 +1,6 @@
 /**
- * ================================================================
- * COPA.pi — /data Cloudflare Worker v3.0
- *
- * FREE SOURCES:
- * 1. football-data.org  → FD_API_KEY (in Cloudflare)
- * 2. TheSportsDB        → No key needed
- * 3. API-Football       → AF_API_KEY (free 100/day, optional)
- * 4. ESPN API           → No key needed (unofficial)
- * 5. Sofascore          → No key needed (unofficial)
- *
- * ENDPOINTS:
- * /data?type=fixtures&league=PL
- * /data?type=standings&league=PL
- * /data?type=scorers&league=PL
- * /data?type=lineup&match=ID
- * /data?type=analysis&match=ID
- * /data?type=h2h&home=A&away=B
- * /data?type=live
- * /data?type=player&id=ID
- * /data?type=leagues
- * ================================================================
+ * COPA.pi — /data v4.0
+ * Smart fixture loading with current date awareness
  */
 
 const CORS = {
@@ -28,172 +9,198 @@ const CORS = {
   'Access-Control-Allow-Headers': 'Content-Type',
 };
 
-const LEAGUES_FD = {
-  PL:'PL', PD:'PD', SA:'SA', BL1:'BL1', FL1:'FL1',
-  CL:'CL', WC:'WC', EC:'EC', EL:'EL', PPL:'PPL', DED:'DED',
-};
-
-const LEAGUES_AF = {
-  PL:39, PD:140, SA:135, BL1:78, FL1:61,
-  CL:2, WC:1, EL:3, PPL:94, DED:88, MLS:253,
+/* Season map - current active seasons */
+const SEASON = {
+  WC:  2026, CL:  2024, EL:  2024,
+  PL:  2025, PD:  2024, SA:  2024,
+  BL1: 2024, FL1: 2024, MLS: 2025,
+  PPL: 2024, DED: 2024,
 };
 
 const LEAGUES_ESPN = {
-  PL:'eng.1', PD:'esp.1', SA:'ita.1', BL1:'ger.1', FL1:'fra.1',
-  CL:'uefa.champions', EL:'uefa.europa', MLS:'usa.1',
+  PL:'eng.1', PD:'esp.1', SA:'ita.1', BL1:'ger.1',
+  FL1:'fra.1', CL:'uefa.champions', EL:'uefa.europa', MLS:'usa.1',
 };
 
-/* ── DATE HELPERS ── */
-function getDateRange(daysAhead) {
-  const now  = new Date();
-  const to   = new Date(now);
-  to.setDate(to.getDate() + daysAhead);
-  const fmt = d => d.toISOString().slice(0,10);
-  return { from: fmt(now), to: fmt(to) };
+function today()    { return new Date().toISOString().slice(0,10); }
+function dateAdd(n) {
+  const d = new Date();
+  d.setDate(d.getDate() + n);
+  return d.toISOString().slice(0,10);
 }
 
-/* ── API CALLERS ── */
 async function fdFetch(path, key) {
   if (!key) return null;
   try {
-    const res = await fetch('https://api.football-data.org/v4/' + path, {
+    const r = await fetch('https://api.football-data.org/v4/' + path, {
       headers: { 'X-Auth-Token': key },
       signal:  AbortSignal.timeout(9000),
     });
-    if (!res.ok) { console.warn('[Copa/FD]', res.status, path); return null; }
-    return await res.json();
-  } catch(e) { console.warn('[Copa/FD] error:', e.message); return null; }
-}
-
-async function tsdbFetch(path) {
-  try {
-    const res = await fetch('https://www.thesportsdb.com/api/v1/json/3/' + path, {
-      signal: AbortSignal.timeout(7000),
-    });
-    return res.ok ? await res.json() : null;
-  } catch(e) { return null; }
-}
-
-async function afFetch(path, key) {
-  if (!key) return null;
-  try {
-    const res = await fetch('https://v3.football.api-sports.io/' + path, {
-      headers: { 'x-apisports-key': key },
-      signal:  AbortSignal.timeout(8000),
-    });
-    return res.ok ? await res.json() : null;
-  } catch(e) { return null; }
+    if (!r.ok) { console.warn('[FD]', r.status, path.slice(0,60)); return null; }
+    return await r.json();
+  } catch(e) { console.warn('[FD] err:', e.message); return null; }
 }
 
 async function espnFetch(path) {
   try {
-    const res = await fetch(
-      'https://site.api.espn.com/apis/site/v2/sports/soccer/' + path,
-      { signal: AbortSignal.timeout(7000) }
-    );
-    return res.ok ? await res.json() : null;
+    const r = await fetch('https://site.api.espn.com/apis/site/v2/sports/soccer/' + path, {
+      signal: AbortSignal.timeout(7000),
+    });
+    return r.ok ? r.json() : null;
   } catch(e) { return null; }
 }
 
 async function sofaFetch(path) {
   try {
-    const res = await fetch('https://api.sofascore.com/api/v1/' + path, {
-      headers: { 'User-Agent': 'Mozilla/5.0 (Linux; Android 10) AppleWebKit/537.36' },
+    const r = await fetch('https://api.sofascore.com/api/v1/' + path, {
+      headers: {'User-Agent':'Mozilla/5.0'},
       signal:  AbortSignal.timeout(8000),
     });
-    return res.ok ? await res.json() : null;
+    return r.ok ? r.json() : null;
   } catch(e) { return null; }
 }
 
-/* ================================================================
-   FIXTURES — with current date range
-================================================================ */
-async function getFixtures(league, FD_KEY, AF_KEY) {
-  const fdLeague  = LEAGUES_FD[league]  || 'PL';
-  const { from, to } = getDateRange(14); /* today → +14 days */
-
-  /* Try football-data.org with date range */
-  const path = `competitions/${fdLeague}/matches`
-    + `?dateFrom=${from}&dateTo=${to}`
-    + `&status=SCHEDULED,LIVE,IN_PLAY,PAUSED,FINISHED`;
-
-  console.log('[Copa/FD] fixtures path:', path);
-  const fdData = await fdFetch(path, FD_KEY);
-
-  if (fdData?.matches?.length) {
-    return {
-      source:  'football-data.org',
-      league,
-      dateFrom: from,
-      dateTo:   to,
-      matches: fdData.matches.map(m => ({
-        id:        m.id,
-        homeTeam:  m.homeTeam?.name  || '',
-        awayTeam:  m.awayTeam?.name  || '',
-        homeCrest: m.homeTeam?.crest || '',
-        awayCrest: m.awayTeam?.crest || '',
-        status:    m.status,
-        score:     m.score,
-        utcDate:   m.utcDate,
-        matchday:  m.matchday,
-        stage:     m.stage,
-        group:     m.group,
-      })),
-    };
-  }
-
-  /* Fallback: ESPN with today's scoreboard */
-  const espnSlug = LEAGUES_ESPN[league] || 'eng.1';
-  const espnData = await espnFetch(`${espnSlug}/scoreboard`);
-
-  if (espnData?.events?.length) {
-    return {
-      source: 'ESPN',
-      league,
-      matches: espnData.events.map(e => {
-        const comp  = e.competitions?.[0];
-        const teams = comp?.competitors || [];
-        const home  = teams.find(t => t.homeAway === 'home') || teams[0] || {};
-        const away  = teams.find(t => t.homeAway === 'away') || teams[1] || {};
-        return {
-          id:        e.id,
-          homeTeam:  home.team?.displayName || '',
-          awayTeam:  away.team?.displayName || '',
-          homeCrest: home.team?.logo || '',
-          awayCrest: away.team?.logo || '',
-          status:    comp?.status?.type?.name || '',
-          score: {
-            fullTime: {
-              home: home.score !== undefined ? parseInt(home.score) : null,
-              away: away.score !== undefined ? parseInt(away.score) : null,
-            },
-          },
-          utcDate: e.date,
-        };
-      }),
-    };
-  }
-
-  return { source: 'none', matches: [], error: 'No data available' };
+/* Map FD match to standard format */
+function mapFDMatch(m) {
+  return {
+    id:        m.id,
+    homeTeam:  m.homeTeam?.shortName || m.homeTeam?.name || '',
+    awayTeam:  m.awayTeam?.shortName || m.awayTeam?.name || '',
+    homeFull:  m.homeTeam?.name || '',
+    awayFull:  m.awayTeam?.name || '',
+    homeCrest: m.homeTeam?.crest || '',
+    awayCrest: m.awayTeam?.crest || '',
+    status:    m.status,
+    homeScore: m.score?.fullTime?.home ?? m.score?.halfTime?.home ?? null,
+    awayScore: m.score?.fullTime?.away ?? m.score?.halfTime?.away ?? null,
+    utcDate:   m.utcDate,
+    matchday:  m.matchday,
+    stage:     m.stage,
+    group:     m.group,
+    minute:    m.minute || null,
+  };
 }
 
-/* ================================================================
-   STANDINGS
-================================================================ */
-async function getStandings(league, FD_KEY) {
-  const fdLeague = LEAGUES_FD[league] || 'PL';
-  const fdData   = await fdFetch(`competitions/${fdLeague}/standings`, FD_KEY);
+/* Group matches into sections */
+function groupMatches(matches) {
+  const now   = new Date();
+  const todayStr = now.toISOString().slice(0,10);
 
-  if (fdData?.standings?.length) {
-    const table = fdData.standings[0]?.table || [];
+  const live     = [];
+  const todayM   = [];
+  const upcoming = [];
+  const recent   = [];
+
+  matches.forEach(function(m) {
+    const s = m.status;
+    if (s === 'IN_PLAY' || s === 'PAUSED' || s === 'LIVE') {
+      live.push(m);
+    } else if (s === 'FINISHED' || s === 'FT') {
+      if (m.utcDate && m.utcDate.slice(0,10) >= dateAdd(-3)) {
+        recent.push(m);
+      }
+    } else {
+      const matchDate = m.utcDate ? m.utcDate.slice(0,10) : '';
+      if (matchDate === todayStr) {
+        todayM.push(m);
+      } else if (matchDate > todayStr) {
+        upcoming.push(m);
+      } else {
+        recent.push(m);
+      }
+    }
+  });
+
+  return { live, today: todayM, upcoming, recent };
+}
+
+/* ── FIXTURES ── */
+async function getFixtures(league, FD_KEY) {
+  const leagueMap = {
+    PL:'PL', PD:'PD', SA:'SA', BL1:'BL1', FL1:'FL1',
+    CL:'CL', WC:'WC', EC:'EC', EL:'EL', PPL:'PPL', DED:'DED',
+  };
+  const fdCode = leagueMap[league] || 'WC';
+
+  /* Wide date range: past 3 days + next 30 days */
+  const from = dateAdd(-3);
+  const to   = dateAdd(30);
+
+  console.log('[Copa] fixtures', league, 'from', from, 'to', to);
+
+  const fd = await fdFetch(
+    `competitions/${fdCode}/matches?dateFrom=${from}&dateTo=${to}`,
+    FD_KEY
+  );
+
+  if (fd?.matches?.length) {
+    const matches = fd.matches.map(mapFDMatch);
+    const groups  = groupMatches(matches);
+    return {
+      source:    'football-data.org',
+      league,
+      competition: fd.competition?.name || league,
+      dateFrom:  from,
+      dateTo:    to,
+      total:     matches.length,
+      groups,
+      matches,   /* full list for predict/other screens */
+    };
+  }
+
+  /* ESPN fallback */
+  const espnCode = LEAGUES_ESPN[league];
+  if (espnCode) {
+    const espn = await espnFetch(`${espnCode}/scoreboard`);
+    if (espn?.events?.length) {
+      const matches = espn.events.map(function(e) {
+        const comp = e.competitions?.[0];
+        const teams = comp?.competitors || [];
+        const h = teams.find(t=>t.homeAway==='home') || teams[0] || {};
+        const a = teams.find(t=>t.homeAway==='away') || teams[1] || {};
+        const st = comp?.status?.type?.name || '';
+        return {
+          id:        e.id,
+          homeTeam:  h.team?.shortDisplayName || h.team?.displayName || '',
+          awayTeam:  a.team?.shortDisplayName || a.team?.displayName || '',
+          homeFull:  h.team?.displayName || '',
+          awayFull:  a.team?.displayName || '',
+          homeCrest: h.team?.logo || '',
+          awayCrest: a.team?.logo || '',
+          status:    st,
+          homeScore: h.score !== undefined ? parseInt(h.score) : null,
+          awayScore: a.score !== undefined ? parseInt(a.score) : null,
+          utcDate:   e.date,
+          minute:    comp?.status?.displayClock || null,
+        };
+      });
+      const groups = groupMatches(matches);
+      return { source:'ESPN', league, groups, matches, total: matches.length };
+    }
+  }
+
+  return { source:'none', league, groups:{ live:[], today:[], upcoming:[], recent:[] }, matches:[], total:0 };
+}
+
+/* ── STANDINGS ── */
+async function getStandings(league, FD_KEY) {
+  const leagueMap = {
+    PL:'PL', PD:'PD', SA:'SA', BL1:'BL1', FL1:'FL1',
+    CL:'CL', WC:'WC', EL:'EL', PPL:'PPL', DED:'DED',
+  };
+  const fdCode = leagueMap[league] || 'WC';
+  const fd = await fdFetch(`competitions/${fdCode}/standings`, FD_KEY);
+
+  if (fd?.standings?.length) {
+    const table = fd.standings[0]?.table || [];
     return {
       source:      'football-data.org',
-      competition: fdData.competition?.name || league,
-      season:      fdData.season?.startDate?.slice(0,4),
+      competition: fd.competition?.name || league,
       standings: table.map(row => ({
         position:     row.position,
-        team:         row.team?.name   || '',
-        crest:        row.team?.crest  || '',
+        team:         row.team?.shortName || row.team?.name || '',
+        fullName:     row.team?.name || '',
+        crest:        row.team?.crest || '',
         played:       row.playedGames  || 0,
         won:          row.won          || 0,
         draw:         row.draw         || 0,
@@ -207,253 +214,131 @@ async function getStandings(league, FD_KEY) {
     };
   }
 
-  /* ESPN fallback */
-  const espnSlug = LEAGUES_ESPN[league] || 'eng.1';
-  const espnData = await espnFetch(`${espnSlug}/standings`);
-  if (espnData?.standings?.length) {
-    return {
-      source: 'ESPN',
-      standings: (espnData.standings[0]?.entries || []).map((e, i) => ({
-        position:     i + 1,
-        team:         e.team?.displayName       || '',
-        crest:        e.team?.logos?.[0]?.href  || '',
-        played:       e.stats?.find(s=>s.name==='gamesPlayed')?.value   || 0,
-        won:          e.stats?.find(s=>s.name==='wins')?.value           || 0,
-        draw:         e.stats?.find(s=>s.name==='ties')?.value           || 0,
-        lost:         e.stats?.find(s=>s.name==='losses')?.value         || 0,
-        goalsFor:     e.stats?.find(s=>s.name==='pointsFor')?.value      || 0,
-        goalsAgainst: e.stats?.find(s=>s.name==='pointsAgainst')?.value  || 0,
-        goalDiff:     e.stats?.find(s=>s.name==='pointDifferential')?.value || 0,
-        points:       e.stats?.find(s=>s.name==='points')?.value         || 0,
-        form:         '',
-      })),
-    };
-  }
-
-  return { source: 'none', standings: [] };
-}
-
-/* ================================================================
-   TOP SCORERS
-================================================================ */
-async function getScorers(league, FD_KEY) {
-  const fdLeague = LEAGUES_FD[league] || 'PL';
-  const fdData   = await fdFetch(`competitions/${fdLeague}/scorers?limit=20`, FD_KEY);
-  if (fdData?.scorers?.length) {
-    return {
-      source:  'football-data.org',
-      scorers: fdData.scorers.map(s => ({
-        name:    s.player?.name || '',
-        team:    s.team?.name   || '',
-        crest:   s.team?.crest  || '',
-        goals:   s.goals        || 0,
-        assists: s.assists       || 0,
-        played:  s.playedMatches || 0,
-        penalty: s.penalties     || 0,
-      })),
-    };
-  }
-  return { source: 'none', scorers: [] };
-}
-
-/* ================================================================
-   LINEUP — TheSportsDB → API-Football → Sofascore
-================================================================ */
-async function getLineup(matchId, AF_KEY) {
-  /* TheSportsDB (free, unlimited) */
-  const tsdb = await tsdbFetch(`lookuplineupsbyevent.php?id=${matchId}`);
-  if (tsdb?.lineup?.length) {
-    const home = tsdb.lineup.filter(p => p.strHome === 'Home');
-    const away = tsdb.lineup.filter(p => p.strHome === 'Away');
-    return {
-      source: 'TheSportsDB',
-      home: { formation: tsdb.lineup[0]?.strFormation || '',
-        players: home.map(p => ({ name:p.strPlayer, number:p.intSquadNumber, position:p.strPosition })) },
-      away: { formation: tsdb.lineup.find(p=>p.strHome==='Away')?.strFormation || '',
-        players: away.map(p => ({ name:p.strPlayer, number:p.intSquadNumber, position:p.strPosition })) },
-    };
-  }
-  /* API-Football */
-  if (AF_KEY) {
-    const af = await afFetch(`fixtures/lineups?fixture=${matchId}`, AF_KEY);
-    if (af?.response?.length) {
-      const [h, a] = af.response;
-      const mp = p => ({ name:p.player?.name||'', number:p.player?.number||'', position:p.player?.pos||'' });
+  const espnCode = LEAGUES_ESPN[league];
+  if (espnCode) {
+    const espn = await espnFetch(`${espnCode}/standings`);
+    if (espn?.standings?.length) {
       return {
-        source: 'API-Football',
-        home: { team:h.team?.name, formation:h.formation, players:(h.startXI||[]).map(p=>mp(p)), subs:(h.substitutes||[]).map(p=>mp(p)) },
-        away: { team:a.team?.name, formation:a.formation, players:(a.startXI||[]).map(p=>mp(p)), subs:(a.substitutes||[]).map(p=>mp(p)) },
-      };
-    }
-  }
-  /* Sofascore */
-  const sofa = await sofaFetch(`event/${matchId}/lineups`);
-  if (sofa?.home) {
-    const ms = players => (players||[]).map(p => ({ name:p.player?.name||'', number:p.jerseyNumber||'', position:p.position||'' }));
-    return {
-      source: 'Sofascore',
-      home: { formation:sofa.home.formation, players:ms(sofa.home.players) },
-      away: { formation:sofa.away.formation, players:ms(sofa.away.players) },
-    };
-  }
-  return { source: 'none', home:{ players:[] }, away:{ players:[] } };
-}
-
-/* ================================================================
-   MATCH ANALYSIS
-================================================================ */
-async function getAnalysis(matchId, AF_KEY) {
-  const results = {};
-  if (AF_KEY) {
-    const [statsData, eventsData] = await Promise.allSettled([
-      afFetch(`fixtures/statistics?fixture=${matchId}`, AF_KEY),
-      afFetch(`fixtures/events?fixture=${matchId}`, AF_KEY),
-    ]);
-    if (statsData.status==='fulfilled' && statsData.value?.response?.length) {
-      results.stats = statsData.value.response.map(t => ({
-        team:  t.team?.name,
-        stats: (t.statistics||[]).map(s => ({ type:s.type, value:s.value })),
-      }));
-    }
-    if (eventsData.status==='fulfilled' && eventsData.value?.response?.length) {
-      results.events = eventsData.value.response.map(e => ({
-        time:   e.time?.elapsed,
-        team:   e.team?.name,
-        player: e.player?.name,
-        assist: e.assist?.name,
-        type:   e.type,
-        detail: e.detail,
-      }));
-    }
-  }
-  if (!results.events) {
-    const sofa = await sofaFetch(`event/${matchId}/incidents`);
-    if (sofa?.incidents) {
-      results.events = sofa.incidents
-        .filter(i => ['goal','card','substitution'].includes(i.incidentType))
-        .map(i => ({ time:i.time, type:i.incidentType, player:i.player?.name||'', team:i.isHome?'home':'away', detail:i.incidentClass||'' }));
-    }
-  }
-  return { source: 'API-Football + Sofascore', ...results };
-}
-
-/* ================================================================
-   HEAD TO HEAD
-================================================================ */
-async function getH2H(home, away, AF_KEY) {
-  if (AF_KEY) {
-    const af = await afFetch(`fixtures/headtohead?h2h=${home}-${away}&last=10`, AF_KEY);
-    if (af?.response?.length) {
-      return {
-        source: 'API-Football',
-        matches: af.response.map(m => ({
-          date:   m.fixture?.date,
-          home:   m.teams?.home?.name,
-          away:   m.teams?.away?.name,
-          scoreH: m.goals?.home,
-          scoreA: m.goals?.away,
-          league: m.league?.name,
-          result: m.goals?.home > m.goals?.away ? 'home' : m.goals?.away > m.goals?.home ? 'away' : 'draw',
+        source: 'ESPN',
+        standings: (espn.standings[0]?.entries || []).map((e,i) => ({
+          position:     i+1,
+          team:         e.team?.shortDisplayName || e.team?.displayName || '',
+          fullName:     e.team?.displayName || '',
+          crest:        e.team?.logos?.[0]?.href || '',
+          played:       e.stats?.find(s=>s.name==='gamesPlayed')?.value    || 0,
+          won:          e.stats?.find(s=>s.name==='wins')?.value            || 0,
+          draw:         e.stats?.find(s=>s.name==='ties')?.value            || 0,
+          lost:         e.stats?.find(s=>s.name==='losses')?.value          || 0,
+          goalsFor:     e.stats?.find(s=>s.name==='pointsFor')?.value       || 0,
+          goalsAgainst: e.stats?.find(s=>s.name==='pointsAgainst')?.value   || 0,
+          goalDiff:     e.stats?.find(s=>s.name==='pointDifferential')?.value || 0,
+          points:       e.stats?.find(s=>s.name==='points')?.value          || 0,
+          form: '',
         })),
       };
     }
   }
-  return { source: 'none', matches: [] };
+
+  return { source:'none', standings:[] };
 }
 
-/* ================================================================
-   LIVE
-================================================================ */
-async function getLive(FD_KEY) {
-  const fdData = await fdFetch('matches?status=LIVE,IN_PLAY,PAUSED', FD_KEY);
-  if (fdData?.matches?.length) {
+/* ── SCORERS ── */
+async function getScorers(league, FD_KEY) {
+  const leagueMap = { PL:'PL', PD:'PD', SA:'SA', BL1:'BL1', FL1:'FL1', CL:'CL', WC:'WC' };
+  const fdCode = leagueMap[league] || 'WC';
+  const fd = await fdFetch(`competitions/${fdCode}/scorers?limit=20`, FD_KEY);
+  if (fd?.scorers?.length) {
     return {
       source: 'football-data.org',
-      live:   true,
-      count:  fdData.matches.length,
-      matches: fdData.matches.map(m => ({
-        id:        m.id,
-        homeTeam:  m.homeTeam?.name  || '',
-        awayTeam:  m.awayTeam?.name  || '',
-        homeCrest: m.homeTeam?.crest || '',
-        awayCrest: m.awayTeam?.crest || '',
-        homeScore: m.score?.fullTime?.home ?? m.score?.halfTime?.home ?? null,
-        awayScore: m.score?.fullTime?.away ?? m.score?.halfTime?.away ?? null,
-        minute:    m.minute || null,
-        status:    m.status,
-        league:    m.competition?.name,
+      scorers: fd.scorers.map(s => ({
+        name:    s.player?.name || '',
+        team:    s.team?.shortName || s.team?.name || '',
+        crest:   s.team?.crest || '',
+        goals:   s.goals     || 0,
+        assists: s.assists    || 0,
+        played:  s.playedMatches || 0,
       })),
     };
   }
-  return { source: 'none', live: false, matches: [] };
+  return { source:'none', scorers:[] };
 }
 
-/* ================================================================
-   LEAGUES LIST
-================================================================ */
+/* ── LINEUP ── */
+async function getLineup(matchId) {
+  const sofa = await sofaFetch(`event/${matchId}/lineups`);
+  if (sofa?.home) {
+    const mp = arr => (arr||[]).map(p => ({
+      name:     p.player?.name || p.player?.shortName || '',
+      number:   p.jerseyNumber || '',
+      position: p.position || '',
+      rating:   p.statistics?.rating || null,
+    }));
+    return {
+      source: 'Sofascore',
+      home: { team: sofa.home.teamColors, formation: sofa.home.formation, players: mp(sofa.home.players) },
+      away: { team: sofa.away.teamColors, formation: sofa.away.formation, players: mp(sofa.away.players) },
+    };
+  }
+  return { source:'none', home:{players:[]}, away:{players:[]} };
+}
+
+/* ── LIVE ── */
+async function getLive(FD_KEY) {
+  const fd = await fdFetch('matches?status=LIVE,IN_PLAY,PAUSED', FD_KEY);
+  if (fd?.matches?.length) {
+    return {
+      source: 'football-data.org',
+      live:   true,
+      count:  fd.matches.length,
+      matches: fd.matches.map(mapFDMatch),
+    };
+  }
+  return { source:'none', live:false, matches:[] };
+}
+
+/* ── LEAGUES ── */
 function getLeagues() {
-  return {
-    source: 'static',
-    leagues: [
-      { code:'PL',  name:'Premier League',   flag:'🏴󠁧󠁢󠁥󠁮󠁧󠁿', country:'England' },
-      { code:'PD',  name:'La Liga',           flag:'🇪🇸', country:'Spain' },
-      { code:'SA',  name:'Serie A',           flag:'🇮🇹', country:'Italy' },
-      { code:'BL1', name:'Bundesliga',        flag:'🇩🇪', country:'Germany' },
-      { code:'FL1', name:'Ligue 1',           flag:'🇫🇷', country:'France' },
-      { code:'CL',  name:'Champions League',  flag:'🇪🇺', country:'Europe' },
-      { code:'EL',  name:'Europa League',     flag:'🇪🇺', country:'Europe' },
-      { code:'WC',  name:'World Cup 2026',    flag:'🌍', country:'World' },
-      { code:'PPL', name:'Primeira Liga',     flag:'🇵🇹', country:'Portugal' },
-      { code:'DED', name:'Eredivisie',        flag:'🇳🇱', country:'Netherlands' },
-      { code:'MLS', name:'MLS',               flag:'🇺🇸', country:'USA' },
-    ],
-  };
+  return { source:'static', leagues:[
+    { code:'WC',  name:'World Cup 2026',   flag:'🌍', country:'World', active:true },
+    { code:'PL',  name:'Premier League',   flag:'🏴󠁧󠁢󠁥󠁮󠁧󠁿', country:'England' },
+    { code:'PD',  name:'La Liga',           flag:'🇪🇸', country:'Spain' },
+    { code:'SA',  name:'Serie A',           flag:'🇮🇹', country:'Italy' },
+    { code:'BL1', name:'Bundesliga',        flag:'🇩🇪', country:'Germany' },
+    { code:'FL1', name:'Ligue 1',           flag:'🇫🇷', country:'France' },
+    { code:'CL',  name:'Champions League',  flag:'🇪🇺', country:'Europe' },
+    { code:'EL',  name:'Europa League',     flag:'🇪🇺', country:'Europe' },
+    { code:'MLS', name:'MLS',               flag:'🇺🇸', country:'USA' },
+  ]};
 }
 
-/* ================================================================
-   MAIN HANDLER
-================================================================ */
+/* ── MAIN ── */
 export async function onRequestGet(context) {
-  const url      = new URL(context.request.url);
-  const type     = url.searchParams.get('type')   || 'health';
-  const league   = url.searchParams.get('league') || 'PL';
-  const matchId  = url.searchParams.get('match')  || '';
-  const home     = url.searchParams.get('home')   || '';
-  const away     = url.searchParams.get('away')   || '';
-  const playerId = url.searchParams.get('id')     || '';
+  const url   = new URL(context.request.url);
+  const type  = url.searchParams.get('type')   || 'health';
+  const league= url.searchParams.get('league') || 'WC';
+  const match = url.searchParams.get('match')  || '';
+  const home  = url.searchParams.get('home')   || '';
+  const away  = url.searchParams.get('away')   || '';
 
   const FD_KEY = context.env.FD_API_KEY || null;
   const AF_KEY = context.env.AF_API_KEY  || null;
 
-  console.log(`[Copa/data] type=${type} league=${league} match=${matchId}`);
+  console.log(`[Copa] type=${type} league=${league}`);
 
   let data;
   switch(type) {
-    case 'fixtures':  data = await getFixtures(league, FD_KEY, AF_KEY);     break;
-    case 'standings': data = await getStandings(league, FD_KEY);            break;
-    case 'scorers':   data = await getScorers(league, FD_KEY);              break;
-    case 'lineup':    data = await getLineup(matchId, AF_KEY);              break;
-    case 'analysis':  data = await getAnalysis(matchId, AF_KEY);            break;
-    case 'h2h':       data = await getH2H(home, away, AF_KEY);              break;
-    case 'live':      data = await getLive(FD_KEY);                         break;
-    case 'leagues':   data = getLeagues();                                   break;
+    case 'fixtures':  data = await getFixtures(league, FD_KEY); break;
+    case 'standings': data = await getStandings(league, FD_KEY); break;
+    case 'scorers':   data = await getScorers(league, FD_KEY); break;
+    case 'lineup':    data = await getLineup(match); break;
+    case 'live':      data = await getLive(FD_KEY); break;
+    case 'leagues':   data = getLeagues(); break;
     default:
       data = {
-        status:  'ok',
-        app:     'Copa.pi',
-        version: '3.0',
-        date:    new Date().toISOString(),
-        sources: { 'football-data.org':!!FD_KEY, 'api-football':!!AF_KEY, 'thesportsdb':true, 'espn':true, 'sofascore':true },
-        endpoints: [
-          '/data?type=fixtures&league=PL  ← current fixtures (today +14 days)',
-          '/data?type=standings&league=PL',
-          '/data?type=scorers&league=PL',
-          '/data?type=lineup&match=ID',
-          '/data?type=analysis&match=ID',
-          '/data?type=h2h&home=A&away=B',
-          '/data?type=live',
-          '/data?type=leagues',
-        ],
+        status:'ok', app:'Copa.pi', version:'4.0',
+        now: new Date().toISOString(),
+        fd_key: !!FD_KEY,
+        default_league: 'WC (World Cup 2026 - active)',
       };
   }
 
