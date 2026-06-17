@@ -1034,154 +1034,12 @@ function onIncompletePayment(payment) {
 }
 
 /* ── COPA PASS — EXACT WORLDCUP buyPrem PATTERN ── */
-function buyCopaPass() {
-  if (isCopaPass) { toast('🏆 Copa Pass already active!'); return; }
 
-  var btn = document.getElementById('copa-pass-btn');
-  if (btn) { btn.textContent = 'Processing...'; btn.disabled = true; }
-
-  if (typeof Pi === 'undefined') {
-    toast('Open in Pi Browser');
-    if (btn) { btn.textContent = 'Get Copa Pass — 1π'; btn.disabled = false; }
-    return;
-  }
-
-  Pi.createPayment({
-    amount:   1,
-    memo:     'Copa Pass — copa.pi Premium',
-    metadata: { type: 'copa_pass', app: 'copa.pi', network: 'mainnet' }
-  }, {
-    onReadyForServerApproval: function(paymentId) {
-      console.log('[Copa] Pass approve:', paymentId);
-      showPaymentStatus('approving');
-      return fetch(_APPROVE, {
-        method:  'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body:    JSON.stringify({ paymentId: paymentId, expectedAmount: 1 })
-      })
-      .then(function(r) {
-        console.log('[Copa] Pass approve status:', r.status);
-        return r.json();
-      })
-      .then(function(d) {
-        console.log('[Copa] Pass approve response:', JSON.stringify(d));
-      });
-    },
-    onReadyForServerCompletion: function(paymentId, txid) {
-      console.log('[Copa] Pass complete:', paymentId, txid);
-      showPaymentStatus('completing');
-      return fetch(_COMPLETE, {
-        method:  'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body:    JSON.stringify({ paymentId: paymentId, txid: txid })
-      })
-      .then(function(r) {
-        console.log('[Copa] Pass complete status:', r.status);
-        return r.json();
-      })
-      .then(function(d) {
-        console.log('[Copa] Pass complete response:', JSON.stringify(d));
-        isCopaPass = true;
-        localStorage.setItem('copa_pass', '1');
-        addTx('Copa Pass 1π txid:' + txid.slice(0,12) + '...');
-        showPaymentStatus('success', 'Copa Pass activated!');
-        renderCopaPassStatus();
-        toast('🏆 Copa Pass activated!');
-      })
-      .catch(function(err) {
-        console.error('[Copa] Pass complete error:', err);
-        showPaymentStatus('failed', 'Error — try again');
-        if (btn) { btn.textContent = 'Get Copa Pass — 1π'; btn.disabled = false; }
-      });
-    },
-    onCancel: function() {
-      if (btn) { btn.textContent = 'Get Copa Pass — 1π'; btn.disabled = false; }
-      showPaymentStatus('cancelled');
-      toast('Payment cancelled');
-    },
-    onError: function(err) {
-      console.error('[Copa] Pass error:', err);
-      if (btn) { btn.textContent = 'Get Copa Pass — 1π'; btn.disabled = false; }
-      showPaymentStatus('failed', 'Payment error — try again');
-      toast('Payment error — try again');
-    }
-  });
-}
 
 /* ── SEND PI — EXACT WORLDCUP _doSendPi PATTERN ── */
-function sendPi() {
-  var to   = (document.getElementById('copa-send-to')   || {}).value || '';
-  var amt  = parseFloat((document.getElementById('copa-send-amt')  || {}).value) || 0;
-  var memo = (document.getElementById('copa-send-memo') || {}).value || 'Copa fan tip';
-  _doSendPi(to, amt, memo);
-}
 
-function _doSendPi(to, amt, memo) {
-  if (!to.trim())      { toast('Enter recipient username'); return; }
-  if (!amt || amt <= 0){ toast('Enter valid amount'); return; }
-  if (typeof Pi === 'undefined') { toast('Open in Pi Browser'); return; }
 
-  Pi.createPayment({
-    amount:   amt,
-    memo:     memo || 'Copa.pi fan tip',
-    metadata: { type: 'send', app: 'copa.pi', network: 'mainnet' }
-  }, {
-    onReadyForServerApproval: function(paymentId) {
-      console.log('[Copa] Send approve:', paymentId);
-      showPaymentStatus('approving');
-      return fetch(_APPROVE, {
-        method:  'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body:    JSON.stringify({ paymentId: paymentId })
-      })
-      .then(function(r) {
-        console.log('[Copa] Send approve status:', r.status);
-        return r.json();
-      })
-      .then(function(d) {
-        console.log('[Copa] Send approve response:', JSON.stringify(d));
-      });
-    },
-    onReadyForServerCompletion: function(paymentId, txid) {
-      console.log('[Copa] Send complete:', paymentId, txid);
-      showPaymentStatus('completing');
-      return fetch(_COMPLETE, {
-        method:  'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body:    JSON.stringify({ paymentId: paymentId, txid: txid })
-      })
-      .then(function(r) {
-        console.log('[Copa] Send complete status:', r.status);
-        return r.json();
-      })
-      .then(function(d) {
-        console.log('[Copa] Send complete response:', JSON.stringify(d));
-        addTx(amt + 'π sent to @' + to + ' txid:' + txid.slice(0,8) + '...');
-        showPaymentStatus('success', amt + 'π sent to @' + to + '!');
-        toast(amt + 'π sent!');
-        /* Clear inputs */
-        var tEl = document.getElementById('copa-send-to');
-        var aEl = document.getElementById('copa-send-amt');
-        if (tEl) tEl.value = '';
-        if (aEl) aEl.value = '0.1';
-      })
-      .catch(function(err) {
-        console.error('[Copa] Send error:', err);
-        addTx(amt + 'π sent to @' + to);
-        toast('Sent!');
-      });
-    },
-    onCancel: function() {
-      showPaymentStatus('cancelled');
-      toast('Payment cancelled');
-    },
-    onError: function(err) {
-      console.error('[Copa] Send error:', err);
-      showPaymentStatus('failed', 'Payment error — try again');
-      toast('Payment error — try again');
-    }
-  });
-}
+
 
 /* ── REQUEST PI — receive button ── */
 function requestPi() {
@@ -1395,6 +1253,152 @@ function goS(id, btn) {
 window.addEventListener('load', function() {
   piLogin();
 });
+
+
+/* ================================================================
+   COPA.pi PAYMENTS — PROVEN WORLDCUP PATTERN
+   MAINNET · sandbox:false
+   
+   KEY RULES:
+   1. onReadyForServerApproval: return fetch().then(r=>r.json()).then(d=>log)
+      NO .catch() inside approval — Pi SDK handles errors
+   2. onReadyForServerCompletion: return fetch().then().then(d=>{unlock}).catch()
+   3. onCancel: function()  — NOT async function()
+   4. onError: function(err)
+================================================================ */
+
+function buyCopaPass() {
+  if (isCopaPass) { toast('Copa Pass already active!'); return; }
+
+  var btn = document.getElementById('copa-pass-btn');
+  if (btn) { btn.textContent = 'Processing...'; btn.disabled = true; }
+
+  if (typeof Pi === 'undefined') {
+    toast('Open in Pi Browser');
+    if (btn) { btn.textContent = 'Get Copa Pass - 1Pi'; btn.disabled = false; }
+    return;
+  }
+
+  Pi.createPayment({
+    amount:   1,
+    memo:     'Copa Pass - copa.pi Premium',
+    metadata: { type: 'copa_pass', app: 'copa.pi', network: 'mainnet' }
+  }, {
+    onReadyForServerApproval: function(paymentId) {
+      console.log('[Copa] Approving payment:', paymentId);
+      return fetch(_APPROVE, {
+        method:  'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body:    JSON.stringify({ paymentId: paymentId, expectedAmount: 1 })
+      }).then(function(r) {
+        console.log('[Copa] Approve status:', r.status);
+        return r.json();
+      }).then(function(d) {
+        console.log('[Copa] Approve response:', JSON.stringify(d));
+      });
+    },
+    onReadyForServerCompletion: function(paymentId, txid) {
+      console.log('[Copa] Completing payment:', paymentId, txid);
+      return fetch(_COMPLETE, {
+        method:  'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body:    JSON.stringify({ paymentId: paymentId, txid: txid })
+      }).then(function(r) {
+        console.log('[Copa] Complete status:', r.status);
+        return r.json();
+      }).then(function(d) {
+        console.log('[Copa] Complete response:', JSON.stringify(d));
+        isCopaPass = true;
+        localStorage.setItem('copa_pass', '1');
+        addTx('Copa Pass 1Pi txid:' + txid.slice(0,12) + '...');
+        showPaymentStatus('success', 'Copa Pass activated!');
+        renderCopaPassStatus();
+        toast('Copa Pass activated!');
+      }).catch(function(err) {
+        console.error('[Copa] Complete error:', err);
+        showPaymentStatus('failed', 'Error - try again');
+        if (btn) { btn.textContent = 'Get Copa Pass - 1Pi'; btn.disabled = false; }
+      });
+    },
+    onCancel: function() {
+      if (btn) { btn.textContent = 'Get Copa Pass - 1Pi'; btn.disabled = false; }
+      showPaymentStatus('cancelled');
+      toast('Payment cancelled');
+    },
+    onError: function(err) {
+      console.error('[Copa] Payment error:', err);
+      if (btn) { btn.textContent = 'Get Copa Pass - 1Pi'; btn.disabled = false; }
+      showPaymentStatus('failed', 'Payment error - try again');
+      toast('Payment error - try again');
+    }
+  });
+}
+
+function sendPi() {
+  var to   = (document.getElementById('copa-send-to')   || {}).value || '';
+  var amt  = parseFloat((document.getElementById('copa-send-amt')  || {}).value) || 0;
+  var memo = (document.getElementById('copa-send-memo') || {}).value || 'Copa fan tip';
+  _doSendPi(to, amt, memo);
+}
+
+function _doSendPi(to, amt, memo) {
+  if (!to.trim())      { toast('Enter recipient username'); return; }
+  if (!amt || amt <= 0){ toast('Enter valid amount'); return; }
+  if (typeof Pi === 'undefined') { toast('Open in Pi Browser'); return; }
+
+  Pi.createPayment({
+    amount:   amt,
+    memo:     memo || 'Copa.pi fan tip',
+    metadata: { type: 'send', app: 'copa.pi', network: 'mainnet' }
+  }, {
+    onReadyForServerApproval: function(paymentId) {
+      console.log('[Copa] Send approve:', paymentId);
+      return fetch(_APPROVE, {
+        method:  'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body:    JSON.stringify({ paymentId: paymentId })
+      }).then(function(r) {
+        console.log('[Copa] Send approve status:', r.status);
+        return r.json();
+      }).then(function(d) {
+        console.log('[Copa] Send approve response:', JSON.stringify(d));
+      });
+    },
+    onReadyForServerCompletion: function(paymentId, txid) {
+      console.log('[Copa] Send complete:', paymentId, txid);
+      return fetch(_COMPLETE, {
+        method:  'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body:    JSON.stringify({ paymentId: paymentId, txid: txid })
+      }).then(function(r) {
+        console.log('[Copa] Send complete status:', r.status);
+        return r.json();
+      }).then(function(d) {
+        console.log('[Copa] Send complete response:', JSON.stringify(d));
+        addTx(amt + 'Pi sent to @' + to + ' txid:' + txid.slice(0,8) + '...');
+        showPaymentStatus('success', amt + 'Pi sent!');
+        toast(amt + 'Pi sent!');
+        var tEl = document.getElementById('copa-send-to');
+        var aEl = document.getElementById('copa-send-amt');
+        if (tEl) tEl.value = '';
+        if (aEl) aEl.value = '0.1';
+      }).catch(function(err) {
+        console.error('[Copa] Send complete error:', err);
+        addTx(amt + 'Pi sent to @' + to);
+        toast('Sent!');
+      });
+    },
+    onCancel: function() {
+      showPaymentStatus('cancelled');
+      toast('Payment cancelled');
+    },
+    onError: function(err) {
+      console.error('[Copa] Send error:', err);
+      showPaymentStatus('failed', 'Payment error - try again');
+      toast('Payment error - try again');
+    }
+  });
+}
 </script>
 </body>
 </html>
