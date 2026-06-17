@@ -1,509 +1,1310 @@
 <!DOCTYPE html>
-<html lang="en" dir="ltr">
+<html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no">
-<meta name="theme-color" content="#04060E">
-<meta name="description" content="Copa — Global Football Super App powered by Pi Network. Live scores, predictions, fantasy, statistics, community.">
-<meta http-equiv="X-Frame-Options" content="ALLOWALL">
-<meta http-equiv="Content-Security-Policy" content="frame-ancestors *; default-src * 'unsafe-inline' 'unsafe-eval' data: blob:; script-src * 'unsafe-inline' 'unsafe-eval'; connect-src *;">
-<meta name="pi-app-id" content="copa_pi">
-<meta name="mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-title" content="Copa">
-<title>Copa — Global Football Super App</title>
-
-<!-- Pi SDK — loads in head per Pi Core Team requirement -->
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1">
+<meta name="theme-color" content="#00061a">
+<title>Copa — copa.pi — Football Super App on Pi</title>
 <script src="https://sdk.minepi.com/pi-sdk.js"></script>
+<style>
+/* ── TOKENS ── */
+:root{
+  --bg1:#00061a; --bg2:#000d2e; --bg3:#001040;
+  --t1:#fff; --t2:rgba(255,255,255,.75); --t3:rgba(255,255,255,.4);
+  --c1:#00d4ff; --c2:#7c3aed; --gold:#ffd700;
+  --grn:#22c55e; --red:#ef4444; --bd:rgba(255,255,255,.08);
+  --df:'Inter',sans-serif; --dm:'DM Sans',sans-serif;
+  --nav-h:64px;
+}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+html,body{height:100%;background:var(--bg1);color:var(--t1);font-family:var(--dm)}
+button{background:none;border:none;cursor:pointer;font-family:inherit}
+a{text-decoration:none;color:inherit}
 
-<script src="https://cdn.jsdelivr.net/npm/qrcode/build/qrcode.min.js"></script>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
-<link rel="manifest" href="/manifest.json">
-<link rel="stylesheet" href="style.css">
+/* ── LAYOUT ── */
+#app{height:100vh;display:flex;flex-direction:column;overflow:hidden}
+#main{flex:1;overflow-y:auto;overflow-x:hidden;-webkit-overflow-scrolling:touch;
+  padding-bottom:var(--nav-h)}
+
+/* ── SCREENS ── */
+.scr{display:none;min-height:100%;animation:fadeIn .18s ease}
+.scr.on{display:block}
+@keyframes fadeIn{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:none}}
+
+/* ── SPLASH ── */
+#splash{position:fixed;inset:0;background:var(--bg1);z-index:999;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1rem}
+#splash .logo{font-size:4rem}
+#splash .app-name{font-family:var(--df);font-size:2rem;color:var(--gold);letter-spacing:.08em}
+#splash .tagline{font-size:.65rem;color:var(--t3);letter-spacing:.12em}
+#splash .pi-badge{background:var(--c1);color:#000;font-size:.52rem;font-weight:700;
+  padding:.25rem .75rem;border-radius:99px;letter-spacing:.06em}
+.spin{width:32px;height:32px;border:3px solid rgba(255,255,255,.1);
+  border-top-color:var(--c1);border-radius:50%;animation:spin 1s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+/* ── HEADER ── */
+.scr-hdr{display:flex;align-items:center;justify-content:space-between;
+  padding:.65rem .85rem;background:rgba(0,6,26,.95);border-bottom:1px solid var(--bd);
+  position:sticky;top:0;z-index:10;backdrop-filter:blur(10px)}
+.scr-hdr-title{font-family:var(--df);font-size:1.1rem;color:var(--gold);letter-spacing:.06em}
+.scr-hdr-sub{font-size:.48rem;color:var(--t3);margin-top:.1rem}
+
+/* ── BOTTOM NAV ── */
+#bnav{position:fixed;bottom:0;left:0;right:0;height:var(--nav-h);
+  background:rgba(0,6,26,.97);border-top:1px solid var(--bd);
+  display:flex;align-items:center;justify-content:space-around;
+  z-index:50;backdrop-filter:blur(12px)}
+.nav-btn{display:flex;flex-direction:column;align-items:center;gap:.1rem;
+  padding:.4rem .5rem;color:var(--t3);transition:color .15s;flex:1}
+.nav-btn.on{color:var(--c1)}
+.nav-btn .nav-icon{font-size:1.25rem}
+.nav-btn .nav-lbl{font-size:.42rem;letter-spacing:.04em}
+
+/* ── TOAST ── */
+#toast{position:fixed;bottom:calc(var(--nav-h)+12px);left:50%;transform:translateX(-50%) translateY(20px);
+  background:rgba(30,40,70,.95);color:#fff;font-size:.58rem;padding:.45rem 1rem;
+  border-radius:99px;opacity:0;transition:all .25s;pointer-events:none;z-index:999;
+  white-space:nowrap;backdrop-filter:blur(10px);border:1px solid rgba(255,255,255,.1)}
+#toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+
+/* ── LEAGUE TABS ── */
+.league-tabs{display:flex;gap:.35rem;overflow-x:auto;padding:.5rem .85rem;
+  scrollbar-width:none;border-bottom:1px solid var(--bd)}
+.league-tabs::-webkit-scrollbar{display:none}
+.ltab{flex-shrink:0;font-size:.52rem;padding:.28rem .7rem;
+  background:rgba(255,255,255,.06);border:1px solid var(--bd);
+  border-radius:99px;color:var(--t3);white-space:nowrap;transition:all .15s}
+.ltab.on{background:var(--c1);border-color:var(--c1);color:#000;font-weight:700}
+.ltab:active{transform:scale(.95)}
+
+/* ── MATCH CARDS ── */
+.match-card{background:var(--bg2);border-radius:12px;margin:.4rem .85rem;
+  padding:.65rem;border:1px solid var(--bd);cursor:pointer;transition:border-color .15s}
+.match-card:active{border-color:var(--c1)}
+.match-meta{display:flex;align-items:center;justify-content:space-between;
+  font-size:.42rem;color:var(--t3);margin-bottom:.5rem}
+.match-live-badge{background:var(--red);color:#fff;font-size:.4rem;font-weight:700;
+  padding:.1rem .35rem;border-radius:4px;letter-spacing:.04em}
+.match-body{display:grid;grid-template-columns:1fr auto 1fr;align-items:center;gap:.4rem}
+.match-team{display:flex;flex-direction:column;align-items:center;gap:.2rem}
+.match-crest{width:32px;height:32px;object-fit:contain}
+.match-name{font-size:.52rem;text-align:center;line-height:1.2}
+.match-score{font-family:var(--df);font-size:1.4rem;color:var(--gold);text-align:center;min-width:60px}
+.match-vs{font-size:.75rem;color:var(--t3);text-align:center;min-width:60px}
+.match-time{font-size:.65rem;color:var(--t2);text-align:center}
+
+/* ── TABLE ── */
+.table-wrap{overflow-x:auto;padding:0 .85rem}
+.standings-table{width:100%;border-collapse:collapse;font-size:.52rem}
+.standings-table th{color:var(--t3);font-weight:600;padding:.35rem .3rem;
+  text-align:left;border-bottom:1px solid var(--bd)}
+.standings-table td{padding:.4rem .3rem;border-bottom:1px solid rgba(255,255,255,.04)}
+.standings-table tr:hover td{background:rgba(255,255,255,.03)}
+.pos-num{color:var(--gold);font-weight:700;width:24px}
+.team-cell{display:flex;align-items:center;gap:.4rem}
+.team-crest-sm{width:18px;height:18px;object-fit:contain}
+.pts-cell{color:var(--c1);font-weight:700}
+.form-cell{display:flex;gap:2px}
+.form-w{width:14px;height:14px;border-radius:2px;background:var(--grn);
+  font-size:.35rem;color:#fff;display:flex;align-items:center;justify-content:center}
+.form-d{width:14px;height:14px;border-radius:2px;background:#666;
+  font-size:.35rem;color:#fff;display:flex;align-items:center;justify-content:center}
+.form-l{width:14px;height:14px;border-radius:2px;background:var(--red);
+  font-size:.35rem;color:#fff;display:flex;align-items:center;justify-content:center}
+
+/* ── LINEUP ── */
+.lineup-pitch{background:linear-gradient(180deg,#1a5c1a 0%,#1d6b1d 100%);
+  border-radius:12px;margin:.5rem .85rem;padding:.75rem;position:relative;
+  min-height:320px;border:2px solid rgba(255,255,255,.1)}
+.lineup-row{display:flex;justify-content:space-around;margin-bottom:.6rem}
+.lineup-player{display:flex;flex-direction:column;align-items:center;gap:.15rem;
+  cursor:pointer}
+.lineup-circle{width:36px;height:36px;border-radius:50%;background:rgba(255,255,255,.15);
+  border:2px solid rgba(255,255,255,.4);display:flex;align-items:center;
+  justify-content:center;font-size:.55rem;font-weight:700;color:#fff}
+.lineup-name{font-size:.4rem;color:#fff;text-align:center;max-width:50px;
+  line-height:1.2;text-shadow:0 1px 3px rgba(0,0,0,.8)}
+.lineup-num{font-size:.36rem;color:rgba(255,255,255,.6)}
+
+/* ── ANALYSIS ── */
+.stat-bar{display:grid;grid-template-columns:1fr auto 1fr;
+  align-items:center;gap:.4rem;padding:.35rem .85rem}
+.stat-bar-home,.stat-bar-away{height:6px;border-radius:3px;background:rgba(255,255,255,.1)}
+.stat-bar-home .fill{background:var(--c1);border-radius:3px;height:100%;transition:width .4s}
+.stat-bar-away .fill{background:var(--gold);border-radius:3px;height:100%;
+  float:right;transition:width .4s}
+.stat-label{font-size:.46rem;color:var(--t3);text-align:center}
+.stat-val{font-size:.5rem;color:var(--t1);font-weight:600}
+
+/* ── NEWS CARD ── */
+.news-card{display:flex;gap:.55rem;padding:.6rem .85rem;
+  border-bottom:1px solid rgba(255,255,255,.05);cursor:pointer;transition:background .12s}
+.news-card:active{background:rgba(255,255,255,.03)}
+.news-thumb{width:80px;height:56px;border-radius:8px;object-fit:cover;
+  flex-shrink:0;background:var(--bg3)}
+.news-body{flex:1;min-width:0}
+.news-title{font-size:.58rem;line-height:1.35;color:var(--t1);
+  display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.news-meta{font-size:.44rem;color:var(--t3);margin-top:.25rem}
+.news-src{color:var(--c1)}
+.news-breaking{background:var(--red);color:#fff;font-size:.38rem;font-weight:700;
+  padding:.08rem .3rem;border-radius:3px;margin-right:.3rem}
+
+/* ── IMAGES ── */
+.img-cats{display:flex;gap:.35rem;overflow-x:auto;padding:.5rem .85rem;
+  scrollbar-width:none}
+.img-cats::-webkit-scrollbar{display:none}
+.img-cat{flex-shrink:0;font-size:.52rem;padding:.28rem .7rem;
+  background:rgba(255,255,255,.06);border:1px solid var(--bd);
+  border-radius:99px;color:var(--t3);white-space:nowrap;transition:all .15s}
+.img-cat.on{background:var(--c1);border-color:var(--c1);color:#000;font-weight:700}
+.img-grid{columns:2;column-gap:.4rem;padding:0 .5rem .5rem}
+.img-card{break-inside:avoid;margin-bottom:.4rem;border-radius:10px;
+  overflow:hidden;cursor:pointer;position:relative;background:var(--bg3)}
+.img-card:active{transform:scale(.97)}
+.img-card img{width:100%;display:block;object-fit:cover;min-height:80px}
+.img-card-src{position:absolute;top:4px;right:4px;background:rgba(0,0,0,.6);
+  border-radius:3px;padding:.06rem .25rem;font-size:.38rem;color:rgba(255,255,255,.7)}
+.img-skeleton{break-inside:avoid;margin-bottom:.4rem;border-radius:10px;
+  background:linear-gradient(90deg,rgba(255,255,255,.05) 0%,rgba(255,255,255,.1) 50%,rgba(255,255,255,.05) 100%);
+  background-size:200% 100%;animation:shimmer 1.4s infinite}
+@keyframes shimmer{0%{background-position:-200% 0}100%{background-position:200% 0}}
+.img-lightbox{position:fixed;inset:0;z-index:1000;display:none;
+  align-items:flex-end;justify-content:center}
+.img-lightbox.open{display:flex}
+.img-lb-backdrop{position:absolute;inset:0;background:rgba(0,0,0,.92)}
+.img-lb-sheet{position:relative;z-index:1;width:100%;max-height:95vh;
+  background:var(--bg2);border-radius:16px 16px 0 0;display:flex;flex-direction:column}
+.img-lb-img{width:100%;max-height:60vh;object-fit:contain;background:#000;
+  border-radius:16px 16px 0 0}
+.img-lb-info{padding:.75rem .85rem}
+.img-lb-caption{font-size:.6rem;color:#fff;margin-bottom:.2rem}
+.img-lb-meta{font-size:.46rem;color:var(--t3);margin-bottom:.5rem}
+.img-lb-close{position:absolute;top:10px;right:12px;z-index:2;
+  background:rgba(255,255,255,.15);border:none;border-radius:50%;
+  color:#fff;width:32px;height:32px;font-size:.9rem}
+.img-lb-actions{display:flex;gap:.4rem}
+.img-lb-btn{flex:1;padding:.4rem;background:rgba(255,255,255,.08);
+  border:1px solid rgba(255,255,255,.15);border-radius:8px;
+  color:#fff;font-size:.54rem;cursor:pointer}
+
+/* ── SCORERS ── */
+.scorer-row{display:flex;align-items:center;gap:.55rem;padding:.5rem .85rem;
+  border-bottom:1px solid rgba(255,255,255,.05)}
+.scorer-rank{font-family:var(--df);font-size:.75rem;color:var(--gold);width:1.5rem}
+.scorer-info{flex:1}
+.scorer-name{font-size:.6rem;color:var(--t1);font-weight:600}
+.scorer-team{font-size:.48rem;color:var(--t3)}
+.scorer-goals{font-family:var(--df);font-size:1.1rem;color:var(--c1)}
+
+/* ── PREDICT ── */
+.predict-card{background:var(--bg2);border-radius:12px;margin:.4rem .85rem;
+  padding:.7rem;border:1px solid var(--bd)}
+.predict-match{display:grid;grid-template-columns:1fr auto 1fr;
+  align-items:center;gap:.4rem;margin-bottom:.6rem}
+.predict-btns{display:grid;grid-template-columns:1fr 1fr 1fr;gap:.35rem}
+.predict-btn{padding:.5rem;background:rgba(255,255,255,.06);border-radius:10px;
+  border:1px solid var(--bd);text-align:center;cursor:pointer;transition:all .15s;font-size:.52rem}
+.predict-btn.selected{background:var(--c1);border-color:var(--c1);color:#000;font-weight:700}
+.predict-btn:active{transform:scale(.96)}
+.predict-pct{font-size:.42rem;color:var(--t3);margin-top:.15rem}
+
+/* ── PI PAYMENTS ── */
+.copa-pass-card{background:linear-gradient(135deg,#1a0a40,#0d1a4a);
+  border-radius:14px;margin:.4rem .85rem;padding:.85rem;
+  border:2px solid var(--gold)}
+.copa-pass-title{font-family:var(--df);font-size:1rem;color:var(--gold);margin-bottom:.3rem}
+.copa-pass-features{display:grid;grid-template-columns:1fr 1fr;gap:.25rem;margin:.5rem 0}
+.copa-feature{font-size:.48rem;color:var(--t2)}
+.pi-pay-btn{width:100%;padding:.6rem;background:var(--gold);border-radius:10px;
+  font-family:var(--df);font-size:.75rem;font-weight:700;color:#000;
+  margin-top:.5rem;cursor:pointer;transition:opacity .15s}
+.pi-pay-btn:active{opacity:.85}
+.pi-tip-row{display:flex;gap:.4rem;margin:.4rem .85rem}
+.tip-btn{flex:1;padding:.45rem;background:rgba(0,212,255,.08);
+  border:1px solid rgba(0,212,255,.25);border-radius:8px;
+  font-size:.54rem;color:var(--c1);cursor:pointer;text-align:center}
+.tip-btn:active{background:rgba(0,212,255,.18)}
+
+/* ── SKELETON ── */
+.skel{background:linear-gradient(90deg,rgba(255,255,255,.05) 0%,rgba(255,255,255,.09) 50%,rgba(255,255,255,.05) 100%);
+  background-size:200% 100%;animation:shimmer 1.4s infinite;border-radius:8px}
+
+/* ── LOADING ── */
+.loading-center{display:flex;align-items:center;justify-content:center;
+  padding:2rem;flex-direction:column;gap:.75rem;color:var(--t3);font-size:.58rem}
+
+/* ── SECTION HEADER ── */
+.sec-hdr{font-size:.68rem;color:var(--t1);font-weight:700;
+  padding:.6rem .85rem .3rem;border-left:3px solid var(--c1);margin:.4rem 0 0}
+
+/* ── SCROLLBAR ── */
+::-webkit-scrollbar{width:0;height:0}
+</style>
 </head>
 <body>
+<div id="app">
 
-<!-- ══════════════════════════════════════════════
-     LANDING SCREEN
-══════════════════════════════════════════════ -->
-<div id="landingScreen">
-
-  <!-- Animated background -->
-  <div class="land-bg">
-    <div class="land-orb orb1"></div>
-    <div class="land-orb orb2"></div>
-    <div class="land-orb orb3"></div>
-    <div class="land-particles" id="landParticles"></div>
-  </div>
-
-  <div class="land-inner">
-
-    <!-- Logo -->
-    <div class="land-logo-wrap">
-      <div class="land-ball-ring"></div>
-      <div class="land-logo">COPA</div>
-      <div class="land-powered">Powered by Copa.pi</div>
-    </div>
-
-    <!-- Welcome text -->
-    <div class="land-welcome">
-      The global football super app powered by Pi Network.<br>
-      Live scores · Predictions · Fantasy · AI · Community
-    </div>
-
-    <!-- Live status bar -->
-    <div class="land-status-bar" id="landStatusBar">
-      <div class="lsb-item"><span class="lsb-dot live"></span><span class="lsb-val" id="lstLive">0</span> Live</div>
-      <div class="lsb-sep"></div>
-      <div class="lsb-item"><span class="lsb-val" id="lstMatches">0</span> Today</div>
-      <div class="lsb-sep"></div>
-      <div class="lsb-item"><span class="lsb-val" id="lstUsers">—</span> Users</div>
-      <div class="lsb-sep"></div>
-      <div class="lsb-item"><span class="lsb-dot green"></span> Secure</div>
-    </div>
-
-    <!-- Live preview cards -->
-    <div class="land-preview" id="landPreview">
-      <div class="lp-loading">Fetching live matches...</div>
-    </div>
-
-    <!-- Actions -->
-    <div class="land-actions">
-      <button class="land-btn-primary" id="loginBtn" onclick="piLogin()">
-        <span class="lbp-ico">π</span>
-        <span id="loginBtnTxt">Sign in with Pi</span>
-      </button>
-      <button class="land-btn-ghost" onclick="_guestLogin()">
-        Continue as Guest
-      </button>
-    </div>
-
-    <div class="land-login-status" id="landLoginStatus"></div>
-
-    <!-- Pending payment box -->
-    <div class="land-pending" id="landPending">
-      <div class="lpd-title">Payment Incomplete</div>
-      <div class="lpd-desc">A previous payment needs to be resolved before continuing.</div>
-      <button class="lpd-btn" onclick="clearPending()">Resolve &amp; Continue</button>
-    </div>
-
-    <!-- Language + theme -->
-    <div class="land-bottom-row">
-      <div class="land-langs">
-        <button class="ll on" onclick="setLang('en',this)">EN</button>
-        <button class="ll" onclick="setLang('ar',this)">AR</button>
-        <button class="ll" onclick="setLang('fr',this)">FR</button>
-        <button class="ll" onclick="setLang('es',this)">ES</button>
-        <button class="ll" onclick="setLang('pt',this)">PT</button>
-        <button class="ll" onclick="setLang('id',this)">ID</button>
-        <button class="ll" onclick="setLang('tr',this)">TR</button>
-      </div>
-      <button class="land-theme-toggle" onclick="toggleTheme()" title="Toggle theme">☀</button>
-    </div>
-
-    <div class="land-footer-links">
-      <span id="ftPrivacy">Privacy Policy</span>
-      <span style="color:var(--t3)">·</span>
-      <span id="ftTerms">Terms of Service</span>
-      <span style="color:var(--t3)">·</span>
-      <span id="ftPowered">Powered by Pi Network</span>
-    </div>
-
-  </div>
+<!-- SPLASH -->
+<div id="splash">
+  <div class="logo">⚽</div>
+  <div class="app-name">Copa</div>
+  <div class="tagline">copa.pi · Football Super App on Pi</div>
+  <div class="spin" id="splash-spin"></div>
+  <div class="pi-badge">MAINNET · PI EXCLUSIVE</div>
 </div>
 
-<!-- ══════════════════════════════════════════════
-     APP SHELL
-══════════════════════════════════════════════ -->
-<div id="appShell">
+<!-- MAIN -->
+<div id="main">
 
-  <!-- TOPBAR -->
-  <header class="topbar">
-    <div class="tb-left" onclick="navTo('home')">
-      <div class="tb-logo">COPA</div>
+  <!-- HOME — LIVE SCORES -->
+  <section class="scr on" id="s-home">
+    <div class="scr-hdr">
+      <div>
+        <div class="scr-hdr-title">⚽ COPA.pi</div>
+        <div class="scr-hdr-sub">copa.pi · Football Super App on Pi</div>
+      </div>
+      <div id="user-chip" style="font-size:.52rem;color:var(--c1)"></div>
     </div>
-    <div class="tb-center">
-      <div class="tb-live-pill" id="tbLivePill">
-        <span class="tlp-dot"></span>
-        <span id="tbLiveNum">0</span> Live
-      </div>
+    <div class="league-tabs" id="home-league-tabs">
+      <button class="ltab on" onclick="homeSetLeague('PL',this)">🏴󠁧󠁢󠁥󠁮󠁧󠁿 PL</button>
+      <button class="ltab" onclick="homeSetLeague('PD',this)">🇪🇸 La Liga</button>
+      <button class="ltab" onclick="homeSetLeague('SA',this)">🇮🇹 Serie A</button>
+      <button class="ltab" onclick="homeSetLeague('BL1',this)">🇩🇪 Bundesliga</button>
+      <button class="ltab" onclick="homeSetLeague('FL1',this)">🇫🇷 Ligue 1</button>
+      <button class="ltab" onclick="homeSetLeague('CL',this)">🇪🇺 UCL</button>
+      <button class="ltab" onclick="homeSetLeague('WC',this)">🌍 World Cup</button>
+      <button class="ltab" onclick="homeSetLeague('MLS',this)">🇺🇸 MLS</button>
     </div>
-    <div class="tb-right">
-      <button class="tb-search" onclick="openSearch()">🔍</button>
-      <button class="tb-notif" onclick="navTo('community')" id="tbNotif">🔔</button>
-      <div class="tb-av" id="tbAv" onclick="navTo('profile')">?</div>
+    <div id="home-matches"><div class="loading-center"><div class="spin"></div><span>Loading matches...</span></div></div>
+  </section>
+
+  <!-- STANDINGS -->
+  <section class="scr" id="s-standings">
+    <div class="scr-hdr">
+      <div><div class="scr-hdr-title">📊 STANDINGS</div><div class="scr-hdr-sub">Live league tables</div></div>
     </div>
-  </header>
+    <div class="league-tabs">
+      <button class="ltab on" onclick="standingsSetLeague('PL',this)">🏴󠁧󠁢󠁥󠁮󠁧󠁿 PL</button>
+      <button class="ltab" onclick="standingsSetLeague('PD',this)">🇪🇸 La Liga</button>
+      <button class="ltab" onclick="standingsSetLeague('SA',this)">🇮🇹 Serie A</button>
+      <button class="ltab" onclick="standingsSetLeague('BL1',this)">🇩🇪 Bundesliga</button>
+      <button class="ltab" onclick="standingsSetLeague('FL1',this)">🇫🇷 Ligue 1</button>
+      <button class="ltab" onclick="standingsSetLeague('CL',this)">🇪🇺 UCL</button>
+      <button class="ltab" onclick="standingsSetLeague('WC',this)">🌍 World Cup</button>
+    </div>
+    <div id="standings-body"><div class="loading-center"><div class="spin"></div></div></div>
+  </section>
 
-  <!-- SCORE TICKER -->
-  <div class="score-ticker"><div class="st-track" id="stTrack"></div></div>
+  <!-- SCORERS -->
+  <section class="scr" id="s-scorers">
+    <div class="scr-hdr">
+      <div><div class="scr-hdr-title">👟 TOP SCORERS</div><div class="scr-hdr-sub">Golden Boot race</div></div>
+    </div>
+    <div class="league-tabs">
+      <button class="ltab on" onclick="scorersSetLeague('PL',this)">🏴󠁧󠁢󠁥󠁮󠁧󠁿 PL</button>
+      <button class="ltab" onclick="scorersSetLeague('PD',this)">🇪🇸 La Liga</button>
+      <button class="ltab" onclick="scorersSetLeague('SA',this)">🇮🇹 Serie A</button>
+      <button class="ltab" onclick="scorersSetLeague('CL',this)">🇪🇺 UCL</button>
+      <button class="ltab" onclick="scorersSetLeague('WC',this)">🌍 WC</button>
+    </div>
+    <div id="scorers-body"><div class="loading-center"><div class="spin"></div></div></div>
+  </section>
 
-  <!-- MAIN CONTENT AREA -->
-  <main class="app-body">
+  <!-- PREDICT -->
+  <section class="scr" id="s-predict">
+    <div class="scr-hdr">
+      <div><div class="scr-hdr-title">🧠 PREDICT</div><div class="scr-hdr-sub">Predict matches · Earn points</div></div>
+      <div id="predict-score-badge" style="font-size:.6rem;color:var(--gold)"></div>
+    </div>
+    <div class="league-tabs">
+      <button class="ltab on" onclick="predictSetLeague('PL',this)">🏴󠁧󠁢󠁥󠁮󠁧󠁿 PL</button>
+      <button class="ltab" onclick="predictSetLeague('PD',this)">🇪🇸 La Liga</button>
+      <button class="ltab" onclick="predictSetLeague('CL',this)">🇪🇺 UCL</button>
+      <button class="ltab" onclick="predictSetLeague('WC',this)">🌍 WC</button>
+    </div>
+    <div id="predict-body"><div class="loading-center"><div class="spin"></div></div></div>
+  </section>
 
-    <!-- ═════════════════════════════
-         1. HOME DASHBOARD
-    ═════════════════════════════ -->
-    <section class="screen on" id="scr-home">
+  <!-- NEWS -->
+  <section class="scr" id="s-news">
+    <div class="scr-hdr">
+      <div><div class="scr-hdr-title">📰 NEWS</div><div class="scr-hdr-sub">Live football news · All sources</div></div>
+      <button onclick="newsRefresh()" style="color:var(--t3);font-size:1rem">↺</button>
+    </div>
+    <div class="league-tabs">
+      <button class="ltab on" onclick="newsSetFilter('all',this)">🌍 All</button>
+      <button class="ltab" onclick="newsSetFilter('transfers',this)">💸 Transfers</button>
+      <button class="ltab" onclick="newsSetFilter('results',this)">⚽ Results</button>
+      <button class="ltab" onclick="newsSetFilter('injuries',this)">🏥 Injuries</button>
+    </div>
+    <div id="news-body"></div>
+    <div id="news-scroll-trigger" style="height:60px"></div>
+  </section>
 
-      <!-- Live Match Hero -->
-      <div class="hero-carousel" id="heroCarousel">
-        <div class="hero-loading"><div class="spin"></div></div>
-      </div>
-
-      <!-- Quick Actions Row -->
-      <div class="quick-row">
-        <div class="qr-btn" onclick="navTo('live')"><span>🔴</span><span>Scores</span></div>
-        <div class="qr-btn" onclick="navTo('predict')"><span>🎯</span><span>Predict</span></div>
-        <div class="qr-btn" onclick="navTo('fantasy')"><span>⭐</span><span>Fantasy</span></div>
-        <div class="qr-btn" onclick="navTo('stats')"><span>📊</span><span>Stats</span></div>
-        <div class="qr-btn" onclick="navTo('ai')"><span>🤖</span><span>AI</span></div>
-        <div class="qr-btn" onclick="navTo('profile')"><span>💳</span><span>Wallet</span></div>
-      </div>
-
-      <!-- Sections -->
-      <div class="dash-section">
-        <div class="ds-hdr"><span class="ds-dot live-dot"></span>Live Now</div>
-        <div id="homeLiveCards"><div class="blk-load"><div class="spin"></div></div></div>
-      </div>
-
-      <div class="dash-section">
-        <div class="ds-hdr">📅 Today's Fixtures</div>
-        <div id="homeTodayCards"><div class="blk-load"><div class="spin"></div></div></div>
-      </div>
-
-      <div class="dash-section">
-        <div class="ds-hdr">🤖 AI Football Intelligence</div>
-        <div id="homeAICards"></div>
-      </div>
-
-      <div class="dash-section">
-        <div class="ds-hdr">⚡ Top Scorers</div>
-        <div id="homeTopScorers"></div>
-      </div>
-
-      <div class="dash-section">
-        <div class="ds-hdr">👥 Community Highlights</div>
-        <div id="homeCommHighlights"></div>
-      </div>
-
-    </section>
-
-    <!-- ═════════════════════════════
-         2. LIVE MATCHES
-    ═════════════════════════════ -->
-    <section class="screen" id="scr-live">
-      <div class="scr-title">Live Scores</div>
-
-      <div class="comp-pills" id="compPillsLive">
-        <button class="cp on" onclick="filterLive('ALL',this)">All</button>
-        <button class="cp" onclick="filterLive('UCL',this)">Champions League</button>
-        <button class="cp" onclick="filterLive('EPL',this)">Premier League</button>
-        <button class="cp" onclick="filterLive('LIGA',this)">La Liga</button>
-        <button class="cp" onclick="filterLive('BUN',this)">Bundesliga</button>
-        <button class="cp" onclick="filterLive('SA',this)">Serie A</button>
-        <button class="cp" onclick="filterLive('L1',this)">Ligue 1</button>
-        <button class="cp" onclick="filterLive('COPA',this)">Copa América</button>
-        <button class="cp" onclick="filterLive('WC',this)">World Cup</button>
-        <button class="cp" onclick="filterLive('MLS',this)">MLS</button>
-        <button class="cp" onclick="filterLive('SPL',this)">Saudi Pro</button>
-        <button class="cp" onclick="filterLive('AFCON',this)">AFCON</button>
-      </div>
-
-      <div id="liveMatchesList"><div class="blk-load"><div class="spin"></div></div></div>
-    </section>
-
-    <!-- ═════════════════════════════
-         3. PREDICT
-    ═════════════════════════════ -->
-    <section class="screen" id="scr-predict">
-      <div class="scr-title">Prediction Markets</div>
-
-      <!-- Pool Hero -->
-      <div class="pool-hero">
-        <div class="ph-l">
-          <div class="ph-label">Prize Pool</div>
-          <div class="ph-val" id="phVal">0 π</div>
-          <div class="ph-sub" id="phSub">0 predictions entered</div>
-        </div>
-        <div class="ph-r">
-          <div class="ph-label">Auto-paid</div>
-          <div class="ph-val" style="font-size:1.1rem">After FT</div>
-          <div class="ph-sub">Per match result</div>
-        </div>
-      </div>
-
-      <!-- Market type tabs -->
-      <div class="mkt-tabs" id="mktTabs">
-        <button class="mkt-tab on" onclick="setMktTab('winner',this)">Winner</button>
-        <button class="mkt-tab" onclick="setMktTab('score',this)">Score</button>
-        <button class="mkt-tab" onclick="setMktTab('tournament',this)">Tournament</button>
-        <button class="mkt-tab" onclick="setMktTab('scorer',this)">First Scorer</button>
-        <button class="mkt-tab" onclick="setMktTab('ou',this)">Over/Under</button>
-      </div>
-
-      <div id="mktContent"><div class="blk-load"><div class="spin"></div></div></div>
-
-      <div class="scr-subtitle" style="margin-top:1.2rem">Your Predictions</div>
-      <div id="myPredsList"><div class="empty-msg">No predictions yet.</div></div>
-    </section>
-
-    <!-- ═════════════════════════════
-         4. FANTASY
-    ═════════════════════════════ -->
-    <section class="screen" id="scr-fantasy">
-      <div class="scr-title">Fantasy League</div>
-
-      <div class="fantasy-hero">
-        <div class="fh-info">
-          <div class="fh-team" id="fhTeamName">My Squad</div>
-          <div class="fh-pts" id="fhPts">0 pts</div>
-          <div class="fh-rank" id="fhRank">Global rank: —</div>
-        </div>
-        <div class="fh-prize">
-          <div class="fhp-label">Weekly Prize</div>
-          <div class="fhp-val">50 π</div>
-        </div>
-      </div>
-
-      <div class="tab-row">
-        <button class="tab-btn on" onclick="setFantasyTab('squad',this)">My Squad</button>
-        <button class="tab-btn" onclick="setFantasyTab('players',this)">Players</button>
-        <button class="tab-btn" onclick="setFantasyTab('rankings',this)">Rankings</button>
-        <button class="tab-btn" onclick="setFantasyTab('transfers',this)">Transfers</button>
-      </div>
-
-      <div id="fantasyContent"><div class="blk-load"><div class="spin"></div></div></div>
-    </section>
-
-    <!-- ═════════════════════════════
-         5. STATISTICS
-    ═════════════════════════════ -->
-    <section class="screen" id="scr-stats">
-      <div class="scr-title">Statistics</div>
-
-      <div class="search-bar">
-        <input class="search-inp" id="statsSearchInp" type="text"
-          placeholder="Search team, player, or competition..."
-          oninput="onStatsSearch(this.value)">
-      </div>
-
-      <div class="tab-row">
-        <button class="tab-btn on" onclick="setStatsTab('scorers',this)">Scorers</button>
-        <button class="tab-btn" onclick="setStatsTab('teams',this)">Teams</button>
-        <button class="tab-btn" onclick="setStatsTab('h2h',this)">H2H</button>
-        <button class="tab-btn" onclick="setStatsTab('leagues',this)">Leagues</button>
-        <button class="tab-btn" onclick="setStatsTab('xg',this)">xG</button>
-      </div>
-
-      <div id="statsContent"><div class="blk-load"><div class="spin"></div></div></div>
-    </section>
-
-    <!-- ═════════════════════════════
-         6. AI / NEWS
-    ═════════════════════════════ -->
-    <section class="screen" id="scr-ai">
-      <div class="scr-title">AI Analyst</div>
-
-      <div class="tab-row">
-        <button class="tab-btn on" onclick="setAITab('chat',this)">AI Chat</button>
-        <button class="tab-btn" onclick="setAITab('reports',this)">Match Reports</button>
-        <button class="tab-btn" onclick="setAITab('preview',this)">Previews</button>
-        <button class="tab-btn" onclick="setAITab('transfers',this)">Transfers</button>
-      </div>
-
-      <!-- AI Chat -->
-      <div id="aiChatPanel">
-        <div class="ai-sugs-row" id="aiSugsRow"></div>
-        <div class="ai-chat-window" id="aiChatWindow">
-          <div class="ai-msg bot">
-            <div class="ai-av">⚽</div>
-            <div class="ai-txt">I'm Copa's AI football analyst — the most advanced football intelligence on Pi Network. Ask me anything about matches, tactics, history, predictions, or any competition globally.</div>
+  <!-- IMAGES -->
+  <section class="scr" id="s-images">
+    <div class="scr-hdr">
+      <div><div class="scr-hdr-title">📸 IMAGES</div><div class="scr-hdr-sub">AI-curated football photography</div></div>
+      <button onclick="imgRefresh()" id="img-refresh-btn" style="background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.15);border-radius:50%;color:rgba(255,255,255,.7);width:32px;height:32px;font-size:.9rem">↺</button>
+    </div>
+    <div class="img-cats">
+      <button class="img-cat on" onclick="imgSetCat('all',this)">🌍 All</button>
+      <button class="img-cat" onclick="imgSetCat('matches',this)">⚽ Matches</button>
+      <button class="img-cat" onclick="imgSetCat('players',this)">⭐ Players</button>
+      <button class="img-cat" onclick="imgSetCat('stadiums',this)">🏟 Stadiums</button>
+      <button class="img-cat" onclick="imgSetCat('fans',this)">🎉 Fans</button>
+      <button class="img-cat" onclick="imgSetCat('trophies',this)">🏆 Trophies</button>
+    </div>
+    <div style="padding:.25rem .85rem .4rem;font-size:.46rem;color:var(--t3);display:flex;justify-content:space-between">
+      <span id="img-count">Loading...</span>
+      <span id="img-source-tags"></span>
+    </div>
+    <div class="img-grid" id="img-grid"></div>
+    <div id="img-skeletons" style="display:none;columns:2;column-gap:.4rem;padding:0 .5rem">
+      <div class="img-skeleton" style="height:130px;margin-bottom:.4rem"></div>
+      <div class="img-skeleton" style="height:180px;margin-bottom:.4rem"></div>
+      <div class="img-skeleton" style="height:110px;margin-bottom:.4rem"></div>
+      <div class="img-skeleton" style="height:160px;margin-bottom:.4rem"></div>
+    </div>
+    <div id="img-scroll-trigger" style="height:80px"></div>
+    <!-- Lightbox -->
+    <div class="img-lightbox" id="img-lightbox">
+      <div class="img-lb-backdrop" onclick="imgCloseLightbox()"></div>
+      <div class="img-lb-sheet">
+        <button class="img-lb-close" onclick="imgCloseLightbox()">✕</button>
+        <img class="img-lb-img" id="img-lb-img" src="" alt="">
+        <div class="img-lb-info">
+          <div class="img-lb-caption" id="img-lb-caption"></div>
+          <div class="img-lb-meta" id="img-lb-meta"></div>
+          <div class="img-lb-actions">
+            <button class="img-lb-btn" onclick="imgDownload()">⬇ Save</button>
+            <button class="img-lb-btn" onclick="imgShare()">⬆ Share</button>
           </div>
         </div>
-        <div class="ai-input-row">
-          <input class="ai-inp" id="aiInp" placeholder="Ask about any match, player, team..."
-            onkeydown="if(event.key==='Enter')sendAI()">
-          <button class="ai-send-btn" onclick="sendAI()">→</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- MORE / COPA PASS -->
+    <section class="scr" id="s-more">
+    <div class="scr-hdr">
+      <div>
+        <div class="scr-hdr-title">⚡ COPA+</div>
+        <div class="scr-hdr-sub">copa.pi · Pi Payments · Mainnet</div>
+      </div>
+      <div id="more-user" style="font-size:.52rem;color:var(--c1)"></div>
+    </div>
+
+    <!-- Copa Pass Premium -->
+    <div id="copa-pass-section" style="margin:.4rem .85rem;background:linear-gradient(135deg,#1a0a40,#0d1a4a);border-radius:14px;padding:.85rem;border:2px solid var(--gold)">
+      <!-- Active badge -->
+      <div id="copa-pass-badge" style="display:none;background:rgba(255,215,0,.12);border:1px solid var(--gold);border-radius:8px;padding:.35rem .6rem;margin-bottom:.5rem;align-items:center;gap:.4rem">
+        <span style="font-size:1rem">⭐</span>
+        <span style="font-family:var(--dm);font-size:.58rem;color:var(--gold);font-weight:700">Copa Pass Active — Premium Unlocked</span>
+      </div>
+      <div style="font-family:var(--df);font-size:1rem;color:var(--gold);margin-bottom:.2rem">🏆 Copa Pass</div>
+      <div style="font-size:.52rem;color:rgba(255,255,255,.55);margin-bottom:.5rem">Football Super App Premium Access</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:.2rem;margin-bottom:.6rem">
+        <div style="font-size:.48rem;color:rgba(255,255,255,.7)">✅ AI Predictions</div>
+        <div style="font-size:.48rem;color:rgba(255,255,255,.7)">✅ All Leagues</div>
+        <div style="font-size:.48rem;color:rgba(255,255,255,.7)">✅ Full Lineups</div>
+        <div style="font-size:.48rem;color:rgba(255,255,255,.7)">✅ Match Analysis</div>
+        <div style="font-size:.48rem;color:rgba(255,255,255,.7)">✅ Head-to-Head</div>
+        <div style="font-size:.48rem;color:rgba(255,255,255,.7)">✅ No Ads</div>
+      </div>
+      <button id="copa-pass-btn" onclick="buyCopaPass()" style="width:100%;padding:.65rem;background:var(--gold);border:none;border-radius:10px;font-family:var(--df);font-size:.78rem;font-weight:700;color:#000;cursor:pointer;transition:opacity .15s">Get Copa Pass — 1π</button>
+    </div>
+
+    <!-- Payment Status -->
+    <div id="copa-payment-status" style="display:none;align-items:center;gap:.5rem;padding:.5rem .85rem;font-size:.58rem;color:var(--t3)"></div>
+
+    <!-- Send Pi -->
+    <div style="margin:.4rem .85rem;background:var(--bg2);border-radius:12px;padding:.75rem;border:1px solid var(--bd)">
+      <div style="font-family:var(--dm);font-size:.68rem;color:var(--t1);font-weight:700;margin-bottom:.5rem">💸 Send Pi</div>
+      <div style="margin-bottom:.4rem">
+        <label style="font-size:.48rem;color:var(--t3);display:block;margin-bottom:.2rem">Recipient Pi Username</label>
+        <input id="copa-send-to" type="text" placeholder="Pi username" style="width:100%;background:rgba(255,255,255,.06);border:1px solid var(--bd);border-radius:8px;padding:.45rem .6rem;color:var(--t1);font-size:.6rem;outline:none">
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:.4rem;margin-bottom:.5rem">
+        <div>
+          <label style="font-size:.48rem;color:var(--t3);display:block;margin-bottom:.2rem">Amount (π)</label>
+          <input id="copa-send-amt" type="number" value="0.1" min="0.001" step="0.001" style="width:100%;background:rgba(255,255,255,.06);border:1px solid var(--bd);border-radius:8px;padding:.45rem .6rem;color:var(--t1);font-size:.6rem;outline:none">
+        </div>
+        <div>
+          <label style="font-size:.48rem;color:var(--t3);display:block;margin-bottom:.2rem">Memo</label>
+          <input id="copa-send-memo" type="text" placeholder="Copa fan tip!" style="width:100%;background:rgba(255,255,255,.06);border:1px solid var(--bd);border-radius:8px;padding:.45rem .6rem;color:var(--t1);font-size:.6rem;outline:none">
         </div>
       </div>
+      <button onclick="sendPi()" style="width:100%;padding:.55rem;background:rgba(0,212,255,.12);border:1px solid rgba(0,212,255,.3);border-radius:8px;color:var(--c1);font-family:var(--dm);font-size:.65rem;font-weight:700;cursor:pointer">💸 Send Pi</button>
+    </div>
 
-      <!-- Other tabs -->
-      <div id="aiOtherPanel" style="display:none"></div>
-    </section>
-
-    <!-- ═════════════════════════════
-         7. COMMUNITY
-    ═════════════════════════════ -->
-    <section class="screen" id="scr-community">
-      <div class="scr-title">Community</div>
-
-      <div class="tab-row">
-        <button class="tab-btn on" onclick="setCommTab('feed',this)">Feed</button>
-        <button class="tab-btn" onclick="setCommTab('leaderboard',this)">Leaderboard</button>
-        <button class="tab-btn" onclick="setCommTab('clubs',this)">Fan Clubs</button>
-        <button class="tab-btn" onclick="setCommTab('quiz',this)">Quiz</button>
-        <button class="tab-btn" onclick="setCommTab('badges',this)">Badges</button>
+    <!-- Request Pi -->
+    <div style="margin:.4rem .85rem;background:var(--bg2);border-radius:12px;padding:.75rem;border:1px solid var(--bd)">
+      <div style="font-family:var(--dm);font-size:.68rem;color:var(--t1);font-weight:700;margin-bottom:.5rem">📥 Request Pi</div>
+      <div style="display:grid;grid-template-columns:1fr auto;gap:.4rem;align-items:flex-end">
+        <div>
+          <label style="font-size:.48rem;color:var(--t3);display:block;margin-bottom:.2rem">Amount (π)</label>
+          <input id="copa-req-amt" type="number" value="1" min="0.001" step="0.001" style="width:100%;background:rgba(255,255,255,.06);border:1px solid var(--bd);border-radius:8px;padding:.45rem .6rem;color:var(--t1);font-size:.6rem;outline:none">
+        </div>
+        <button onclick="requestPi()" style="padding:.45rem .75rem;background:rgba(255,215,0,.12);border:1px solid rgba(255,215,0,.3);border-radius:8px;color:var(--gold);font-family:var(--dm);font-size:.6rem;font-weight:700;cursor:pointer;white-space:nowrap">📥 Request</button>
       </div>
+    </div>
 
-      <div id="commContent"></div>
-    </section>
-
-    <!-- ═════════════════════════════
-         8. PROFILE & WALLET
-    ═════════════════════════════ -->
-    <section class="screen" id="scr-profile">
-      <div class="scr-title">Profile &amp; Wallet</div>
-
-      <!-- Profile Card -->
-      <div class="profile-card">
-        <div class="pc-av" id="pcAv">⚽</div>
-        <div class="pc-info">
-          <div class="pc-name" id="pcName">—</div>
-          <div class="pc-id"   id="pcId">—</div>
-          <div class="pc-tags" id="pcTags"></div>
-        </div>
+    <!-- Quick Tips -->
+    <div style="margin:.4rem .85rem">
+      <div style="font-family:var(--dm);font-size:.58rem;color:var(--t3);margin-bottom:.35rem">⚡ Quick Tip</div>
+      <div style="display:flex;gap:.4rem">
+        <button onclick="_doSendPi('',0.1,'Copa quick tip')" style="flex:1;padding:.4rem;background:rgba(0,212,255,.08);border:1px solid rgba(0,212,255,.2);border-radius:8px;color:var(--c1);font-size:.52rem;cursor:pointer">0.1π</button>
+        <button onclick="_doSendPi('',0.5,'Copa fan tip')" style="flex:1;padding:.4rem;background:rgba(0,212,255,.08);border:1px solid rgba(0,212,255,.2);border-radius:8px;color:var(--c1);font-size:.52rem;cursor:pointer">0.5π</button>
+        <button onclick="_doSendPi('',1,'Copa super tip')" style="flex:1;padding:.4rem;background:rgba(0,212,255,.08);border:1px solid rgba(0,212,255,.2);border-radius:8px;color:var(--c1);font-size:.52rem;cursor:pointer">1π</button>
       </div>
+    </div>
 
-      <!-- Stats grid -->
-      <div class="pf-stats" id="pfStats"></div>
+    <!-- Transaction History -->
+    <div style="margin:.4rem .85rem;background:var(--bg2);border-radius:12px;padding:.75rem;border:1px solid var(--bd)">
+      <div style="font-family:var(--dm);font-size:.68rem;color:var(--t1);font-weight:700;margin-bottom:.4rem">📋 Transaction History</div>
+      <div id="tx-history"></div>
+    </div>
 
-      <!-- Pi Wallet -->
-      <div class="sect-label">Pi Wallet</div>
-      <div class="wallet-card">
-        <div class="wc-top">
-          <div>
-            <div class="wc-bal-label">Balance</div>
-            <div class="wc-bal">π</div>
-          </div>
-          <div class="wc-id-wrap" id="wcIdWrap">—</div>
-        </div>
-        <div class="wc-note">Send and receive Pi directly via Pi Browser. Copa processes the Premium payment only.</div>
+    <!-- App Info -->
+    <div style="margin:.4rem .85rem 2rem;padding:.75rem;background:var(--bg2);border-radius:10px;border:1px solid var(--bd)">
+      <div style="font-size:.52rem;color:var(--t3);line-height:1.9">
+        <div>⚽ Copa — copa.pi — Football Super App on Pi</div>
+        <div>📦 Version 1.0.0</div>
+        <div>🔐 Pi SDK Exclusive Authentication</div>
+        <div>💎 Pi Exclusive Transactions</div>
+        <div>🌍 Mainnet · sandbox:false</div>
+        <div style="margin-top:.3rem;color:var(--c1)">copa-pi.pages.dev</div>
       </div>
+    </div>
 
-      <!-- Send / Request Pi -->
-      <div class="sect-label">Send &amp; Request Pi</div>
-      <div class="pi-actions-card">
-        <div class="tab-row" style="margin-bottom:.85rem">
-          <button class="tab-btn on" onclick="setPiActionTab('send',this)">Send Pi</button>
-          <button class="tab-btn" onclick="setPiActionTab('request',this)">Request Pi</button>
-          <button class="tab-btn" onclick="setPiActionTab('history',this)">History</button>
-        </div>
-        <div id="piActionContent"></div>
-      </div>
+  </section>
 
-      <!-- Premium -->
-      <div class="sect-label">Premium</div>
-      <div class="prem-card" id="premCard">
-        <div class="prem-glow"></div>
-        <div class="prem-top">
-          <div>
-            <div class="prem-title">Copa Premium</div>
-            <div class="prem-sub">One-time · All features · Forever</div>
-          </div>
-          <div class="prem-price">0.5 π</div>
-        </div>
-        <div class="prem-feats">
-          <div class="pf-item">Advanced xG &amp; tactical data</div>
-          <div class="pf-item">Unlimited AI match analysis</div>
-          <div class="pf-item">Priority leaderboard placement</div>
-          <div class="pf-item">Exclusive prediction markets</div>
-          <div class="pf-item">Ad-free experience</div>
-          <div class="pf-item">All future features included</div>
-        </div>
-        <button class="prem-btn" id="premBtn" onclick="payPremium()">Unlock Premium — 0.5 π</button>
-        <div class="prem-status" id="premStatus"></div>
-      </div>
+</div><!-- /main -->
 
-      <!-- Transaction history -->
-      <div class="sect-label">Transaction History</div>
-      <div id="txHistList"><div class="empty-msg">No transactions yet.</div></div>
+<!-- BOTTOM NAV -->
+<nav id="bnav">
+  <button class="nav-btn on" onclick="goS('home',this)">
+    <span class="nav-icon">⚽</span><span class="nav-lbl">Live</span>
+  </button>
+  <button class="nav-btn" onclick="goS('standings',this)">
+    <span class="nav-icon">📊</span><span class="nav-lbl">Tables</span>
+  </button>
+  <button class="nav-btn" onclick="goS('scorers',this)">
+    <span class="nav-icon">👟</span><span class="nav-lbl">Scorers</span>
+  </button>
+  <button class="nav-btn" onclick="goS('predict',this)">
+    <span class="nav-icon">🧠</span><span class="nav-lbl">Predict</span>
+  </button>
+  <button class="nav-btn" onclick="goS('news',this)">
+    <span class="nav-icon">📰</span><span class="nav-lbl">News</span>
+  </button>
+  <button class="nav-btn" onclick="goS('images',this)">
+    <span class="nav-icon">📸</span><span class="nav-lbl">Images</span>
+  </button>
+  <button class="nav-btn" onclick="goS('more',this)">
+    <span class="nav-icon">⚡</span><span class="nav-lbl">Copa+</span>
+  </button>
+</nav>
 
-      <!-- QR Identity -->
-      <div class="sect-label">Identity Card</div>
-      <div class="qr-card">
-        <div class="qr-canvas-wrap" id="qrCanvasWrap"></div>
-        <div class="qr-id-label" id="qrIdLabel">—</div>
-        <div class="qr-btns">
-          <button class="qr-btn" onclick="shareQR()">Share</button>
-          <button class="qr-btn" onclick="dlQR()">Save</button>
-        </div>
-      </div>
+</div><!-- /app -->
+<div id="toast"></div>
 
-      <!-- Security settings -->
-      <div class="sect-label">Settings</div>
-      <div class="settings-card">
-        <div class="setting-row">
-          <span>Language</span>
-          <select class="setting-sel" onchange="setLang(this.value, null)">
-            <option value="en">🌐 English</option>
-            <option value="ar">🇸🇦 العربية</option>
-            <option value="fr">🇫🇷 Français</option>
-            <option value="es">🇪🇸 Español</option>
-            <option value="pt">🇵🇹 Português</option>
-            <option value="id">🇮🇩 Indonesia</option>
-            <option value="tr">🇹🇷 Türkçe</option>
-          </select>
-        </div>
-        <div class="setting-row">
-          <span>Theme</span>
-          <button class="setting-btn" onclick="toggleTheme()">Toggle</button>
-        </div>
-        <div class="setting-row">
-          <span>Account</span>
-          <button class="setting-btn danger" onclick="doLogout()">Sign Out</button>
-        </div>
-      </div>
-
-      <!-- Fingerprint / Biometric tip -->
-      <div style="background:rgba(0,230,118,.06);border:1px solid rgba(0,230,118,.18);border-radius:12px;padding:.85rem 1rem;margin-bottom:.82rem">
-        <div style="font-family:var(--fb);font-size:.72rem;font-weight:700;color:var(--g);margin-bottom:.4rem">🔐 Enable Fingerprint for Payments</div>
-        <div style="font-size:.72rem;color:var(--t2);line-height:1.6">
-          To use fingerprint / Face ID for Pi payments:<br>
-          1. Open Pi Browser menu (≡)<br>
-          2. Go to <strong style="color:var(--t)">Wallet → Security</strong><br>
-          3. Enable <strong style="color:var(--t)">Biometric Authentication</strong><br>
-          4. Your next Copa payment will use fingerprint automatically.
-        </div>
-      </div>
-
-    </section>
-
-  </main>
-
-  <!-- BOTTOM NAVIGATION — 8 tabs -->
-  <nav class="bottom-nav" id="bottomNav" style="display:none">
-    <button class="bnav on" data-s="home"      onclick="bnTap(this)"><span>🏠</span><span>Home</span></button>
-    <button class="bnav"    data-s="live"       onclick="bnTap(this)"><span>🔴</span><span>Live</span></button>
-    <button class="bnav"    data-s="predict"    onclick="bnTap(this)"><span>🎯</span><span>Predict</span></button>
-    <button class="bnav"    data-s="fantasy"    onclick="bnTap(this)"><span>⭐</span><span>Fantasy</span></button>
-    <button class="bnav"    data-s="stats"      onclick="bnTap(this)"><span>📊</span><span>Stats</span></button>
-    <button class="bnav"    data-s="ai"         onclick="bnTap(this)"><span>🤖</span><span>AI</span></button>
-    <button class="bnav"    data-s="community"  onclick="bnTap(this)"><span>👥</span><span>Community</span></button>
-    <button class="bnav"    data-s="profile"    onclick="bnTap(this)"><span>👤</span><span>Profile</span></button>
-  </nav>
-
-</div><!-- end appShell -->
-
-<!-- SEARCH OVERLAY -->
-<div class="search-overlay" id="searchOverlay">
-  <div class="so-inner">
-    <input class="so-inp" id="soInp" placeholder="Search matches, teams, players..."
-      oninput="globalSearch(this.value)">
-    <button class="so-close" onclick="closeSearch()">✕</button>
-  </div>
-  <div id="soResults"></div>
-</div>
-
-<div class="toast" id="toast"></div>
-
-<!-- ③ script.js at END of body — Pi Core Team requirement -->
-<script src="script.js"></script>
 <script>
-  if('serviceWorker' in navigator){
-    navigator.serviceWorker.register('/sw.js').catch(function(){});
+/* ================================================================
+   COPA.pi — JavaScript Engine
+   MAINNET · sandbox:false · Cloudflare Pages
+================================================================ */
+
+/* ── PI SDK ── */
+var _APPROVE = '/approve';
+var _COMPLETE = '/complete';
+var _CANCEL  = '/cancel-payment';
+var piUser = null;
+var copaPassActive = false;
+var predictions = JSON.parse(localStorage.getItem('copa_preds')||'{}');
+var txHistory   = JSON.parse(localStorage.getItem('copa_tx')||'[]');
+
+
+
+function onIncompletePayment(payment) {
+  if (!payment) return;
+  console.log('[Copa] Incomplete payment:', payment.identifier);
+  var txid = '';
+  try { txid = (payment.transaction && payment.transaction.txid) ? payment.transaction.txid : ''; } catch(e){}
+  var pid = payment.identifier;
+  if (txid) {
+    fetch(_COMPLETE,{ method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({paymentId:pid,txid:txid})})
+      .then(function(r){ return r.json(); })
+      .then(function(d){ console.log('[Copa] Completed:', d); })
+      .catch(function(e){ console.warn('[Copa] Complete error:', e); });
+  } else {
+    fetch(_CANCEL,{ method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({paymentId:pid})})
+      .then(function(r){ return r.json(); })
+      .then(function(d){ console.log('[Copa] Cancelled:', d); })
+      .catch(function(e){ console.warn('[Copa] Cancel error:', e); });
   }
+}
+
+/* ── COPA PASS ── */
+
+
+
+
+
+
+
+
+/* ── NAVIGATION ── */
+function goS(id, btn) {
+  document.querySelectorAll('.scr').forEach(function(s){ s.classList.remove('on'); });
+  var el = document.getElementById('s-'+id);
+  if (el) el.classList.add('on');
+  document.querySelectorAll('.nav-btn').forEach(function(b){ b.classList.remove('on'); });
+  if (btn) btn.classList.add('on');
+  /* Lazy init */
+  if (id==='standings' && !document.getElementById('standings-body').children.length)
+    standingsLoad('PL');
+  if (id==='scorers' && !document.getElementById('scorers-body').children.length)
+    scorersLoad('PL');
+  if (id==='predict' && !document.getElementById('predict-body').children.length)
+    predictLoad('PL');
+  if (id==='news' && !document.getElementById('news-body').innerHTML.trim())
+    newsLoad();
+  if (id==='images' && !IMG.allImages.length)
+    imgLoadPage();
+}
+
+function hideSplash() {
+  var s = document.getElementById('splash');
+  if (s) { s.style.opacity='0'; s.style.transition='opacity .3s'; setTimeout(function(){ s.style.display='none'; },300); }
+}
+
+/* ── UTILITIES ── */
+function toast(msg, dur) {
+  var el = document.getElementById('toast');
+  el.textContent = msg;
+  el.classList.add('show');
+  setTimeout(function(){ el.classList.remove('show'); }, dur||2500);
+}
+
+function escHtml(s) {
+  return (s||'').toString().replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+function fmtDate(d) {
+  if (!d) return '';
+  try {
+    var dt = new Date(d);
+    return dt.toLocaleDateString('en-GB',{day:'numeric',month:'short'}) + ' ' +
+      dt.toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'});
+  } catch(e) { return d; }
+}
+
+/* ── HOME / LIVE SCORES ── */
+var homeLeague = 'PL';
+function homeSetLeague(league, btn) {
+  homeLeague = league;
+  document.querySelectorAll('#home-league-tabs .ltab').forEach(function(b){ b.classList.remove('on'); });
+  if (btn) btn.classList.add('on');
+  homeLoad(league);
+}
+
+function homeLoad(league) {
+  var el = document.getElementById('home-matches');
+  el.innerHTML = '<div class="loading-center"><div class="spin"></div></div>';
+  fetch('/data?type=fixtures&league='+league)
+    .then(function(r){ return r.json(); })
+    .then(function(data){ renderMatches(data.matches||[], el); })
+    .catch(function(){ el.innerHTML = '<div class="loading-center">⚽ No matches found</div>'; });
+}
+
+function renderMatches(matches, container) {
+  if (!matches.length) {
+    container.innerHTML = '<div class="loading-center">⚽ No matches available</div>';
+    return;
+  }
+  container.innerHTML = matches.map(function(m){
+    var isLive  = m.status==='LIVE'||m.status==='IN_PLAY'||m.status==='PAUSED';
+    var isDone  = m.status==='FINISHED';
+    var score   = m.score;
+    var homeS   = score?.fullTime?.home;
+    var awayS   = score?.fullTime?.away;
+    var scoreStr = (homeS!==null&&homeS!==undefined) ? homeS+' - '+awayS : 'vs';
+    return '<div class="match-card" onclick="openMatch('+JSON.stringify(JSON.stringify(m))+')">'
+      +'<div class="match-meta">'
+      +(isLive?'<span class="match-live-badge">🔴 LIVE</span>':'<span></span>')
+      +'<span>'+fmtDate(m.utcDate)+'</span>'
+      +(isDone?'<span style="color:var(--t3);font-size:.4rem">FT</span>':'<span></span>')
+      +'</div>'
+      +'<div class="match-body">'
+      +'<div class="match-team">'
+      +(m.homeCrest?'<img class="match-crest" src="'+m.homeCrest+'" onerror="this.style.display=\'none\'">'
+        :'<div style="width:32px;height:32px;border-radius:50%;background:var(--bg3);display:flex;align-items:center;justify-content:center;font-size:1rem">⚽</div>')
+      +'<div class="match-name">'+escHtml(m.homeTeam)+'</div></div>'
+      +'<div>'+(isDone||isLive?'<div class="match-score">'+scoreStr+'</div>':'<div class="match-vs">vs</div>')
+      +'</div>'
+      +'<div class="match-team">'
+      +(m.awayCrest?'<img class="match-crest" src="'+m.awayCrest+'" onerror="this.style.display=\'none\'">'
+        :'<div style="width:32px;height:32px;border-radius:50%;background:var(--bg3);display:flex;align-items:center;justify-content:center;font-size:1rem">⚽</div>')
+      +'<div class="match-name">'+escHtml(m.awayTeam)+'</div></div>'
+      +'</div></div>';
+  }).join('');
+}
+
+/* ── MATCH DETAIL ── */
+var currentMatch = null;
+function openMatch(jsonStr) {
+  /* For now show lineup + analysis in a toast -- expand to modal in Phase 2 */
+  try {
+    var m = JSON.parse(jsonStr);
+    currentMatch = m;
+    toast(escHtml(m.homeTeam) + ' vs ' + escHtml(m.awayTeam));
+  } catch(e) {}
+}
+
+/* ── STANDINGS ── */
+var standingsLeague = 'PL';
+function standingsSetLeague(league, btn) {
+  standingsLeague = league;
+  document.querySelectorAll('#s-standings .ltab').forEach(function(b){ b.classList.remove('on'); });
+  if (btn) btn.classList.add('on');
+  standingsLoad(league);
+}
+
+function standingsLoad(league) {
+  var el = document.getElementById('standings-body');
+  el.innerHTML = '<div class="loading-center"><div class="spin"></div></div>';
+  fetch('/data?type=standings&league='+league)
+    .then(function(r){ return r.json(); })
+    .then(function(data){
+      if (!data.standings?.length) {
+        el.innerHTML = '<div class="loading-center">No standings data</div>'; return;
+      }
+      el.innerHTML = '<div class="table-wrap"><table class="standings-table">'
+        +'<thead><tr><th>#</th><th>Team</th><th>P</th><th>W</th><th>D</th><th>L</th><th>GD</th><th>Pts</th><th>Form</th></tr></thead>'
+        +'<tbody>'+data.standings.map(function(row){
+          var form = (row.form||'').split(',').slice(-5);
+          return '<tr><td class="pos-num">'+row.position+'</td>'
+            +'<td><div class="team-cell">'
+            +(row.crest?'<img class="team-crest-sm" src="'+row.crest+'" onerror="this.style.display=\'none\'">':'')
+            +'<span>'+escHtml(row.team)+'</span></div></td>'
+            +'<td>'+row.played+'</td><td>'+row.won+'</td><td>'+row.draw+'</td><td>'+row.lost+'</td>'
+            +'<td style="color:'+(row.goalDiff>0?'var(--grn)':row.goalDiff<0?'var(--red)':'var(--t3)')+'">'+
+              (row.goalDiff>0?'+':'')+row.goalDiff+'</td>'
+            +'<td class="pts-cell">'+row.points+'</td>'
+            +'<td class="form-cell">'+form.map(function(f){
+              return f==='W'?'<div class="form-w">W</div>':f==='D'?'<div class="form-d">D</div>':'<div class="form-l">L</div>';
+            }).join('')+'</td>'
+            +'</tr>';
+        }).join('')+'</tbody></table></div>';
+    })
+    .catch(function(){ el.innerHTML = '<div class="loading-center">Failed to load standings</div>'; });
+}
+
+/* ── SCORERS ── */
+function scorersSetLeague(league, btn) {
+  document.querySelectorAll('#s-scorers .ltab').forEach(function(b){ b.classList.remove('on'); });
+  if (btn) btn.classList.add('on');
+  scorersLoad(league);
+}
+
+function scorersLoad(league) {
+  var el = document.getElementById('scorers-body');
+  el.innerHTML = '<div class="loading-center"><div class="spin"></div></div>';
+  fetch('/data?type=scorers&league='+league)
+    .then(function(r){ return r.json(); })
+    .then(function(data){
+      if (!data.scorers?.length) {
+        el.innerHTML = '<div class="loading-center">No scorer data</div>'; return;
+      }
+      el.innerHTML = data.scorers.map(function(s, i){
+        return '<div class="scorer-row">'
+          +'<div class="scorer-rank">#'+(i+1)+'</div>'
+          +(s.crest?'<img style="width:28px;height:28px;object-fit:contain" src="'+s.crest+'" onerror="this.style.display=\'none\'">':'')
+          +'<div class="scorer-info">'
+          +'<div class="scorer-name">'+escHtml(s.name)+'</div>'
+          +'<div class="scorer-team">'+escHtml(s.team)+(s.assists?' · '+s.assists+' ast':'')+'</div>'
+          +'</div>'
+          +'<div class="scorer-goals">'+s.goals+'</div>'
+          +'</div>';
+      }).join('');
+    })
+    .catch(function(){ el.innerHTML = '<div class="loading-center">Failed to load scorers</div>'; });
+}
+
+/* ── PREDICT ── */
+var predictLeague = 'PL';
+var predictScore  = JSON.parse(localStorage.getItem('copa_score')||'{"points":0,"streak":0}');
+
+function predictSetLeague(league, btn) {
+  predictLeague = league;
+  document.querySelectorAll('#s-predict .ltab').forEach(function(b){ b.classList.remove('on'); });
+  if (btn) btn.classList.add('on');
+  predictLoad(league);
+}
+
+function predictLoad(league) {
+  var el = document.getElementById('predict-body');
+  el.innerHTML = '<div class="loading-center"><div class="spin"></div></div>';
+  var badge = document.getElementById('predict-score-badge');
+  if (badge) badge.textContent = '⭐ '+predictScore.points+' pts · 🔥 '+predictScore.streak;
+  fetch('/data?type=fixtures&league='+league)
+    .then(function(r){ return r.json(); })
+    .then(function(data){
+      var upcoming = (data.matches||[]).filter(function(m){ return m.status==='SCHEDULED'||m.status==='TIMED'; }).slice(0,10);
+      if (!upcoming.length) {
+        el.innerHTML = '<div class="loading-center">No upcoming matches to predict</div>'; return;
+      }
+      el.innerHTML = upcoming.map(function(m){
+        var pid = 'p_'+m.id;
+        var saved = predictions[pid];
+        return '<div class="predict-card">'
+          +'<div class="predict-match">'
+          +'<div style="text-align:center;font-size:.54rem">'+escHtml(m.homeTeam)+'</div>'
+          +'<div style="font-size:.44rem;color:var(--t3)">'+fmtDate(m.utcDate)+'</div>'
+          +'<div style="text-align:center;font-size:.54rem">'+escHtml(m.awayTeam)+'</div>'
+          +'</div>'
+          +'<div class="predict-btns" id="pb_'+m.id+'">'
+          +'<div class="predict-btn'+(saved==='home'?' selected':'')+'" onclick="makePrediction(\''+m.id+'\',\'home\',\''+escHtml(m.homeTeam)+'\')">'
+          +'1 (Home)<div class="predict-pct" id="ph_'+m.id+'">—</div></div>'
+          +'<div class="predict-btn'+(saved==='draw'?' selected':'')+'" onclick="makePrediction(\''+m.id+'\',\'draw\',\'Draw\')">'
+          +'X (Draw)<div class="predict-pct" id="pd_'+m.id+'">—</div></div>'
+          +'<div class="predict-btn'+(saved==='away'?' selected':'')+'" onclick="makePrediction(\''+m.id+'\',\'away\',\''+escHtml(m.awayTeam)+'\')">'
+          +'2 (Away)<div class="predict-pct" id="pa_'+m.id+'">—</div></div>'
+          +'</div></div>';
+      }).join('');
+    })
+    .catch(function(){ el.innerHTML = '<div class="loading-center">Failed to load fixtures</div>'; });
+}
+
+function makePrediction(matchId, outcome, label) {
+  predictions['p_'+matchId] = outcome;
+  localStorage.setItem('copa_preds', JSON.stringify(predictions));
+  var container = document.getElementById('pb_'+matchId);
+  if (container) {
+    container.querySelectorAll('.predict-btn').forEach(function(b){ b.classList.remove('selected'); });
+    var idx = outcome==='home'?0:outcome==='draw'?1:2;
+    if (container.children[idx]) container.children[idx].classList.add('selected');
+  }
+  predictScore.points += 5;
+  predictScore.streak += 1;
+  localStorage.setItem('copa_score', JSON.stringify(predictScore));
+  var badge = document.getElementById('predict-score-badge');
+  if (badge) badge.textContent = '⭐ '+predictScore.points+' pts · 🔥 '+predictScore.streak;
+  toast('Predicted: '+label+' (+5 pts)');
+}
+
+/* ── NEWS ── */
+var newsPage = 1;
+var newsLoading = false;
+var newsHasMore = true;
+var newsFilter = 'all';
+
+function newsSetFilter(filter, btn) {
+  newsFilter = filter;
+  newsPage = 1;
+  newsHasMore = true;
+  document.querySelectorAll('#s-news .ltab').forEach(function(b){ b.classList.remove('on'); });
+  if (btn) btn.classList.add('on');
+  document.getElementById('news-body').innerHTML = '';
+  newsLoad();
+}
+
+function newsRefresh() {
+  newsPage = 1;
+  newsHasMore = true;
+  document.getElementById('news-body').innerHTML = '';
+  newsLoad();
+}
+
+function newsLoad() {
+  if (newsLoading || !newsHasMore) return;
+  newsLoading = true;
+  fetch('/news?page='+newsPage+'&filter='+newsFilter)
+    .then(function(r){ return r.json(); })
+    .then(function(data){
+      newsHasMore = data.hasMore !== false;
+      newsPage++;
+      renderNews(data.articles||[]);
+    })
+    .catch(function(){
+      document.getElementById('news-body').innerHTML += '<div class="loading-center">Failed to load news</div>';
+    })
+    .finally(function(){ newsLoading = false; });
+}
+
+function renderNews(articles) {
+  var el = document.getElementById('news-body');
+  if (!el) return;
+  articles.forEach(function(a){
+    var card = document.createElement('div');
+    card.className = 'news-card';
+    card.onclick = function(){ if(a.url) window.open(a.url); };
+    var isNew = (Date.now() - new Date(a.date).getTime()) < 1800000; /* 30 min */
+    card.innerHTML =
+      (a.image?'<img class="news-thumb" src="'+a.image+'" alt="" loading="lazy" onerror="this.style.display=\'none\'">':'')
+      +'<div class="news-body">'
+      +'<div class="news-title">'
+      +(isNew?'<span class="news-breaking">NEW</span>':'')
+      +escHtml(a.title||'')+'</div>'
+      +'<div class="news-meta"><span class="news-src">'+escHtml(a.source||'')+'</span> · '+fmtDate(a.date)+'</div>'
+      +'</div>';
+    el.appendChild(card);
+  });
+}
+
+/* News infinite scroll */
+if ('IntersectionObserver' in window) {
+  new IntersectionObserver(function(entries){
+    if (entries[0].isIntersecting) newsLoad();
+  }, { rootMargin:'400px' }).observe(document.getElementById('news-scroll-trigger'));
+}
+
+/* ── IMAGES ── */
+var IMG = {
+  category:'all', page:1, loading:false, hasMore:true,
+  cache:{}, allImages:[], current:null,
+};
+var imgLazyObs = 'IntersectionObserver' in window
+  ? new IntersectionObserver(function(entries){
+      entries.forEach(function(e){
+        if(e.isIntersecting){var el=e.target;var src=el.getAttribute('data-src');if(src){el.src=src;el.removeAttribute('data-src');}imgLazyObs.unobserve(el);}
+      });
+    },{ rootMargin:'300px' })
+  : { observe:function(){}, unobserve:function(){} };
+
+function imgSetCat(cat, btn) {
+  IMG.category=cat; IMG.page=1; IMG.hasMore=true; IMG.allImages=[];
+  document.querySelectorAll('.img-cat').forEach(function(b){ b.classList.remove('on'); });
+  if(btn) btn.classList.add('on');
+  document.getElementById('img-grid').innerHTML='';
+  imgLoadPage();
+}
+
+function imgRefresh() {
+  var prefix=IMG.category+'_';
+  Object.keys(IMG.cache).forEach(function(k){ if(k.startsWith(prefix)) delete IMG.cache[k]; });
+  IMG.page=1; IMG.hasMore=true; IMG.allImages=[];
+  document.getElementById('img-grid').innerHTML='';
+  var btn=document.getElementById('img-refresh-btn');
+  if(btn) btn.style.transform='rotate(360deg)';
+  setTimeout(function(){ if(btn) btn.style.transform=''; }, 600);
+  imgLoadPage();
+}
+
+function imgLoadPage() {
+  if(IMG.loading||!IMG.hasMore) return;
+  var key=IMG.category+'_'+IMG.page;
+  if(IMG.cache[key]){ imgRender(IMG.cache[key]); IMG.page++; return; }
+  IMG.loading=true;
+  document.getElementById('img-skeletons').style.display='block';
+  fetch('/images?category='+IMG.category+'&page='+IMG.page)
+    .then(function(r){ return r.json(); })
+    .then(function(data){
+      IMG.cache[key]=data.images||[];
+      IMG.hasMore=data.hasMore!==false;
+      imgRender(data.images||[]);
+      IMG.page++;
+      /* Source tags */
+      var srcs=document.getElementById('img-source-tags');
+      if(srcs && data.sources){
+        srcs.innerHTML=Object.keys(data.sources).filter(function(k){ return data.sources[k]; })
+          .map(function(k){ return '<span style="background:rgba(255,255,255,.06);border-radius:99px;padding:.08rem .35rem;font-size:.4rem;color:var(--t3);margin-left:.2rem">'+k+'</span>'; }).join('');
+      }
+    })
+    .catch(function(){ document.getElementById('img-grid').innerHTML+='<div style="grid-column:1/-1;text-align:center;padding:1rem;font-size:.54rem;color:var(--t3)">Images unavailable</div>'; })
+    .finally(function(){ IMG.loading=false; document.getElementById('img-skeletons').style.display='none'; });
+}
+
+function imgRender(images) {
+  var grid=document.getElementById('img-grid');
+  images.forEach(function(img){
+    IMG.allImages.push(img);
+    var idx=IMG.allImages.length-1;
+    var card=document.createElement('div'); card.className='img-card';
+    card.onclick=(function(i){ return function(){ imgOpen(i); }; })(idx);
+    var el=document.createElement('img');
+    el.setAttribute('data-src', img.thumb||img.url);
+    el.src=''; el.alt=img.caption||''; el.loading='lazy';
+    el.style.minHeight=(80+Math.floor(Math.random()*100))+'px';
+    el.onerror=function(){ card.style.display='none'; };
+    var src=document.createElement('div'); src.className='img-card-src';
+    src.textContent=(img.source||'').slice(0,8);
+    card.appendChild(el); card.appendChild(src);
+    grid.appendChild(card);
+    imgLazyObs.observe(el);
+  });
+  var cnt=document.getElementById('img-count');
+  if(cnt) cnt.textContent=IMG.allImages.length+' images';
+}
+
+function imgOpen(i) {
+  var img=IMG.allImages[i]; if(!img) return;
+  IMG.current=i;
+  var lb=document.getElementById('img-lightbox');
+  var lbImg=document.getElementById('img-lb-img');
+  if(!lb||!lbImg) return;
+  lbImg.src=img.fullUrl||img.url; lbImg.alt=img.caption||'';
+  document.getElementById('img-lb-caption').textContent=img.caption||'';
+  document.getElementById('img-lb-meta').textContent=(img.source||'')+(img.author?' · '+img.author:'')+(img.license?' · '+img.license:'');
+  lb.classList.add('open'); document.body.style.overflow='hidden';
+}
+
+function imgCloseLightbox() {
+  var lb=document.getElementById('img-lightbox'); if(lb) lb.classList.remove('open');
+  var lbImg=document.getElementById('img-lb-img'); if(lbImg) lbImg.src='';
+  document.body.style.overflow='';
+}
+
+function imgDownload() {
+  var img=IMG.allImages[IMG.current]; if(!img) return;
+  var a=document.createElement('a'); a.href=img.fullUrl||img.url;
+  a.download='copa-'+Date.now()+'.jpg'; a.target='_blank';
+  document.body.appendChild(a); a.click(); document.body.removeChild(a);
+}
+
+function imgShare() {
+  var img=IMG.allImages[IMG.current]; if(!img) return;
+  if(navigator.share) navigator.share({ title:img.caption||'Copa.pi', url:img.url }).catch(function(){});
+  else if(navigator.clipboard) navigator.clipboard.writeText(img.url).then(function(){ toast('Link copied!'); });
+}
+
+/* Images infinite scroll */
+if ('IntersectionObserver' in window) {
+  new IntersectionObserver(function(entries){
+    if(entries[0].isIntersecting&&!IMG.loading&&IMG.hasMore) imgLoadPage();
+  },{ rootMargin:'400px' }).observe(document.getElementById('img-scroll-trigger'));
+}
+
+document.addEventListener('keydown',function(e){ if(e.key==='Escape') imgCloseLightbox(); });
+
+/* ── INIT ── */
+window.addEventListener('load', function() {
+  /* Check Copa Pass */
+  if (localStorage.getItem('copa_pass')==='1') copaPassActive=true;
+  renderTxHistory();
+  /* Pi login */
+  piLogin();
+  /* Auto-refresh live data */
+  setInterval(function(){
+    var activeScr = document.querySelector('.scr.on');
+    if (activeScr && activeScr.id==='s-home') homeLoad(homeLeague);
+  }, 60000);
+});
+
+
+/* ================================================================
+   COPA.pi PAYMENT SYSTEM — EXACT WORLDCUP PATTERN
+   MAINNET · sandbox:false · Cloudflare Pages
+================================================================ */
+
+var _APPROVE = '/approve';
+var _COMPLETE = '/complete';
+var _CANCEL  = '/cancel-payment';
+
+var piUser      = null;
+var isCopaPass  = localStorage.getItem('copa_pass') === '1';
+var txLog       = JSON.parse(localStorage.getItem('copa_tx') || '[]');
+var copaScore   = JSON.parse(localStorage.getItem('copa_score') || '{"points":0,"streak":0}');
+var predictions = JSON.parse(localStorage.getItem('copa_preds') || '{}');
+
+/* ── PI LOGIN — EXACT WORLDCUP PATTERN ── */
+function piLogin() {
+  var btn    = document.getElementById('loginBtn');
+  var splash = document.getElementById('splash');
+
+  if (typeof Pi === 'undefined') {
+    /* Outside Pi Browser — demo mode */
+    piUser = { username: 'Pioneer' };
+    hideSplash();
+    homeLoad('PL');
+    toast('Demo mode — open in Pi Browser for real Pi!');
+    return;
+  }
+
+  /* MAINNET — sandbox:false */
+  Pi.init({ version: '2.0', sandbox: false });
+
+  Pi.authenticate(['username', 'payments'], onIncompletePayment)
+    .then(function(auth) {
+      piUser = auth.user;
+      console.log('[Copa] Authenticated:', piUser.username);
+      localStorage.setItem('copa_user', JSON.stringify(piUser));
+      /* Update UI */
+      document.getElementById('user-chip').textContent = '\uD83D\uDFE2 ' + piUser.username;
+      document.getElementById('more-user').textContent = '@' + piUser.username;
+      hideSplash();
+      homeLoad('PL');
+      renderCopaPassStatus();
+      renderTxHistory();
+    })
+    .catch(function(err) {
+      console.error('[Copa] Auth error:', err);
+      hideSplash();
+      homeLoad('PL');
+    });
+}
+
+/* ── INCOMPLETE PAYMENT — EXACT WORLDCUP PATTERN ── */
+function onIncompletePayment(payment) {
+  if (!payment) return;
+  console.log('[Copa] Incomplete payment:', payment.identifier);
+  var txid = '';
+  try {
+    txid = (payment.transaction && payment.transaction.txid)
+      ? payment.transaction.txid : '';
+  } catch(e) { txid = ''; }
+  var pid = payment.identifier;
+
+  if (txid) {
+    /* Has txid — complete it */
+    console.log('[Copa] Completing incomplete payment, txid:', txid);
+    fetch(_COMPLETE, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ paymentId: pid, txid: txid })
+    })
+    .then(function(r) { return r.json(); })
+    .then(function(d) { console.log('[Copa] Incomplete completed:', d); })
+    .catch(function(e) { console.warn('[Copa] Complete error:', e); });
+  } else {
+    /* No txid — re-approve stuck payment */
+    console.log('[Copa] Re-approving stuck payment:', pid);
+    fetch(_CANCEL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ paymentId: pid })
+    })
+    .then(function(r) { return r.json(); })
+    .then(function(d) { console.log('[Copa] Stuck payment handled:', d); })
+    .catch(function(e) { console.warn('[Copa] Cancel error:', e); });
+  }
+}
+
+/* ── COPA PASS — EXACT WORLDCUP buyPrem PATTERN ── */
+function buyCopaPass() {
+  if (isCopaPass) { toast('\uD83C\uDFC6 Copa Pass already active!'); return; }
+
+  var btn = document.getElementById('copa-pass-btn');
+  if (btn) { btn.textContent = 'Processing...'; btn.disabled = true; }
+
+  if (typeof Pi === 'undefined') {
+    toast('Open in Pi Browser');
+    if (btn) { btn.textContent = 'Get Copa Pass \u2014 1\u03C0'; btn.disabled = false; }
+    return;
+  }
+
+  Pi.createPayment({
+    amount:   1,
+    memo:     'Copa Pass \u2014 copa.pi Premium',
+    metadata: { type: 'copa_pass', app: 'copa.pi', network: 'mainnet' }
+  }, {
+    onReadyForServerApproval: function(paymentId) {
+      console.log('[Copa] Pass approve:', paymentId);
+      showPaymentStatus('approving');
+      return fetch(_APPROVE, {
+        method:  'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body:    JSON.stringify({ paymentId: paymentId, expectedAmount: 1 })
+      })
+      .then(function(r) {
+        console.log('[Copa] Pass approve status:', r.status);
+        return r.json();
+      })
+      .then(function(d) {
+        console.log('[Copa] Pass approve response:', JSON.stringify(d));
+      });
+    },
+    onReadyForServerCompletion: function(paymentId, txid) {
+      console.log('[Copa] Pass complete:', paymentId, txid);
+      showPaymentStatus('completing');
+      return fetch(_COMPLETE, {
+        method:  'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body:    JSON.stringify({ paymentId: paymentId, txid: txid })
+      })
+      .then(function(r) {
+        console.log('[Copa] Pass complete status:', r.status);
+        return r.json();
+      })
+      .then(function(d) {
+        console.log('[Copa] Pass complete response:', JSON.stringify(d));
+        isCopaPass = true;
+        localStorage.setItem('copa_pass', '1');
+        addTx('Copa Pass 1\u03C0 txid:' + txid.slice(0,12) + '...');
+        showPaymentStatus('success', 'Copa Pass activated!');
+        renderCopaPassStatus();
+        toast('\uD83C\uDFC6 Copa Pass activated!');
+      })
+      .catch(function(err) {
+        console.error('[Copa] Pass complete error:', err);
+        showPaymentStatus('failed', 'Error — try again');
+        if (btn) { btn.textContent = 'Get Copa Pass \u2014 1\u03C0'; btn.disabled = false; }
+      });
+    },
+    onCancel: function() {
+      if (btn) { btn.textContent = 'Get Copa Pass \u2014 1\u03C0'; btn.disabled = false; }
+      showPaymentStatus('cancelled');
+      toast('Payment cancelled');
+    },
+    onError: function(err) {
+      console.error('[Copa] Pass error:', err);
+      if (btn) { btn.textContent = 'Get Copa Pass \u2014 1\u03C0'; btn.disabled = false; }
+      showPaymentStatus('failed', 'Payment error \u2014 try again');
+      toast('Payment error \u2014 try again');
+    }
+  });
+}
+
+/* ── SEND PI — EXACT WORLDCUP _doSendPi PATTERN ── */
+function sendPi() {
+  var to   = (document.getElementById('copa-send-to')   || {}).value || '';
+  var amt  = parseFloat((document.getElementById('copa-send-amt')  || {}).value) || 0;
+  var memo = (document.getElementById('copa-send-memo') || {}).value || 'Copa fan tip';
+  _doSendPi(to, amt, memo);
+}
+
+function _doSendPi(to, amt, memo) {
+  if (!to.trim())      { toast('Enter recipient username'); return; }
+  if (!amt || amt <= 0){ toast('Enter valid amount'); return; }
+  if (typeof Pi === 'undefined') { toast('Open in Pi Browser'); return; }
+
+  Pi.createPayment({
+    amount:   amt,
+    memo:     memo || 'Copa.pi fan tip',
+    metadata: { type: 'send', app: 'copa.pi', network: 'mainnet' }
+  }, {
+    onReadyForServerApproval: function(paymentId) {
+      console.log('[Copa] Send approve:', paymentId);
+      showPaymentStatus('approving');
+      return fetch(_APPROVE, {
+        method:  'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body:    JSON.stringify({ paymentId: paymentId })
+      })
+      .then(function(r) {
+        console.log('[Copa] Send approve status:', r.status);
+        return r.json();
+      })
+      .then(function(d) {
+        console.log('[Copa] Send approve response:', JSON.stringify(d));
+      });
+    },
+    onReadyForServerCompletion: function(paymentId, txid) {
+      console.log('[Copa] Send complete:', paymentId, txid);
+      showPaymentStatus('completing');
+      return fetch(_COMPLETE, {
+        method:  'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body:    JSON.stringify({ paymentId: paymentId, txid: txid })
+      })
+      .then(function(r) {
+        console.log('[Copa] Send complete status:', r.status);
+        return r.json();
+      })
+      .then(function(d) {
+        console.log('[Copa] Send complete response:', JSON.stringify(d));
+        addTx(amt + '\u03C0 sent to @' + to + ' txid:' + txid.slice(0,8) + '...');
+        showPaymentStatus('success', amt + '\u03C0 sent to @' + to + '!');
+        toast(amt + '\u03C0 sent!');
+        /* Clear inputs */
+        var tEl = document.getElementById('copa-send-to');
+        var aEl = document.getElementById('copa-send-amt');
+        if (tEl) tEl.value = '';
+        if (aEl) aEl.value = '0.1';
+      })
+      .catch(function(err) {
+        console.error('[Copa] Send error:', err);
+        addTx(amt + '\u03C0 sent to @' + to);
+        toast('Sent!');
+      });
+    },
+    onCancel: function() {
+      showPaymentStatus('cancelled');
+      toast('Payment cancelled');
+    },
+    onError: function(err) {
+      console.error('[Copa] Send error:', err);
+      showPaymentStatus('failed', 'Payment error \u2014 try again');
+      toast('Payment error \u2014 try again');
+    }
+  });
+}
+
+/* ── REQUEST PI — receive button ── */
+function requestPi() {
+  if (!piUser) { toast('Login required'); return; }
+  var amt = parseFloat((document.getElementById('copa-req-amt') || {}).value) || 1;
+  var msg = 'Send ' + amt + '\u03C0 to copa.pi/' + piUser.username;
+  if (navigator.share) {
+    navigator.share({ title: 'Pay me on Copa.pi', text: msg, url: window.location.href })
+      .catch(function(){});
+  } else if (navigator.clipboard) {
+    navigator.clipboard.writeText(msg).then(function(){ toast('Payment request copied!'); });
+  } else {
+    toast(msg);
+  }
+}
+
+/* ── PAYMENT STATUS ── */
+function showPaymentStatus(status, message) {
+  var pst = document.getElementById('copa-payment-status');
+  if (!pst) return;
+  var configs = {
+    idle:       { icon:'\uD83D\uDCB3', text:'',                         color:'var(--t3)',   show:false },
+    approving:  { icon:'\uD83D\uDD04', text:'Approving...',             color:'var(--c1)',   show:true  },
+    completing: { icon:'\u23F3',       text:'Completing...',            color:'var(--gold)', show:true  },
+    success:    { icon:'\u2705',       text:message||'Payment complete!',color:'var(--grn)', show:true  },
+    failed:     { icon:'\u274C',       text:message||'Payment failed',  color:'var(--red)',  show:true  },
+    cancelled:  { icon:'\u21A9\uFE0F', text:'Cancelled',                color:'var(--t3)',   show:true  },
+  };
+  var cfg = configs[status] || configs.idle;
+  pst.style.display = cfg.show ? 'flex' : 'none';
+  pst.innerHTML = '<span style="font-size:1rem">' + cfg.icon + '</span>'
+    + '<span style="font-family:var(--dm);font-size:.6rem;color:' + cfg.color + '">' + cfg.text + '</span>';
+}
+
+/* ── TX LOG ── */
+function addTx(text) {
+  var d = new Date().toLocaleString();
+  txLog.unshift({ t: text, d: d });
+  if (txLog.length > 60) txLog.pop();
+  localStorage.setItem('copa_tx', JSON.stringify(txLog));
+  renderTxHistory();
+}
+
+function renderTxHistory() {
+  var el = document.getElementById('tx-history');
+  if (!el) return;
+  if (!txLog.length) {
+    el.innerHTML = '<div style="font-size:.54rem;color:var(--t3);padding:.5rem">No transactions yet</div>';
+    return;
+  }
+  el.innerHTML = txLog.slice(0, 15).map(function(tx){
+    return '<div style="display:flex;justify-content:space-between;align-items:flex-start;'
+      + 'padding:.45rem 0;border-bottom:1px solid rgba(255,255,255,.05)">'
+      + '<div><div style="font-size:.54rem;color:var(--t1)">' + escHtml(tx.t) + '</div>'
+      + '<div style="font-size:.42rem;color:var(--t3)">' + escHtml(tx.d) + '</div></div>'
+      + '<span style="font-size:.5rem;color:var(--gold)">\u03C0</span>'
+      + '</div>';
+  }).join('');
+}
+
+/* ── COPA PASS STATUS ── */
+function renderCopaPassStatus() {
+  var btn   = document.getElementById('copa-pass-btn');
+  var badge = document.getElementById('copa-pass-badge');
+  if (isCopaPass) {
+    if (btn)   { btn.textContent = '\uD83C\uDFC6 Copa Pass Active'; btn.disabled = true; btn.style.opacity = '.75'; }
+    if (badge) { badge.style.display = 'flex'; }
+  } else {
+    if (btn)   { btn.textContent = 'Get Copa Pass \u2014 1\u03C0'; btn.disabled = false; btn.style.opacity = '1'; }
+    if (badge) { badge.style.display = 'none'; }
+  }
+}
 </script>
 </body>
 </html>
