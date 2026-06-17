@@ -1,0 +1,10 @@
+{
+  "name": "copa-pi",
+  "version": "1.0.0",
+  "description": "Copa.pi - Football Super App on Pi Network",
+  "main": "index.html",
+  "scripts": {
+    "deploy": "npx wrangler pages deploy . --project-name copa-pi"
+  },
+  "dependencies": {}
+}
