@@ -345,7 +345,7 @@ a{text-decoration:none;color:inherit}
     </div>
   </div>
   <div style="padding:1rem 1.5rem 2.5rem">
-    <button id="loginBtn" onclick="piLogin()" style="width:100%;padding:.85rem;background:var(--c1);border:none;border-radius:12px;font-family:var(--df);font-size:1rem;font-weight:700;color:#000;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:.5rem;transition:opacity .15s">
+    <button id="loginBtn" onclick="piLogin()" style="width:100%;padding:.9rem;background:var(--c1);border:none;border-radius:14px;font-family:var(--df);font-size:1.05rem;font-weight:700;color:#000;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:.5rem;touch-action:manipulation">
       <span style="font-size:1.2rem">&#x03C0;</span>
       <span id="signin-txt">Sign In with Pi</span>
     </button>
@@ -619,7 +619,6 @@ a{text-decoration:none;color:inherit}
 </div><!-- /app -->
 <div id="toast"></div>
 
-<script>
 <script>
 
 /* ================================================================
@@ -1121,63 +1120,9 @@ function makePrediction(matchId, outcome) {
   toast('Predicted! (+5 pts)');
 }
 
-function piLogin() {
-  var btn     = document.getElementById('loginBtn');
-  var btnText = document.getElementById('signin-txt');
-  var lmsg    = document.getElementById('lmsg');
-  if (btn)     btn.disabled = true;
-  if (btnText) btnText.textContent = 'Authenticating...';
-  if (lmsg)    lmsg.textContent = 'Connecting to Pi Network...';
-  if (typeof Pi === 'undefined') {
-    piUser = { username: 'Pioneer' };
-    localStorage.setItem('copa_user', JSON.stringify(piUser));
-    launchApp();
-    toast('Demo mode — open in Pi Browser for real Pi!');
-    return;
-  }
-  /* MAINNET */
-  Pi.init({ version: '2.0', sandbox: false });
-  Pi.authenticate(['username', 'payments'], onIncompletePayment)
-    .then(function(auth) {
-      piUser = auth.user;
-      console.log('[Copa] Auth OK:', piUser.username);
-      localStorage.setItem('copa_user', JSON.stringify(piUser));
-      launchApp();
-    })
-    .catch(function(err) {
-      console.error('[Copa] Auth error:', err);
-      if (btn)     btn.disabled = false;
-      if (btnText) btnText.textContent = 'Sign In with Pi';
-      if (lmsg)    lmsg.textContent = 'Try again or open in Pi Browser';
-    });
-}
 
-function launchApp() {
-  var loginEl = document.getElementById('login');
-  var appEl   = document.getElementById('app');
-  if (loginEl) loginEl.style.display = 'none';
-  if (appEl) {
-    appEl.style.display       = 'flex';
-    appEl.style.flexDirection = 'column';
-    appEl.style.height        = '100vh';
-  }
-  if (piUser) {
-    var u     = piUser.username || 'Pioneer';
-    var chip  = document.getElementById('user-chip');
-    var moreU = document.getElementById('more-user');
-    if (chip)  chip.textContent  = '@' + u;
-    if (moreU) moreU.textContent = '@' + u;
-  }
-  if (localStorage.getItem('copa_pass') === '1') isCopaPass = true;
-  renderCopaPassStatus();
-  renderTxHistory();
-  homeLoad('WC');
-  setInterval(function(){
-    var active = document.querySelector('.scr.on');
-    if (active && active.id === 's-home') homeLoad(homeLeague);
-  }, 60000);
-  toast('Welcome ' + (piUser ? '@' + piUser.username : 'Pioneer') + '!');
-}
+
+
 
 function goS(id, btn) {
   document.querySelectorAll('.scr').forEach(function(s){ s.classList.remove('on'); });
@@ -1193,7 +1138,10 @@ function goS(id, btn) {
 }
 
 window.addEventListener('load', function() {
-  piLogin();
+  if (localStorage.getItem('copa_pass') === '1') isCopaPass = true;
+  renderTxHistory();
+  var btn = document.getElementById('loginBtn');
+  if (btn) { btn.disabled = false; btn.style.opacity = '1'; }
 });
 
 
@@ -1955,6 +1903,84 @@ setInterval(function(){
   }
 }, 120000);
 
+
+
+function piLogin() {
+  var btn     = document.getElementById('loginBtn');
+  var btnText = document.getElementById('signin-txt');
+  var lmsg    = document.getElementById('lmsg');
+
+  /* Disable only AFTER user taps */
+  if (btn)     { btn.disabled = true; btn.style.opacity = '0.7'; }
+  if (btnText) btnText.textContent = 'Authenticating...';
+  if (lmsg)    lmsg.textContent = 'Connecting to Pi Network...';
+
+  /* Demo mode outside Pi Browser */
+  if (typeof Pi === 'undefined') {
+    setTimeout(function() {
+      piUser = { username: 'Pioneer' };
+      localStorage.setItem('copa_user', JSON.stringify(piUser));
+      launchApp();
+      toast('Demo mode — open in Pi Browser for Pi!');
+    }, 500);
+    return;
+  }
+
+  /* MAINNET */
+  Pi.init({ version: '2.0', sandbox: false });
+
+  Pi.authenticate(['username', 'payments'], onIncompletePayment)
+    .then(function(auth) {
+      piUser = auth.user;
+      console.log('[Copa] Auth OK:', piUser.username);
+      localStorage.setItem('copa_user', JSON.stringify(piUser));
+      launchApp();
+    })
+    .catch(function(err) {
+      console.error('[Copa] Auth error:', err);
+      /* Re-enable button so user can try again */
+      if (btn)     { btn.disabled = false; btn.style.opacity = '1'; }
+      if (btnText) btnText.textContent = 'Sign In with Pi';
+      if (lmsg)    lmsg.textContent = 'Authentication failed — try again';
+    });
+}
+
+function launchApp() {
+  /* Hide login */
+  var loginEl = document.getElementById('login');
+  var appEl   = document.getElementById('app');
+  if (loginEl) loginEl.style.display = 'none';
+  if (appEl)   {
+    appEl.style.display       = 'flex';
+    appEl.style.flexDirection = 'column';
+    appEl.style.height        = '100vh';
+  }
+
+  /* Update username */
+  if (piUser) {
+    var u     = piUser.username || 'Pioneer';
+    var chip  = document.getElementById('user-chip');
+    var moreU = document.getElementById('more-user');
+    if (chip)  chip.textContent  = '@' + u;
+    if (moreU) moreU.textContent = '@' + u;
+  }
+
+  /* Restore Copa Pass */
+  if (localStorage.getItem('copa_pass') === '1') isCopaPass = true;
+  renderCopaPassStatus();
+  renderTxHistory();
+
+  /* Load home data - WC default */
+  homeLoad('WC');
+
+  /* Auto-refresh live data every 60s */
+  setInterval(function() {
+    var active = document.querySelector('.scr.on');
+    if (active && active.id === 's-home') homeLoad(homeLeague);
+  }, 60000);
+
+  toast('Welcome ' + (piUser ? '@' + piUser.username : 'Pioneer') + '!');
+}
 </script>
 </body>
 </html>
