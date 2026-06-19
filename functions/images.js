@@ -1,159 +1,120 @@
-/* =================================================================
-   COPA.pi · functions/news.js · Cloudflare Pages Function
-   Route: /news
-   Multi-source football news aggregator
-   Sources: NewsAPI, Guardian, BBC RSS, ESPN, Sky Sports, Goal.com
-================================================================= */
+/**
+ * COPA.pi — /images v3.0
+ * Fast football images — Wikimedia only (always works, no key)
+ * Other sources blocked from Cloudflare Workers egress
+ */
 
 const CORS = {
   'Access-Control-Allow-Origin':  '*',
   'Access-Control-Allow-Methods': 'GET, OPTIONS',
   'Access-Control-Allow-Headers': 'Content-Type',
-  'Cache-Control':                'public, max-age=120',
+  'Cache-Control':                'public, max-age=300',
 };
 
-const WC_FILTER = ['football','soccer','premier league','la liga','serie a',
-  'bundesliga','champions league','copa','transfer','goal','match','fixture',
-  'standings','injury','manager','club','player','striker','midfielder','defender'];
+const CATEGORY_QUERIES = {
+  all:       ['FIFA World Cup 2026', 'football match', 'soccer stadium', 'football player', 'football fans'],
+  matches:   ['football match', 'soccer game', 'football stadium match'],
+  players:   ['football player', 'soccer player', 'footballer'],
+  stadiums:  ['football stadium', 'soccer arena', 'football ground'],
+  fans:      ['football fans', 'soccer supporters', 'football crowd'],
+  trophies:  ['FIFA World Cup trophy', 'football trophy', 'Champions League trophy'],
+};
 
-async function fetchGuardian(key) {
-  const url = `https://content.guardianapis.com/search?section=football&show-fields=thumbnail,bodyText,trailText&page-size=20&api-key=${key||'test'}`;
+async function fetchWikimedia(query, page, limit) {
+  const offset = (page - 1) * limit;
+  const url = 'https://commons.wikimedia.org/w/api.php'
+    + '?action=query'
+    + '&generator=search'
+    + '&gsrnamespace=6'
+    + '&gsrsearch=' + encodeURIComponent(query)
+    + '&gsrlimit=' + limit
+    + '&gsroffset=' + offset
+    + '&prop=imageinfo'
+    + '&iiprop=url|size|mime|extmetadata'
+    + '&iiurlwidth=1200'
+    + '&format=json'
+    + '&origin=*';
+
   try {
-    const res = await fetch(url, { signal:AbortSignal.timeout(6000) });
+    const res = await fetch(url, { signal: AbortSignal.timeout(8000) });
     if (!res.ok) return [];
     const data = await res.json();
-    return (data.response?.results||[]).map(a => ({
-      id:      'g_'+a.id.replace(/[^a-z0-9]/gi,'_'),
-      title:   a.webTitle,
-      summary: a.fields?.trailText?.replace(/<[^>]+>/g,'').slice(0,200)||'',
-      image:   a.fields?.thumbnail||null,
-      source:  'The Guardian',
-      url:     a.webUrl,
-      date:    a.webPublicationDate,
-      category:'football',
-    }));
+    const pages = data.query?.pages || {};
+
+    return Object.values(pages)
+      .map(p => {
+        const info = p.imageinfo?.[0];
+        if (!info) return null;
+        const mime = info.mime || '';
+        if (!mime.startsWith('image/') || mime.includes('svg')) return null;
+        const meta  = info.extmetadata || {};
+        const caption = (meta.ImageDescription?.value || meta.ObjectName?.value || p.title || '')
+          .replace(/<[^>]+>/g, '').slice(0, 120);
+        const author  = (meta.Artist?.value || '').replace(/<[^>]+>/g, '').slice(0, 50);
+        const license = (meta.LicenseShortName?.value || 'CC Licensed').slice(0, 30);
+        return {
+          id:       'wm_' + p.pageid,
+          url:      info.url,
+          thumb:    info.thumburl || info.url,
+          fullUrl:  info.url,
+          caption,
+          author,
+          license,
+          source:   'Wikimedia Commons',
+          width:    info.width,
+          height:   info.height,
+        };
+      })
+      .filter(Boolean);
   } catch(e) { return []; }
 }
 
-async function fetchNewsAPI(key) {
-  if (!key) return [];
-  const url = `https://newsapi.org/v2/everything?q=football+soccer&language=en&sortBy=publishedAt&pageSize=20&apiKey=${key}`;
-  try {
-    const res = await fetch(url, { signal:AbortSignal.timeout(6000) });
-    if (!res.ok) return [];
-    const data = await res.json();
-    return (data.articles||[])
-      .filter(a => a.title && !a.title.includes('[Removed]'))
-      .map(a => ({
-        id:      'n_'+Buffer.from(a.url||'').toString('base64').slice(0,12),
-        title:   a.title,
-        summary: (a.description||'').slice(0,200),
-        image:   a.urlToImage||null,
-        source:  a.source?.name||'NewsAPI',
-        url:     a.url,
-        date:    a.publishedAt,
-        category:'football',
-      }));
-  } catch(e) { return []; }
-}
-
-async function fetchRSS(feedUrl, sourceName) {
-  try {
-    const res = await fetch(feedUrl, { signal:AbortSignal.timeout(7000) });
-    if (!res.ok) return [];
-    const text = await res.text();
-    const items = [];
-    const itemMatches = text.matchAll(/<item>([\s\S]*?)<\/item>/gi);
-    for (const m of itemMatches) {
-      const block = m[1];
-      const get   = (tag) => {
-        const match = block.match(new RegExp(`<${tag}[^>]*><!\\[CDATA\\[([\\s\\S]*?)\\]\\]></${tag}>|<${tag}[^>]*>([^<]*)</${tag}>`, 'i'));
-        return match ? (match[1]||match[2]||'').trim() : '';
-      };
-      const getAttr = (tag, attr) => {
-        const match = block.match(new RegExp(`<${tag}[^>]*${attr}="([^"]+)"`, 'i'));
-        return match ? match[1] : '';
-      };
-      const title = get('title');
-      const desc  = get('description');
-      if (!title) continue;
-      const low = (title+desc).toLowerCase();
-      const relevant = WC_FILTER.some(w => low.includes(w));
-      if (!relevant) continue;
-      items.push({
-        id:      sourceName.slice(0,3).toLowerCase()+'_'+items.length+'_'+Date.now(),
-        title,
-        summary: desc.replace(/<[^>]+>/g,'').slice(0,200),
-        image:   getAttr('enclosure','url') || getAttr('media:content','url') || null,
-        source:  sourceName,
-        url:     get('link'),
-        date:    get('pubDate') || new Date().toISOString(),
-        category:'football',
-      });
-      if (items.length >= 15) break;
-    }
-    return items;
-  } catch(e) { return []; }
+/* Hardcoded WC 2026 image fallbacks from Wikimedia direct URLs */
+function fallbackImages() {
+  return [
+    { id:'fb1', url:'https://upload.wikimedia.org/wikipedia/commons/thumb/6/66/FIFA_World_Cup_2026_logo.svg/800px-FIFA_World_Cup_2026_logo.svg.png', thumb:'https://upload.wikimedia.org/wikipedia/commons/thumb/6/66/FIFA_World_Cup_2026_logo.svg/400px-FIFA_World_Cup_2026_logo.svg.png', fullUrl:'https://upload.wikimedia.org/wikipedia/commons/6/66/FIFA_World_Cup_2026_logo.svg', caption:'FIFA World Cup 2026 Official Logo', source:'Wikimedia', license:'Public Domain' },
+    { id:'fb2', url:'https://upload.wikimedia.org/wikipedia/commons/thumb/9/91/Football_Pallo_valmiina-cropped.jpg/800px-Football_Pallo_valmiina-cropped.jpg', thumb:'https://upload.wikimedia.org/wikipedia/commons/thumb/9/91/Football_Pallo_valmiina-cropped.jpg/400px-Football_Pallo_valmiina-cropped.jpg', fullUrl:'https://upload.wikimedia.org/wikipedia/commons/9/91/Football_Pallo_valmiina-cropped.jpg', caption:'Football', source:'Wikimedia', license:'CC BY-SA' },
+    { id:'fb3', url:'https://upload.wikimedia.org/wikipedia/commons/thumb/3/3e/SoccerBall.svg/800px-SoccerBall.svg.png', thumb:'https://upload.wikimedia.org/wikipedia/commons/thumb/3/3e/SoccerBall.svg/400px-SoccerBall.svg.png', fullUrl:'https://upload.wikimedia.org/wikipedia/commons/3/3e/SoccerBall.svg', caption:'Soccer Ball', source:'Wikimedia', license:'Public Domain' },
+  ];
 }
 
 export async function onRequestGet(context) {
   const url      = new URL(context.request.url);
-  const league   = url.searchParams.get('league') || 'all';
-  const page     = parseInt(url.searchParams.get('page')||'1', 10);
+  const category = url.searchParams.get('category') || 'all';
+  const page     = parseInt(url.searchParams.get('page') || '1', 10);
+  const perPage  = 12;
 
-  const NEWS_KEY    = context.env.NEWS_API_KEY    || null;
-  const GUARDIAN_KEY = context.env.GUARDIAN_KEY   || 'test';
+  const queries  = CATEGORY_QUERIES[category] || CATEGORY_QUERIES.all;
+  /* Pick a query based on page to get variety */
+  const query    = queries[(page - 1) % queries.length];
 
-  const RSS_FEEDS = [
-    ['https://www.goal.com/feeds/en/news',                    'Goal.com'],
-    ['https://feeds.bbci.co.uk/sport/football/rss.xml',       'BBC Sport'],
-    ['https://www.skysports.com/rss/12040',                    'Sky Sports'],
-    ['https://www.espn.com/espn/rss/soccer/news',              'ESPN FC'],
-    ['https://talksport.com/football/feed/',                   'talkSPORT'],
-    ['https://www.fourfourtwo.com/rss',                        'FourFourTwo'],
-  ];
+  console.log(`[Copa/images] category=${category} page=${page} query="${query}"`);
 
-  /* Fetch all sources in parallel */
-  const fetches = [
-    fetchGuardian(GUARDIAN_KEY),
-    fetchNewsAPI(NEWS_KEY),
-    ...RSS_FEEDS.map(([feed, name]) => fetchRSS(feed, name)),
-  ];
+  const images = await fetchWikimedia(query, page, perPage);
 
-  const results = await Promise.allSettled(fetches);
-  let articles = [];
-  results.forEach(r => {
-    if (r.status === 'fulfilled') articles = articles.concat(r.value);
-  });
+  /* Filter: only real images, min size */
+  const filtered = images.filter(img =>
+    img.url &&
+    !img.url.endsWith('.svg') &&
+    img.url.includes('wikimedia') &&
+    (img.width === undefined || img.width >= 400)
+  );
 
-  /* Deduplicate by title similarity */
-  const seen   = new Set();
-  const unique = articles.filter(a => {
-    const key = a.title.toLowerCase().slice(0,40);
-    if (seen.has(key)) return false;
-    seen.add(key);
-    return true;
-  });
-
-  /* Sort by date */
-  unique.sort((a,b) => new Date(b.date)-new Date(a.date));
-
-  /* Pagination */
-  const perPage = 20;
-  const start   = (page-1)*perPage;
-  const paged   = unique.slice(start, start+perPage);
+  const result = filtered.length ? filtered : fallbackImages();
 
   return new Response(JSON.stringify({
     success:  true,
-    league,
+    category,
     page,
-    total:    unique.length,
-    hasMore:  start+perPage < unique.length,
-    sources:  [...new Set(unique.map(a=>a.source))],
-    articles: paged,
-  }), { headers:{ ...CORS, 'Content-Type':'application/json' }});
+    query,
+    total:    result.length,
+    hasMore:  filtered.length >= perPage - 2, /* more pages available */
+    images:   result,
+  }), {
+    headers: { ...CORS, 'Content-Type': 'application/json' },
+  });
 }
 
 export async function onRequestOptions() {
-  return new Response(null, { headers:CORS });
+  return new Response(null, { headers: CORS });
 }
