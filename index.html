@@ -500,7 +500,7 @@ input{font-family:inherit}
       <button class="nfbtn" onclick="newsSetFilter('injuries',this)">&#x1FA7A; Injuries</button>
     </div>
     <div class="news-feed" id="news-body"></div>
-    <div id="news-scroll-trigger" style="height:1px;flex-shrink:0"></div>
+    <div id="news-scroll-trigger" style="height:60px;min-height:60px;flex-shrink:0;display:flex;align-items:center;justify-content:center"><div class="news-loader" id="news-loader" style="display:none;width:22px;height:22px;border:2px solid var(--bg4);border-top-color:var(--c1);border-radius:50%;animation:spin .7s linear infinite"></div></div>
   </section>
   <div id="news-reader-panel" style="display:none;position:fixed;inset:0;background:var(--bg1);z-index:120;overflow-y:auto;padding-bottom:var(--nav-h)"></div>
 
@@ -524,7 +524,7 @@ input{font-family:inherit}
       <div class="skel-post"><div class="skel-hdr"></div><div class="skel-img"></div></div>
       <div class="skel-post"><div class="skel-hdr"></div><div class="skel-img"></div></div>
     </div>
-    <div id="img-scroll-trigger" style="height:1px;flex-shrink:0"></div>
+    <div id="img-scroll-trigger" style="height:80px;min-height:80px;flex-shrink:0;display:flex;align-items:center;justify-content:center"><div class="img-loader" id="img-loader" style="display:none;width:22px;height:22px;border:2px solid var(--bg4);border-top-color:var(--c1);border-radius:50%;animation:spin .7s linear infinite"></div></div>
     <div class="img-lightbox" id="img-lightbox">
       <div class="img-lb-backdrop" onclick="imgCloseLightbox()"></div>
       <div class="img-lb-sheet">
@@ -544,97 +544,201 @@ input{font-family:inherit}
 
   <!-- MORE / COPA PASS -->
     <section class="scr" id="s-more">
-    <div class="scr-hdr">
+    <div class="scr-hdr" style="flex-shrink:0">
       <div>
-        <div class="scr-hdr-title">⚡ COPA+</div>
-        <div class="scr-hdr-sub">copa.pi · Pi Payments · Mainnet</div>
+        <div class="scr-hdr-title">&#x26A1; COPA+</div>
+        <div class="scr-hdr-sub">Pi Payments &#xB7; Mainnet &#xB7; sandbox:false</div>
       </div>
-      <div id="more-user" style="font-size:.52rem;color:var(--c1)"></div>
+      <div id="more-user" style="font-size:.55rem;color:var(--c1);font-weight:700"></div>
     </div>
+    <div class="scr-scroll">
 
-    <!-- Copa Pass Premium -->
-    <div id="copa-pass-section" style="margin:.4rem .85rem;background:linear-gradient(135deg,#1a0a40,#0d1a4a);border-radius:14px;padding:.85rem;border:2px solid var(--gold)">
-      <!-- Active badge -->
-      <div id="copa-pass-badge" style="display:none;background:rgba(255,215,0,.12);border:1px solid var(--gold);border-radius:8px;padding:.35rem .6rem;margin-bottom:.5rem;align-items:center;gap:.4rem">
-        <span style="font-size:1rem">⭐</span>
-        <span style="font-family:var(--dm);font-size:.58rem;color:var(--gold);font-weight:700">Copa Pass Active — Premium Unlocked</span>
-      </div>
-      <div style="font-family:var(--df);font-size:1rem;color:var(--gold);margin-bottom:.2rem">🏆 Copa Pass</div>
-      <div style="font-size:.52rem;color:rgba(255,255,255,.55);margin-bottom:.5rem">Football Super App Premium Access</div>
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:.2rem;margin-bottom:.6rem">
-        <div style="font-size:.48rem;color:rgba(255,255,255,.7)">✅ AI Predictions</div>
-        <div style="font-size:.48rem;color:rgba(255,255,255,.7)">✅ All Leagues</div>
-        <div style="font-size:.48rem;color:rgba(255,255,255,.7)">✅ Full Lineups</div>
-        <div style="font-size:.48rem;color:rgba(255,255,255,.7)">✅ Match Analysis</div>
-        <div style="font-size:.48rem;color:rgba(255,255,255,.7)">✅ Head-to-Head</div>
-        <div style="font-size:.48rem;color:rgba(255,255,255,.7)">✅ No Ads</div>
-      </div>
-      <button id="copa-pass-btn" onclick="buyCopaPass()" style="width:100%;padding:.65rem;background:var(--gold);border:none;border-radius:10px;font-family:var(--df);font-size:.78rem;font-weight:700;color:#000;cursor:pointer;transition:opacity .15s">Get Copa Pass — 1π</button>
-    </div>
-
-    <!-- Payment Status -->
-    <div id="copa-payment-status" style="display:none;align-items:center;gap:.5rem;padding:.5rem .85rem;font-size:.58rem;color:var(--t3)"></div>
-
-    <!-- Send Pi -->
-    <div style="margin:.4rem .85rem;background:var(--bg2);border-radius:12px;padding:.75rem;border:1px solid var(--bd)">
-      <div style="font-family:var(--dm);font-size:.68rem;color:var(--t1);font-weight:700;margin-bottom:.5rem">💸 Send Pi</div>
-      <div style="margin-bottom:.4rem">
-        <label style="font-size:.48rem;color:var(--t3);display:block;margin-bottom:.2rem">Recipient Pi Username</label>
-        <input id="copa-send-to" type="text" placeholder="Pi username" style="width:100%;background:rgba(255,255,255,.06);border:1px solid var(--bd);border-radius:8px;padding:.45rem .6rem;color:var(--t1);font-size:.6rem;outline:none">
-      </div>
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:.4rem;margin-bottom:.5rem">
-        <div>
-          <label style="font-size:.48rem;color:var(--t3);display:block;margin-bottom:.2rem">Amount (π)</label>
-          <input id="copa-send-amt" type="number" value="0.1" min="0.001" step="0.001" style="width:100%;background:rgba(255,255,255,.06);border:1px solid var(--bd);border-radius:8px;padding:.45rem .6rem;color:var(--t1);font-size:.6rem;outline:none">
+      <!-- Copa Pass -->
+      <div style="margin:.6rem .75rem">
+        <div id="copa-pass-badge" style="display:none;background:rgba(232,255,0,.08);
+          border:1px solid var(--c1);border-radius:10px;padding:.5rem .75rem;
+          margin-bottom:.6rem;align-items:center;gap:.4rem">
+          <span style="font-size:1.1rem">&#x2B50;</span>
+          <span style="font-family:var(--dm);font-size:.6rem;color:var(--c1);font-weight:800">Copa Pass Active &#x2014; Premium Unlocked</span>
         </div>
-        <div>
-          <label style="font-size:.48rem;color:var(--t3);display:block;margin-bottom:.2rem">Memo</label>
-          <input id="copa-send-memo" type="text" placeholder="Copa fan tip!" style="width:100%;background:rgba(255,255,255,.06);border:1px solid var(--bd);border-radius:8px;padding:.45rem .6rem;color:var(--t1);font-size:.6rem;outline:none">
+        <div style="background:linear-gradient(135deg,#111 0%,#1a1a00 100%);
+          border:2px solid var(--c1);border-radius:16px;padding:1rem 1.1rem;
+          box-shadow:0 0 30px rgba(232,255,0,.1)">
+          <div style="font-family:var(--df);font-size:1.15rem;font-weight:800;
+            color:var(--c1);margin-bottom:.2rem">&#x1F3C6; Copa Pass</div>
+          <div style="font-family:var(--dm);font-size:.58rem;color:var(--t2);
+            margin-bottom:.8rem;line-height:1.4">
+            Unlock the full Copa.pi experience.<br>All features, all leagues, no limits.
+          </div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:.4rem;margin-bottom:.9rem">
+            <div style="display:flex;align-items:center;gap:.3rem;font-family:var(--dm);font-size:.54rem;color:var(--t1)">
+              <span style="color:var(--c1);font-size:.7rem">&#x2713;</span> AI Predictions
+            </div>
+            <div style="display:flex;align-items:center;gap:.3rem;font-family:var(--dm);font-size:.54rem;color:var(--t1)">
+              <span style="color:var(--c1);font-size:.7rem">&#x2713;</span> All Leagues
+            </div>
+            <div style="display:flex;align-items:center;gap:.3rem;font-family:var(--dm);font-size:.54rem;color:var(--t1)">
+              <span style="color:var(--c1);font-size:.7rem">&#x2713;</span> Full Lineups
+            </div>
+            <div style="display:flex;align-items:center;gap:.3rem;font-family:var(--dm);font-size:.54rem;color:var(--t1)">
+              <span style="color:var(--c1);font-size:.7rem">&#x2713;</span> Match Analysis
+            </div>
+            <div style="display:flex;align-items:center;gap:.3rem;font-family:var(--dm);font-size:.54rem;color:var(--t1)">
+              <span style="color:var(--c1);font-size:.7rem">&#x2713;</span> H2H History
+            </div>
+            <div style="display:flex;align-items:center;gap:.3rem;font-family:var(--dm);font-size:.54rem;color:var(--t1)">
+              <span style="color:var(--c1);font-size:.7rem">&#x2713;</span> No Ads Ever
+            </div>
+          </div>
+          <button id="copa-pass-btn" onclick="buyCopaPass()"
+            style="width:100%;padding:.75rem;background:var(--c1);border:none;
+            border-radius:12px;font-family:var(--df);font-size:.85rem;font-weight:800;
+            color:#000;cursor:pointer;letter-spacing:-.01em;touch-action:manipulation;
+            transition:all .15s">
+            Get Copa Pass &#x2014; 1&#x03C0;
+          </button>
         </div>
       </div>
-      <button onclick="sendPi()" style="width:100%;padding:.55rem;background:rgba(0,212,255,.12);border:1px solid rgba(0,212,255,.3);border-radius:8px;color:var(--c1);font-family:var(--dm);font-size:.65rem;font-weight:700;cursor:pointer">💸 Send Pi</button>
-    </div>
 
-    <!-- Request Pi -->
-    <div style="margin:.4rem .85rem;background:var(--bg2);border-radius:12px;padding:.75rem;border:1px solid var(--bd)">
-      <div style="font-family:var(--dm);font-size:.68rem;color:var(--t1);font-weight:700;margin-bottom:.5rem">📥 Request Pi</div>
-      <div style="display:grid;grid-template-columns:1fr auto;gap:.4rem;align-items:flex-end">
-        <div>
-          <label style="font-size:.48rem;color:var(--t3);display:block;margin-bottom:.2rem">Amount (π)</label>
-          <input id="copa-req-amt" type="number" value="1" min="0.001" step="0.001" style="width:100%;background:rgba(255,255,255,.06);border:1px solid var(--bd);border-radius:8px;padding:.45rem .6rem;color:var(--t1);font-size:.6rem;outline:none">
+      <!-- Payment status -->
+      <div id="copa-payment-status" style="display:none;align-items:center;gap:.5rem;
+        padding:.4rem .75rem;font-size:.56rem;color:var(--t2)"></div>
+
+      <!-- Send Pi -->
+      <div style="margin:.5rem .75rem;background:var(--bg2);border-radius:14px;
+        padding:.9rem 1rem;border:1px solid var(--bd)">
+        <div style="font-family:var(--dm);font-size:.7rem;font-weight:800;
+          color:var(--t1);margin-bottom:.65rem">&#x1F4B8; Send Pi</div>
+        <div style="margin-bottom:.5rem">
+          <label style="font-family:var(--dm);font-size:.5rem;color:var(--t3);
+            display:block;margin-bottom:.25rem;text-transform:uppercase;letter-spacing:.05em">
+            Recipient Username
+          </label>
+          <input id="copa-send-to" type="text" placeholder="Pi username"
+            style="width:100%;background:var(--bg3);border:1px solid var(--bd2);
+            border-radius:10px;padding:.55rem .75rem;color:var(--t1);
+            font-family:var(--dm);font-size:.62rem;outline:none;
+            transition:border-color .15s"
+            onfocus="this.style.borderColor='var(--c1)'"
+            onblur="this.style.borderColor='var(--bd2)'">
         </div>
-        <button onclick="requestPi()" style="padding:.45rem .75rem;background:rgba(255,215,0,.12);border:1px solid rgba(255,215,0,.3);border-radius:8px;color:var(--gold);font-family:var(--dm);font-size:.6rem;font-weight:700;cursor:pointer;white-space:nowrap">📥 Request</button>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:.5rem;margin-bottom:.6rem">
+          <div>
+            <label style="font-family:var(--dm);font-size:.5rem;color:var(--t3);
+              display:block;margin-bottom:.25rem;text-transform:uppercase;letter-spacing:.05em">
+              Amount (&#x03C0;)
+            </label>
+            <input id="copa-send-amt" type="number" value="0.1" min="0.001" step="0.001"
+              style="width:100%;background:var(--bg3);border:1px solid var(--bd2);
+              border-radius:10px;padding:.55rem .75rem;color:var(--t1);
+              font-family:var(--dm);font-size:.62rem;outline:none;
+              transition:border-color .15s"
+              onfocus="this.style.borderColor='var(--c1)'"
+              onblur="this.style.borderColor='var(--bd2)'">
+          </div>
+          <div>
+            <label style="font-family:var(--dm);font-size:.5rem;color:var(--t3);
+              display:block;margin-bottom:.25rem;text-transform:uppercase;letter-spacing:.05em">
+              Memo
+            </label>
+            <input id="copa-send-memo" type="text" placeholder="Copa tip!"
+              style="width:100%;background:var(--bg3);border:1px solid var(--bd2);
+              border-radius:10px;padding:.55rem .75rem;color:var(--t1);
+              font-family:var(--dm);font-size:.62rem;outline:none;
+              transition:border-color .15s"
+              onfocus="this.style.borderColor='var(--c1)'"
+              onblur="this.style.borderColor='var(--bd2)'">
+          </div>
+        </div>
+        <button onclick="sendPi()"
+          style="width:100%;padding:.65rem;background:var(--bg3);
+          border:1px solid var(--c1);border-radius:10px;color:var(--c1);
+          font-family:var(--dm);font-size:.65rem;font-weight:800;cursor:pointer;
+          touch-action:manipulation;transition:all .15s"
+          onactive="this.style.background='var(--c1)';this.style.color='#000'">
+          &#x1F4B8; Send Pi
+        </button>
       </div>
-    </div>
 
-    <!-- Quick Tips -->
-    <div style="margin:.4rem .85rem">
-      <div style="font-family:var(--dm);font-size:.58rem;color:var(--t3);margin-bottom:.35rem">⚡ Quick Tip</div>
-      <div style="display:flex;gap:.4rem">
-        <button onclick="_doSendPi('',0.1,'Copa quick tip')" style="flex:1;padding:.4rem;background:rgba(0,212,255,.08);border:1px solid rgba(0,212,255,.2);border-radius:8px;color:var(--c1);font-size:.52rem;cursor:pointer">0.1π</button>
-        <button onclick="_doSendPi('',0.5,'Copa fan tip')" style="flex:1;padding:.4rem;background:rgba(0,212,255,.08);border:1px solid rgba(0,212,255,.2);border-radius:8px;color:var(--c1);font-size:.52rem;cursor:pointer">0.5π</button>
-        <button onclick="_doSendPi('',1,'Copa super tip')" style="flex:1;padding:.4rem;background:rgba(0,212,255,.08);border:1px solid rgba(0,212,255,.2);border-radius:8px;color:var(--c1);font-size:.52rem;cursor:pointer">1π</button>
+      <!-- Request Pi -->
+      <div style="margin:.5rem .75rem;background:var(--bg2);border-radius:14px;
+        padding:.9rem 1rem;border:1px solid var(--bd)">
+        <div style="font-family:var(--dm);font-size:.7rem;font-weight:800;
+          color:var(--t1);margin-bottom:.65rem">&#x1F4E5; Request Pi</div>
+        <div style="display:grid;grid-template-columns:1fr auto;gap:.5rem;align-items:flex-end">
+          <div>
+            <label style="font-family:var(--dm);font-size:.5rem;color:var(--t3);
+              display:block;margin-bottom:.25rem;text-transform:uppercase;letter-spacing:.05em">
+              Amount (&#x03C0;)
+            </label>
+            <input id="copa-req-amt" type="number" value="1" min="0.001" step="0.001"
+              style="width:100%;background:var(--bg3);border:1px solid var(--bd2);
+              border-radius:10px;padding:.55rem .75rem;color:var(--t1);
+              font-family:var(--dm);font-size:.62rem;outline:none;
+              transition:border-color .15s"
+              onfocus="this.style.borderColor='var(--c1)'"
+              onblur="this.style.borderColor='var(--bd2)'">
+          </div>
+          <button onclick="requestPi()"
+            style="padding:.55rem .85rem;background:var(--c2);border:none;
+            border-radius:10px;color:#fff;font-family:var(--dm);font-size:.62rem;
+            font-weight:800;cursor:pointer;white-space:nowrap;touch-action:manipulation;
+            transition:opacity .15s">
+            &#x1F517; Share Request
+          </button>
+        </div>
       </div>
-    </div>
 
-    <!-- Transaction History -->
-    <div style="margin:.4rem .85rem;background:var(--bg2);border-radius:12px;padding:.75rem;border:1px solid var(--bd)">
-      <div style="font-family:var(--dm);font-size:.68rem;color:var(--t1);font-weight:700;margin-bottom:.4rem">📋 Transaction History</div>
-      <div id="tx-history"></div>
-    </div>
-
-    <!-- App Info -->
-    <div style="margin:.4rem .85rem 2rem;padding:.75rem;background:var(--bg2);border-radius:10px;border:1px solid var(--bd)">
-      <div style="font-size:.52rem;color:var(--t3);line-height:1.9">
-        <div>⚽ Copa — copa.pi — Football Super App on Pi</div>
-        <div>📦 Version 1.0.0</div>
-        <div>🔐 Pi SDK Exclusive Authentication</div>
-        <div>💎 Pi Exclusive Transactions</div>
-        <div>🌍 Mainnet · sandbox:false</div>
-        <div style="margin-top:.3rem;color:var(--c1)">copa-pi.pages.dev</div>
+      <!-- Quick Tips -->
+      <div style="margin:.5rem .75rem">
+        <div style="font-family:var(--dm);font-size:.5rem;color:var(--t3);
+          text-transform:uppercase;letter-spacing:.06em;margin-bottom:.4rem">
+          &#x26A1; Quick Tip
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:.4rem">
+          <button onclick="_doSendPi('',0.1,'Copa quick tip')"
+            style="padding:.6rem .3rem;background:var(--bg2);border:1px solid var(--bd);
+            border-radius:10px;color:var(--t1);font-family:var(--dm);font-size:.6rem;
+            font-weight:700;cursor:pointer;transition:all .15s">
+            0.1&#x03C0;
+          </button>
+          <button onclick="_doSendPi('',0.5,'Copa fan tip')"
+            style="padding:.6rem .3rem;background:var(--bg2);border:1px solid var(--bd);
+            border-radius:10px;color:var(--t1);font-family:var(--dm);font-size:.6rem;
+            font-weight:700;cursor:pointer;transition:all .15s">
+            0.5&#x03C0;
+          </button>
+          <button onclick="_doSendPi('',1,'Copa super tip')"
+            style="padding:.6rem .3rem;background:var(--c1);border:1px solid var(--c1);
+            border-radius:10px;color:#000;font-family:var(--dm);font-size:.6rem;
+            font-weight:800;cursor:pointer;transition:all .15s">
+            1&#x03C0;
+          </button>
+        </div>
       </div>
-    </div>
 
+      <!-- TX History -->
+      <div style="margin:.5rem .75rem;background:var(--bg2);border-radius:14px;
+        padding:.9rem 1rem;border:1px solid var(--bd)">
+        <div style="font-family:var(--dm);font-size:.7rem;font-weight:800;
+          color:var(--t1);margin-bottom:.5rem">&#x1F4CB; Transaction History</div>
+        <div id="tx-history"></div>
+      </div>
+
+      <!-- App info -->
+      <div style="margin:.5rem .75rem 1.5rem;padding:.85rem 1rem;
+        background:var(--bg2);border-radius:14px;border:1px solid var(--bd)">
+        <div style="font-family:var(--dm);font-size:.52rem;color:var(--t3);line-height:2">
+          <div style="color:var(--t1);font-weight:700;font-size:.58rem;margin-bottom:.3rem">Copa &#x2014; copa.pi</div>
+          <div>&#x1F4E6; Version 1.0.0</div>
+          <div>&#x1F510; Pi SDK Exclusive Authentication</div>
+          <div>&#x1F48E; Pi Exclusive Transactions</div>
+          <div>&#x1F30D; Mainnet &#xB7; sandbox:false</div>
+          <div style="margin-top:.3rem;color:var(--c1);font-weight:700">copa-pi.pages.dev</div>
+        </div>
+      </div>
+
+    </div><!-- /scr-scroll -->
   </section>
 
 </div><!-- /main -->
@@ -668,6 +772,7 @@ input{font-family:inherit}
 <div id="toast"></div>
 
 <script>
+
 
 
 /* ================================================================
@@ -1163,18 +1268,7 @@ function makePrediction(matchId, outcome) {
 
 
 
-function goS(id, btn) {
-  document.querySelectorAll('.scr').forEach(function(s){ s.classList.remove('on'); });
-  var el = document.getElementById('s-' + id);
-  if (el) el.classList.add('on');
-  document.querySelectorAll('.nav-btn').forEach(function(b){ b.classList.remove('on'); });
-  if (btn) btn.classList.add('on');
-  if (id==='standings' && !document.getElementById('standings-body').children.length) standingsLoad('PL');
-  if (id==='scorers'   && !document.getElementById('scorers-body').children.length)   scorersLoad('PL');
-  if (id==='predict'   && !document.getElementById('predict-body').children.length)   predictLoad('PL');
-  if (id==='news'      && !document.getElementById('news-body').innerHTML.trim())      newsLoad();
-  if (id==='images'    && !IMG.allImages.length)                                       imgLoadPage();
-}
+
 
 window.addEventListener('load', function() {
   if (localStorage.getItem('copa_pass') === '1') isCopaPass = true;
@@ -1726,44 +1820,11 @@ var newsHasMore = true;
 var newsFilter  = 'all';
 var newsTimer   = null;
 
-function newsSetFilter(filter, btn) {
-  newsFilter = filter;
-  newsPage = 1; newsHasMore = true;
-  document.querySelectorAll('.nfbtn').forEach(function(b){ b.classList.remove('on'); });
-  if (btn) btn.classList.add('on');
-  var nb = document.getElementById('news-body');
-  if (nb) nb.innerHTML = '';
-  newsLoad();
-}
 
-function newsRefresh() {
-  newsPage = 1; newsHasMore = true;
-  var nb = document.getElementById('news-body');
-  if (nb) nb.innerHTML = '';
-  newsLoad();
-}
 
-function newsLoad() {
-  if (newsLoading || !newsHasMore) return;
-  newsLoading = true;
-  fetch('/news?page=' + newsPage + '&filter=' + newsFilter)
-    .then(function(r){ return r.json(); })
-    .then(function(data){
-      newsHasMore = data.hasMore !== false;
-      newsPage++;
-      renderNews(data.articles || []);
-    })
-    .catch(function(){
-      var nb = document.getElementById('news-body');
-      if (nb && !nb.innerHTML.trim()) {
-        nb.innerHTML = '<div class="loading-center" style="flex-direction:column;gap:.5rem;padding:2rem">'
-          + '<div>Failed to load news</div>'
-          + '<button onclick="newsRefresh()" style="background:var(--c1);border:none;border-radius:8px;color:#000;padding:.35rem .75rem;font-size:.56rem;cursor:pointer">Retry</button>'
-          + '</div>';
-      }
-    })
-    .finally(function(){ newsLoading = false; });
-}
+
+
+
 
 
 
@@ -1782,56 +1843,11 @@ var imgLazyObs = 'IntersectionObserver' in window
     },{ rootMargin:'400px' })
   : { observe:function(){}, unobserve:function(){} };
 
-function imgSetCat(cat, btn) {
-  IMG.category=cat; IMG.page=1; IMG.hasMore=true; IMG.allImages=[];
-  document.querySelectorAll('.nfbtn').forEach(function(b){ b.classList.remove('on'); });
-  if(btn) btn.classList.add('on');
-  var grid = document.getElementById('img-grid');
-  if(grid) grid.innerHTML = '';
-  imgLoadPage();
-}
 
-function imgRefresh() {
-  var prefix = IMG.category+'_';
-  Object.keys(IMG.cache).forEach(function(k){ if(k.startsWith(prefix)) delete IMG.cache[k]; });
-  IMG.page=1; IMG.hasMore=true; IMG.allImages=[];
-  var grid = document.getElementById('img-grid');
-  if(grid) grid.innerHTML = '';
-  var btn = document.getElementById('img-refresh-btn');
-  if(btn){ btn.style.transform='rotate(360deg)'; setTimeout(function(){ btn.style.transform=''; },600); }
-  imgLoadPage();
-}
 
-function imgLoadPage() {
-  if(IMG.loading || !IMG.hasMore) return;
-  var key = IMG.category + '_' + IMG.page;
-  if(IMG.cache[key]){ imgRender(IMG.cache[key]); IMG.page++; return; }
-  IMG.loading = true;
-  var sk = document.getElementById('img-skeletons');
-  if(sk) sk.style.display = 'block';
-  fetch('/images?category=' + IMG.category + '&page=' + IMG.page)
-    .then(function(r){ return r.json(); })
-    .then(function(data){
-      IMG.cache[key] = data.images || [];
-      IMG.hasMore = data.hasMore !== false;
-      imgRender(data.images || []);
-      IMG.page++;
-    })
-    .catch(function(){
-      var grid = document.getElementById('img-grid');
-      if(grid && !grid.innerHTML.trim()){
-        grid.innerHTML = '<div class="loading-center" style="padding:2rem;flex-direction:column;gap:.5rem">'
-          +'<div>Images unavailable</div>'
-          +'<button onclick="imgRefresh()" style="background:var(--c1);border:none;border-radius:8px;color:#000;padding:.35rem .75rem;font-size:.56rem;cursor:pointer">Retry</button>'
-          +'</div>';
-      }
-    })
-    .finally(function(){
-      IMG.loading = false;
-      var sk2 = document.getElementById('img-skeletons');
-      if(sk2) sk2.style.display = 'none';
-    });
-}
+
+
+
 
 
 
@@ -1842,26 +1858,10 @@ function imgLoadPage() {
 
 
 /* Infinite scroll */
-if('IntersectionObserver' in window) {
-  new IntersectionObserver(function(entries){
-    if(entries[0].isIntersecting && !newsLoading && newsHasMore) newsLoad();
-  },{ rootMargin:'500px' }).observe(document.getElementById('news-scroll-trigger') || document.body);
 
-  new IntersectionObserver(function(entries){
-    if(entries[0].isIntersecting && !IMG.loading && IMG.hasMore) imgLoadPage();
-  },{ rootMargin:'500px' }).observe(document.getElementById('img-scroll-trigger') || document.body);
-}
 
 /* Auto-refresh news every 2 min */
-setInterval(function(){
-  var active = document.querySelector('.scr.on');
-  if(active && active.id === 's-news') {
-    newsPage=1; newsHasMore=true;
-    var nb = document.getElementById('news-body');
-    if(nb) nb.innerHTML = '';
-    newsLoad();
-  }
-}, 120000);
+
 
 
 
@@ -2108,6 +2108,268 @@ function imgDl(i) {
   a.download = 'copa-' + Date.now() + '.jpg';
   a.target = '_blank';
   document.body.appendChild(a); a.click(); document.body.removeChild(a);
+}
+
+
+/* ================================================================
+   COPA — INFINITE SCROLL ENGINE v2
+   News: unlimited pages, auto-load, in-app reader
+   Images: unlimited, lazy, Instagram-style, in-app lightbox
+================================================================ */
+
+/* ── NEWS ── */
+var newsPage    = 1;
+var newsLoading = false;
+var newsHasMore = true;
+var newsFilter  = 'all';
+var _newsObs    = null;
+
+function newsSetFilter(filter, btn) {
+  newsFilter = filter;
+  newsPage = 1;
+  newsHasMore = true;
+  document.querySelectorAll('.nfbtn').forEach(function(b){ b.classList.remove('on'); });
+  if (btn) btn.classList.add('on');
+  var nb = document.getElementById('news-body');
+  if (nb) nb.innerHTML = '';
+  newsShowLoader(false);
+  newsLoad();
+}
+
+function newsRefresh() {
+  newsPage = 1;
+  newsHasMore = true;
+  var nb = document.getElementById('news-body');
+  if (nb) nb.innerHTML = '';
+  newsLoad();
+}
+
+function newsShowLoader(show) {
+  var l = document.getElementById('news-loader');
+  if (l) l.style.display = show ? 'block' : 'none';
+}
+
+function newsLoad() {
+  if (newsLoading || !newsHasMore) return;
+  newsLoading = true;
+  newsShowLoader(true);
+
+  fetch('/news?page=' + newsPage + '&filter=' + newsFilter)
+    .then(function(r) { return r.json(); })
+    .then(function(data) {
+      var articles = data.articles || [];
+      if (!data.hasMore || articles.length < 5) newsHasMore = false;
+      newsPage++;
+      if (articles.length) {
+        renderNews(articles);
+      } else if (newsPage === 2) {
+        var nb = document.getElementById('news-body');
+        if (nb) nb.innerHTML = '<div style="text-align:center;padding:3rem 1rem;'
+          + 'font-family:var(--dm);font-size:.6rem;color:var(--t3)">'
+          + '&#x1F4F0; No news available right now<br>'
+          + '<span style="font-size:.5rem">Pull to refresh</span></div>';
+      }
+    })
+    .catch(function() {
+      newsHasMore = false;
+      var nb = document.getElementById('news-body');
+      if (nb && !nb.innerHTML.trim()) {
+        nb.innerHTML = '<div style="text-align:center;padding:3rem 1rem;'
+          + 'font-family:var(--dm);font-size:.58rem;color:var(--t3)">'
+          + '&#x26A0; Failed to load news<br><br>'
+          + '<button onclick="newsRefresh()" style="background:var(--c1);border:none;'
+          + 'border-radius:10px;color:#000;padding:.5rem 1.2rem;font-family:var(--dm);'
+          + 'font-size:.56rem;font-weight:800;cursor:pointer">Retry</button></div>';
+      }
+    })
+    .finally(function() {
+      newsLoading = false;
+      newsShowLoader(false);
+    });
+}
+
+/* Setup news observer once */
+function initNewsScroll() {
+  var trigger = document.getElementById('news-scroll-trigger');
+  if (!trigger || _newsObs) return;
+  _newsObs = new IntersectionObserver(function(entries) {
+    if (entries[0].isIntersecting && !newsLoading && newsHasMore) {
+      newsLoad();
+    }
+  }, { rootMargin: '600px', threshold: 0 });
+  _newsObs.observe(trigger);
+}
+
+/* ── IMAGES ── */
+var IMG = {
+  category: 'all',
+  page:     1,
+  loading:  false,
+  hasMore:  true,
+  cache:    {},
+  allImages:[],
+  current:  null,
+};
+var _imgObs  = null;
+var _lazyObs = null;
+
+function _initLazyObs() {
+  if (_lazyObs) return;
+  _lazyObs = new IntersectionObserver(function(entries) {
+    entries.forEach(function(e) {
+      if (e.isIntersecting) {
+        var el  = e.target;
+        var src = el.getAttribute('data-src');
+        if (src) { el.src = src; el.removeAttribute('data-src'); }
+        _lazyObs.unobserve(el);
+      }
+    });
+  }, { rootMargin: '400px', threshold: 0 });
+}
+
+function imgSetCat(cat, btn) {
+  IMG.category  = cat;
+  IMG.page      = 1;
+  IMG.hasMore   = true;
+  IMG.allImages = [];
+  document.querySelectorAll('.nfbtn').forEach(function(b){ b.classList.remove('on'); });
+  if (btn) btn.classList.add('on');
+  var grid = document.getElementById('img-grid');
+  if (grid) grid.innerHTML = '';
+  imgShowLoader(false);
+  /* Reset observer */
+  _imgObs = null;
+  imgLoadPage();
+}
+
+function imgRefresh() {
+  var prefix = IMG.category + '_';
+  Object.keys(IMG.cache).forEach(function(k) {
+    if (k.startsWith(prefix)) delete IMG.cache[k];
+  });
+  IMG.page      = 1;
+  IMG.hasMore   = true;
+  IMG.allImages = [];
+  var grid = document.getElementById('img-grid');
+  if (grid) grid.innerHTML = '';
+  var btn = document.getElementById('img-refresh-btn');
+  if (btn) {
+    btn.style.transform = 'rotate(360deg)';
+    btn.style.transition = 'transform .5s';
+    setTimeout(function(){ btn.style.transform=''; btn.style.transition=''; }, 600);
+  }
+  _imgObs = null;
+  imgLoadPage();
+}
+
+function imgShowLoader(show) {
+  var sk = document.getElementById('img-skeletons');
+  var l  = document.getElementById('img-loader');
+  if (sk) sk.style.display = show && IMG.allImages.length === 0 ? 'block' : 'none';
+  if (l)  l.style.display  = show && IMG.allImages.length > 0  ? 'block' : 'none';
+}
+
+function imgLoadPage() {
+  if (IMG.loading || !IMG.hasMore) return;
+  var key = IMG.category + '_' + IMG.page;
+
+  /* Cache hit */
+  if (IMG.cache[key]) {
+    imgRender(IMG.cache[key]);
+    IMG.page++;
+    initImgScroll();
+    return;
+  }
+
+  IMG.loading = true;
+  imgShowLoader(true);
+
+  fetch('/images?category=' + IMG.category + '&page=' + IMG.page + '&per_page=16')
+    .then(function(r) { return r.json(); })
+    .then(function(data) {
+      var images = data.images || [];
+      IMG.cache[key] = images;
+      if (!data.hasMore || images.length < 4) IMG.hasMore = false;
+      if (images.length) {
+        imgRender(images);
+        IMG.page++;
+      } else if (IMG.page === 1) {
+        var grid = document.getElementById('img-grid');
+        if (grid) grid.innerHTML = '<div style="text-align:center;padding:3rem 1rem;'
+          + 'font-family:var(--dm);font-size:.58rem;color:var(--t3)">&#x1F4F8; No images found</div>';
+      }
+    })
+    .catch(function() {
+      IMG.hasMore = false;
+      var grid = document.getElementById('img-grid');
+      if (grid && !grid.innerHTML.trim()) {
+        grid.innerHTML = '<div style="text-align:center;padding:3rem 1rem;'
+          + 'font-family:var(--dm);font-size:.58rem;color:var(--t3)">'
+          + '&#x26A0; Images unavailable<br><br>'
+          + '<button onclick="imgRefresh()" style="background:var(--c1);border:none;'
+          + 'border-radius:10px;color:#000;padding:.5rem 1.2rem;font-family:var(--dm);'
+          + 'font-size:.56rem;font-weight:800;cursor:pointer">Retry</button></div>';
+      }
+    })
+    .finally(function() {
+      IMG.loading = false;
+      imgShowLoader(false);
+      initImgScroll();
+    });
+}
+
+/* Setup img observer once per category */
+function initImgScroll() {
+  var trigger = document.getElementById('img-scroll-trigger');
+  if (!trigger || _imgObs) return;
+  _imgObs = new IntersectionObserver(function(entries) {
+    if (entries[0].isIntersecting && !IMG.loading && IMG.hasMore) {
+      imgLoadPage();
+    }
+  }, { rootMargin: '700px', threshold: 0 });
+  _imgObs.observe(trigger);
+}
+
+/* Auto-refresh news every 90 seconds while on news tab */
+setInterval(function() {
+  var active = document.querySelector('.scr.on');
+  if (active && active.id === 's-news' && !newsLoading) {
+    newsPage   = 1;
+    newsHasMore= true;
+    var nb = document.getElementById('news-body');
+    if (nb) nb.innerHTML = '';
+    newsLoad();
+  }
+}, 90000);
+
+/* imgOpen, imgShare2, imgDl already defined above */
+
+
+function goS(id, btn) {
+  document.querySelectorAll('.scr').forEach(function(s){ s.classList.remove('on'); });
+  var el = document.getElementById('s-' + id);
+  if (el) el.classList.add('on');
+  document.querySelectorAll('.nav-btn').forEach(function(b){ b.classList.remove('on'); });
+  if (btn) btn.classList.add('on');
+
+  /* Lazy init each screen */
+  if (id === 'standings' && !document.getElementById('standings-body').children.length) standingsLoad('WC');
+  if (id === 'scorers'   && !document.getElementById('scorers-body').children.length)   scorersLoad('WC');
+  if (id === 'predict'   && !document.getElementById('predict-body').children.length)   predictLoad('WC');
+
+  if (id === 'news') {
+    var nb = document.getElementById('news-body');
+    if (!nb || !nb.innerHTML.trim()) { newsLoad(); }
+    /* Always init observer when switching to news */
+    setTimeout(initNewsScroll, 100);
+  }
+
+  if (id === 'images') {
+    if (!IMG.allImages.length) { imgLoadPage(); }
+    /* Always init observer when switching to images */
+    setTimeout(initImgScroll, 100);
+    _initLazyObs();
+  }
 }
 
 </script>
