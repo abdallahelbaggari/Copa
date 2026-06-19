@@ -428,7 +428,7 @@ input{font-family:inherit}
       <button class="ltab" onclick="homeSetLeague('DED',this)">🇳🇱 Eredivisie</button>
       <button class="ltab" onclick="homeSetLeague('EC',this)">🇪🇺 Euro</button>
     </div><div class="scr-scroll" id="home-scroll">
-    <div id="home-matches"><div class="loading-center"><div class="spin"></div><span>Loading matches...</span></div></div>
+    <div id="home-matches" style="flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;padding-bottom:calc(var(--nav-h)+0.5rem)"><div class="loading-center"><div class="spin"></div><span>Loading matches...</span></div></div>
   </div></section>
   <!-- Match Detail Panel -->
   <div id="match-detail-panel" style="display:none;position:fixed;inset:0;background:var(--bg1);z-index:100;overflow-y:auto;padding-bottom:var(--nav-h)"></div>
@@ -499,7 +499,7 @@ input{font-family:inherit}
       <button class="nfbtn" onclick="newsSetFilter('results',this)">&#x26BD; Results</button>
       <button class="nfbtn" onclick="newsSetFilter('injuries',this)">&#x1FA7A; Injuries</button>
     </div>
-    <div class="news-feed" id="news-body"></div>
+    <div class="news-feed" id="news-body" style="flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;padding-bottom:calc(var(--nav-h)+1rem)"></div>
     
   </section>
   <div id="news-reader-panel" style="display:none;position:fixed;inset:0;background:var(--bg1);z-index:120;overflow-y:auto;padding-bottom:var(--nav-h)"></div>
@@ -507,8 +507,12 @@ input{font-family:inherit}
   <!-- IMAGES -->
   <section class="scr" id="s-images">
     <div class="scr-hdr" style="flex-shrink:0">
-      <div><div class="scr-hdr-title">&#x1F4F8; IMAGES</div><div class="scr-hdr-sub">Football photography &#xB7; Infinite scroll</div></div>
-      <button onclick="imgRefresh()" id="img-refresh-btn" style="background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.15);border-radius:50%;color:rgba(255,255,255,.7);width:32px;height:32px;font-size:.9rem">&#x21BA;</button>
+      <div><div class="scr-hdr-title">&#x1F4F8; IMAGES</div>
+      <div class="scr-hdr-sub">Football photography &#xB7; Infinite scroll</div></div>
+      <button onclick="imgRefresh()" id="img-refresh-btn"
+        style="background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.15);
+        border-radius:50%;color:rgba(255,255,255,.7);width:34px;height:34px;font-size:.9rem;
+        cursor:pointer;touch-action:manipulation">&#x21BA;</button>
     </div>
     <div class="nfbar">
       <button class="nfbtn on" onclick="imgSetCat('all',this)">&#x1F30D; All</button>
@@ -518,15 +522,16 @@ input{font-family:inherit}
       <button class="nfbtn" onclick="imgSetCat('fans',this)">&#x1F389; Fans</button>
       <button class="nfbtn" onclick="imgSetCat('trophies',this)">&#x1F3C6; Trophies</button>
     </div>
-    <div class="img-feed" id="img-grid"></div>
-    <div id="img-skeletons" style="display:none">
-      <div class="skel-post"><div class="skel-hdr"></div><div class="skel-img"></div></div>
-      <div class="skel-post"><div class="skel-hdr"></div><div class="skel-img"></div></div>
-      <div class="skel-post"><div class="skel-hdr"></div><div class="skel-img"></div></div>
+    <!-- img-feed-wrap is the scroll container; _imgInitScroll binds scroll on it -->
+    <div class="img-feed" id="img-feed-wrap" style="flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;padding-bottom:calc(var(--nav-h)+1rem)">
+      <div id="img-grid"></div>
+      <div id="img-skeletons" style="display:none">
+        <div class="skel-post"><div class="skel-hdr"></div><div class="skel-img"></div></div>
+        <div class="skel-post"><div class="skel-hdr"></div><div class="skel-img"></div></div>
+      </div>
     </div>
-    
+    <!-- Lightbox -->
     <div class="img-lightbox" id="img-lightbox">
-      <div class="img-lb-backdrop" onclick="imgCloseLightbox()"></div>
       <div class="img-lb-sheet">
         <button class="img-lb-close" onclick="imgCloseLightbox()">&#x2715;</button>
         <img class="img-lb-img" id="img-lb-img" src="" alt="">
@@ -534,8 +539,8 @@ input{font-family:inherit}
           <div class="img-lb-caption" id="img-lb-caption"></div>
           <div class="img-lb-meta" id="img-lb-meta"></div>
           <div class="img-lb-actions">
-            <button class="img-lb-btn" onclick="imgDownload()">&#x2B07; Save</button>
-            <button class="img-lb-btn" onclick="imgShare()">&#x2B06; Share</button>
+            <button class="img-lb-btn" onclick="imgDl(IMG.current)">&#x2B07; Save</button>
+            <button class="img-lb-btn" onclick="imgShare2(IMG.current)">&#x2B06; Share</button>
           </div>
         </div>
       </div>
@@ -772,693 +777,316 @@ input{font-family:inherit}
 <div id="toast"></div>
 
 <script>
-
-
-
-
-/* ================================================================
-   COPA.pi — JavaScript Engine
-   MAINNET · sandbox:false · Cloudflare Pages
-================================================================ */
-
-/* ── PI SDK ── */
+var piUser      = null;
+var isCopaPass  = localStorage.getItem('copa_pass') === '1';
+var txLog       = JSON.parse(localStorage.getItem('copa_tx') || '[]');
+var copaScore   = JSON.parse(localStorage.getItem('copa_score') || '{"points":0,"streak":0}');
+var predictions = JSON.parse(localStorage.getItem('copa_preds') || '{}');
 var _APPROVE = '/approve';
 var _COMPLETE = '/complete';
 var _CANCEL  = '/cancel-payment';
-var piUser = null;
-var copaPassActive = false;
-var predictions = JSON.parse(localStorage.getItem('copa_preds')||'{}');
-var txHistory   = JSON.parse(localStorage.getItem('copa_tx')||'[]');
+var homeLeague  = 'WC';
+var homeData    = null;
+var openMatchId = null;
 
+function piLogin() {
+  var btn     = document.getElementById('loginBtn');
+  var btnText = document.getElementById('signin-txt');
+  var lmsg    = document.getElementById('lmsg');
+  if (btn)     { btn.disabled = true; btn.style.opacity = '0.7'; }
+  if (btnText) btnText.textContent = 'Authenticating...';
+  if (lmsg)    lmsg.textContent = 'Connecting to Pi Network...';
+  if (typeof Pi === 'undefined') {
+    setTimeout(function() {
+      piUser = { username: 'Pioneer' };
+      localStorage.setItem('copa_user', JSON.stringify(piUser));
+      launchApp();
+      toast('Demo mode — open in Pi Browser!');
+    }, 500);
+    return;
+  }
+  Pi.init({ version: '2.0', sandbox: false });
+  Pi.authenticate(['username', 'payments'], onIncompletePayment)
+    .then(function(auth) {
+      piUser = auth.user;
+      localStorage.setItem('copa_user', JSON.stringify(piUser));
+      launchApp();
+    })
+    .catch(function(err) {
+      console.error('[Copa] Auth error:', err);
+      if (btn)     { btn.disabled = false; btn.style.opacity = '1'; }
+      if (btnText) btnText.textContent = 'Sign In with Pi';
+      if (lmsg)    lmsg.textContent = 'Try again';
+    });
+}
 
+function launchApp() {
+  var loginEl = document.getElementById('login');
+  var appEl   = document.getElementById('app');
+  if (loginEl) loginEl.style.display = 'none';
+  if (appEl)   { appEl.style.display='flex'; appEl.style.flexDirection='column'; appEl.style.height='100vh'; }
+  if (piUser) {
+    var u = piUser.username || 'Pioneer';
+    var c = document.getElementById('user-chip');
+    var m = document.getElementById('more-user');
+    if (c) c.textContent = '@' + u;
+    if (m) m.textContent = '@' + u;
+  }
+  if (localStorage.getItem('copa_pass') === '1') isCopaPass = true;
+  renderCopaPassStatus();
+  renderTxHistory();
+  homeLoad('WC');
+  setInterval(function() {
+    var a = document.querySelector('.scr.on');
+    if (a && a.id === 's-home') homeLoad(homeLeague);
+  }, 60000);
+  toast('Welcome ' + (piUser ? '@' + piUser.username : 'Pioneer') + '!');
+}
 
 function onIncompletePayment(payment) {
   if (!payment) return;
-  console.log('[Copa] Incomplete payment:', payment.identifier);
   var txid = '';
   try { txid = (payment.transaction && payment.transaction.txid) ? payment.transaction.txid : ''; } catch(e){}
   var pid = payment.identifier;
   if (txid) {
-    fetch(_COMPLETE,{ method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({paymentId:pid,txid:txid})})
-      .then(function(r){ return r.json(); })
-      .then(function(d){ console.log('[Copa] Completed:', d); })
-      .catch(function(e){ console.warn('[Copa] Complete error:', e); });
+    fetch(_COMPLETE, { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({paymentId:pid,txid:txid}) })
+      .then(function(r){ return r.json(); }).catch(function(){});
   } else {
-    fetch(_CANCEL,{ method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({paymentId:pid})})
-      .then(function(r){ return r.json(); })
-      .then(function(d){ console.log('[Copa] Cancelled:', d); })
-      .catch(function(e){ console.warn('[Copa] Cancel error:', e); });
+    fetch(_CANCEL, { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({paymentId:pid}) })
+      .then(function(r){ return r.json(); }).catch(function(){});
   }
 }
 
-/* ── COPA PASS ── */
-
-
-
-
-
-
-
-
-/* ── NAVIGATION ── */
-
-
-
-
-/* ── UTILITIES ── */
-function toast(msg, dur) {
-  var el = document.getElementById('toast');
-  el.textContent = msg;
-  el.classList.add('show');
-  setTimeout(function(){ el.classList.remove('show'); }, dur||2500);
+function buyCopaPass() {
+  if (isCopaPass) { toast('Copa Pass already active!'); return; }
+  var btn=document.getElementById('copa-pass-btn');
+  if (btn) { btn.textContent='Processing...'; btn.disabled=true; }
+  if (typeof Pi==='undefined') { toast('Open in Pi Browser'); if(btn){btn.textContent='Get Copa Pass — 1π';btn.disabled=false;} return; }
+  Pi.createPayment({ amount:1, memo:'Copa Pass — copa.pi Premium', metadata:{type:'copa_pass',app:'copa.pi',network:'mainnet'} }, {
+    onReadyForServerApproval: function(paymentId){
+      return fetch(_APPROVE,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({paymentId:paymentId,expectedAmount:1})})
+        .then(function(r){ return r.json(); }).then(function(d){ console.log('[Copa] Approved:',d); });
+    },
+    onReadyForServerCompletion: function(paymentId,txid){
+      return fetch(_COMPLETE,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({paymentId:paymentId,txid:txid})})
+        .then(function(r){ return r.json(); })
+        .then(function(d){
+          isCopaPass=true; localStorage.setItem('copa_pass','1');
+          addTx('Copa Pass 1π txid:'+txid.slice(0,12)+'...');
+          showPaymentStatus('success','Copa Pass activated!');
+          renderCopaPassStatus(); toast('Copa Pass activated!');
+        }).catch(function(err){ showPaymentStatus('failed','Error — try again'); if(btn){btn.textContent='Get Copa Pass — 1π';btn.disabled=false;} });
+    },
+    onCancel: function(){ if(btn){btn.textContent='Get Copa Pass — 1π';btn.disabled=false;} showPaymentStatus('cancelled'); toast('Cancelled'); },
+    onError:  function(err){ console.error(err); if(btn){btn.textContent='Get Copa Pass — 1π';btn.disabled=false;} showPaymentStatus('failed','Error'); }
+  });
 }
 
-function escHtml(s) {
-  return (s||'').toString().replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+function _doSendPi(to,amt,memo) {
+  if (!to.trim()) { toast('Enter recipient'); return; }
+  if (!amt||amt<=0) { toast('Enter amount'); return; }
+  if (typeof Pi==='undefined') { toast('Open in Pi Browser'); return; }
+  Pi.createPayment({ amount:amt, memo:memo||'Copa.pi fan tip', metadata:{type:'send',app:'copa.pi',network:'mainnet'} }, {
+    onReadyForServerApproval: function(paymentId){
+      return fetch(_APPROVE,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({paymentId:paymentId})})
+        .then(function(r){ return r.json(); }).then(function(d){ console.log('[Copa] Send approved:',d); });
+    },
+    onReadyForServerCompletion: function(paymentId,txid){
+      return fetch(_COMPLETE,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({paymentId:paymentId,txid:txid})})
+        .then(function(r){ return r.json(); })
+        .then(function(){
+          addTx(amt+'π sent to @'+to); showPaymentStatus('success',amt+'π sent!'); toast(amt+'π sent!');
+          var te=document.getElementById('copa-send-to'); if(te) te.value='';
+        }).catch(function(){ addTx(amt+'π sent'); toast('Sent!'); });
+    },
+    onCancel: function(){ showPaymentStatus('cancelled'); toast('Cancelled'); },
+    onError:  function(err){ console.error(err); showPaymentStatus('failed','Error'); }
+  });
 }
 
-
-
-/* ── HOME / LIVE SCORES ── */
-
-
-
-
-
-
-
-/* ── MATCH DETAIL ── */
-var currentMatch = null;
-function openMatch(jsonStr) {
-  /* For now show lineup + analysis in a toast -- expand to modal in Phase 2 */
-  try {
-    var m = JSON.parse(jsonStr);
-    currentMatch = m;
-    toast(escHtml(m.homeTeam) + ' vs ' + escHtml(m.awayTeam));
-  } catch(e) {}
+function sendPi() {
+  var to  =(document.getElementById('copa-send-to')||{}).value||'';
+  var amt =parseFloat((document.getElementById('copa-send-amt')||{}).value)||0;
+  var memo=(document.getElementById('copa-send-memo')||{}).value||'Copa fan tip';
+  _doSendPi(to,amt,memo);
 }
 
-/* ── STANDINGS ── */
-var standingsLeague = 'PL';
+function requestPi() {
+  if (!piUser) { toast('Login required'); return; }
+  var amt=parseFloat((document.getElementById('copa-req-amt')||{}).value)||1;
+  var msg='Send '+amt+'π to copa.pi/'+piUser.username;
+  if (navigator.share) navigator.share({title:'Pay me on Copa.pi',text:msg,url:window.location.href}).catch(function(){});
+  else if (navigator.clipboard) navigator.clipboard.writeText(msg).then(function(){ toast('Request copied!'); });
+  else toast(msg);
+}
+
+function showPaymentStatus(status,message) {
+  var pst=document.getElementById('copa-payment-status'); if(!pst) return;
+  var configs={
+    idle:{text:'',show:false},
+    approving:{icon:'🔄',text:'Approving...',color:'var(--c1)',show:true},
+    completing:{icon:'⏳',text:'Completing...',color:'var(--gold)',show:true},
+    success:{icon:'✅',text:message||'Done!',color:'var(--grn)',show:true},
+    failed:{icon:'❌',text:message||'Failed',color:'var(--red)',show:true},
+    cancelled:{icon:'↩',text:'Cancelled',color:'var(--t3)',show:true},
+  };
+  var cfg=configs[status]||configs.idle;
+  pst.style.display=cfg.show?'flex':'none';
+  if(cfg.show) pst.innerHTML='<span>'+cfg.icon+'</span><span style="font-family:var(--dm);font-size:.62rem;color:'+cfg.color+'">'+cfg.text+'</span>';
+}
+
+function addTx(text) {
+  txLog.unshift({t:text,d:new Date().toLocaleString()});
+  if(txLog.length>60) txLog.pop();
+  localStorage.setItem('copa_tx',JSON.stringify(txLog));
+  renderTxHistory();
+}
+
+function renderTxHistory() {
+  var el=document.getElementById('tx-history'); if(!el) return;
+  if (!txLog.length) { el.innerHTML='<div style="font-size:.58rem;color:var(--t3);padding:.5rem">No transactions yet</div>'; return; }
+  el.innerHTML=txLog.slice(0,15).map(function(tx){
+    return '<div style="display:flex;justify-content:space-between;padding:.45rem 0;border-bottom:1px solid rgba(255,255,255,.05)">'
+      +'<div><div style="font-size:.58rem;color:var(--t1)">'+escHtml(tx.t)+'</div>'
+      +'<div style="font-size:.46rem;color:var(--t3)">'+escHtml(tx.d)+'</div></div>'
+      +'<span style="font-size:.54rem;color:var(--gold)">π</span></div>';
+  }).join('');
+}
+
+function renderCopaPassStatus() {
+  var btn=document.getElementById('copa-pass-btn');
+  var badge=document.getElementById('copa-pass-badge');
+  if (isCopaPass) {
+    if(btn){ btn.textContent='🏆 Copa Pass Active'; btn.disabled=true; btn.style.opacity='.75'; }
+    if(badge) badge.style.display='flex';
+  } else {
+    if(btn){ btn.textContent='Get Copa Pass — 1π'; btn.disabled=false; btn.style.opacity='1'; }
+    if(badge) badge.style.display='none';
+  }
+}
+
+function standingsLoad(league) {
+  var el = document.getElementById('standings-body');
+  if (!el) return;
+  el.innerHTML = '<div class="loading-center"><div class="spin"></div></div>';
+  fetch('/data?type=standings&league='+league)
+    .then(function(r){ return r.json(); })
+    .then(function(data){
+      if (!data.standings||!data.standings.length) { el.innerHTML='<div class="loading-center">No standings</div>'; return; }
+      el.innerHTML = '<div class="table-wrap"><table class="standings-table">'
+        + '<thead><tr><th>#</th><th>Team</th><th>P</th><th>W</th><th>D</th><th>L</th><th>GD</th><th>Pts</th></tr></thead>'
+        + '<tbody>' + data.standings.map(function(row){
+          return '<tr><td class="pos-num">'+row.position+'</td>'
+            + '<td><div class="team-cell">'
+            + (row.crest ? '<img class="team-crest-sm" src="'+row.crest+'" loading="lazy" onerror="this.style.display=\'none\'">' : '')
+            + '<span>'+escHtml(row.team)+'</span></div></td>'
+            + '<td>'+row.played+'</td><td>'+row.won+'</td><td>'+row.draw+'</td><td>'+row.lost+'</td>'
+            + '<td style="color:'+(row.goalDiff>0?'var(--grn)':row.goalDiff<0?'var(--red)':'var(--t3)')+'">'+
+              (row.goalDiff>0?'+':'')+row.goalDiff+'</td>'
+            + '<td class="pts-cell">'+row.points+'</td>'
+            + '</tr>';
+        }).join('') + '</tbody></table></div>';
+    })
+    .catch(function(){ el.innerHTML='<div class="loading-center">Failed to load</div>'; });
+}
+
 function standingsSetLeague(league, btn) {
-  standingsLeague = league;
   document.querySelectorAll('#s-standings .ltab').forEach(function(b){ b.classList.remove('on'); });
   if (btn) btn.classList.add('on');
   standingsLoad(league);
 }
 
-function standingsLoad(league) {
-  var el = document.getElementById('standings-body');
+function scorersLoad(league) {
+  var el = document.getElementById('scorers-body');
+  if (!el) return;
   el.innerHTML = '<div class="loading-center"><div class="spin"></div></div>';
-  fetch('/data?type=standings&league='+league)
+  fetch('/data?type=scorers&league='+league)
     .then(function(r){ return r.json(); })
     .then(function(data){
-      if (!data.standings?.length) {
-        el.innerHTML = '<div class="loading-center">No standings data</div>'; return;
-      }
-      el.innerHTML = '<div class="table-wrap"><table class="standings-table">'
-        +'<thead><tr><th>#</th><th>Team</th><th>P</th><th>W</th><th>D</th><th>L</th><th>GD</th><th>Pts</th><th>Form</th></tr></thead>'
-        +'<tbody>'+data.standings.map(function(row){
-          var form = (row.form||'').split(',').slice(-5);
-          return '<tr><td class="pos-num">'+row.position+'</td>'
-            +'<td><div class="team-cell">'
-            +(row.crest?'<img class="team-crest-sm" src="'+row.crest+'" onerror="this.style.display=\'none\'">':'')
-            +'<span>'+escHtml(row.team)+'</span></div></td>'
-            +'<td>'+row.played+'</td><td>'+row.won+'</td><td>'+row.draw+'</td><td>'+row.lost+'</td>'
-            +'<td style="color:'+(row.goalDiff>0?'var(--grn)':row.goalDiff<0?'var(--red)':'var(--t3)')+'">'+
-              (row.goalDiff>0?'+':'')+row.goalDiff+'</td>'
-            +'<td class="pts-cell">'+row.points+'</td>'
-            +'<td class="form-cell">'+form.map(function(f){
-              return f==='W'?'<div class="form-w">W</div>':f==='D'?'<div class="form-d">D</div>':'<div class="form-l">L</div>';
-            }).join('')+'</td>'
-            +'</tr>';
-        }).join('')+'</tbody></table></div>';
+      if (!data.scorers||!data.scorers.length) { el.innerHTML='<div class="loading-center">No scorer data</div>'; return; }
+      el.innerHTML = data.scorers.map(function(s,i){
+        return '<div class="scorer-row">'
+          + '<div class="scorer-rank">#'+(i+1)+'</div>'
+          + (s.crest ? '<img style="width:28px;height:28px;object-fit:contain" src="'+s.crest+'" loading="lazy" onerror="this.style.display=\'none\'">' : '')
+          + '<div class="scorer-info"><div class="scorer-name">'+escHtml(s.name)+'</div>'
+          + '<div class="scorer-team">'+escHtml(s.team)+(s.assists?' · '+s.assists+' ast':'')+'</div></div>'
+          + '<div class="scorer-goals">'+s.goals+'</div></div>';
+      }).join('');
     })
-    .catch(function(){ el.innerHTML = '<div class="loading-center">Failed to load standings</div>'; });
+    .catch(function(){ el.innerHTML='<div class="loading-center">Failed to load</div>'; });
 }
 
-/* ── SCORERS ── */
 function scorersSetLeague(league, btn) {
   document.querySelectorAll('#s-scorers .ltab').forEach(function(b){ b.classList.remove('on'); });
   if (btn) btn.classList.add('on');
   scorersLoad(league);
 }
 
-function scorersLoad(league) {
-  var el = document.getElementById('scorers-body');
+function predictLoad(league) {
+  var el = document.getElementById('predict-body');
+  if (!el) return;
   el.innerHTML = '<div class="loading-center"><div class="spin"></div></div>';
-  fetch('/data?type=scorers&league='+league)
+  var badge = document.getElementById('predict-score-badge');
+  if (badge) badge.textContent = 'pts: '+copaScore.points+' streak: '+copaScore.streak;
+  fetch('/data?type=fixtures&league='+league)
     .then(function(r){ return r.json(); })
     .then(function(data){
-      if (!data.scorers?.length) {
-        el.innerHTML = '<div class="loading-center">No scorer data</div>'; return;
-      }
-      el.innerHTML = data.scorers.map(function(s, i){
-        return '<div class="scorer-row">'
-          +'<div class="scorer-rank">#'+(i+1)+'</div>'
-          +(s.crest?'<img style="width:28px;height:28px;object-fit:contain" src="'+s.crest+'" onerror="this.style.display=\'none\'">':'')
-          +'<div class="scorer-info">'
-          +'<div class="scorer-name">'+escHtml(s.name)+'</div>'
-          +'<div class="scorer-team">'+escHtml(s.team)+(s.assists?' · '+s.assists+' ast':'')+'</div>'
-          +'</div>'
-          +'<div class="scorer-goals">'+s.goals+'</div>'
-          +'</div>';
-      }).join('');
+      var upcoming = (data.matches||[]).filter(function(m){ return m.status==='SCHEDULED'||m.status==='TIMED'; }).slice(0,10);
+      if (!upcoming.length) { el.innerHTML='<div class="loading-center">No upcoming matches</div>'; return; }
+      el.innerHTML = '';
+      upcoming.forEach(function(m){
+        var saved = predictions['p_'+m.id]||'';
+        var card  = document.createElement('div'); card.className='predict-card';
+        var hdr   = document.createElement('div'); hdr.className='predict-match';
+        hdr.innerHTML='<div style="text-align:center;font-size:.62rem">'+escHtml(m.homeTeam)+'</div>'
+          +'<div style="font-size:.5rem;color:var(--t3)">'+fmtDate(m.utcDate)+'</div>'
+          +'<div style="text-align:center;font-size:.62rem">'+escHtml(m.awayTeam)+'</div>';
+        var btns = document.createElement('div'); btns.className='predict-btns'; btns.id='pb_'+m.id;
+        [['home','1 Home'],['draw','X Draw'],['away','2 Away']].forEach(function(pair){
+          var b = document.createElement('div');
+          b.className='predict-btn'+(saved===pair[0]?' selected':'');
+          b.textContent=pair[1];
+          b.setAttribute('data-mid',m.id); b.setAttribute('data-out',pair[0]);
+          b.onclick=function(){ makePrediction(this.getAttribute('data-mid'),this.getAttribute('data-out')); };
+          btns.appendChild(b);
+        });
+        card.appendChild(hdr); card.appendChild(btns); el.appendChild(card);
+      });
     })
-    .catch(function(){ el.innerHTML = '<div class="loading-center">Failed to load scorers</div>'; });
+    .catch(function(){ el.innerHTML='<div class="loading-center">Failed to load</div>'; });
 }
 
-/* ── PREDICT ── */
-var predictLeague = 'PL';
-var predictScore  = JSON.parse(localStorage.getItem('copa_score')||'{"points":0,"streak":0}');
-
 function predictSetLeague(league, btn) {
-  predictLeague = league;
   document.querySelectorAll('#s-predict .ltab').forEach(function(b){ b.classList.remove('on'); });
   if (btn) btn.classList.add('on');
   predictLoad(league);
 }
 
-function predictLoad(league) {
-  var el = document.getElementById('predict-body');
-  el.innerHTML = '<div class="loading-center"><div class="spin"></div></div>';
-  var badge = document.getElementById('predict-score-badge');
-  if (badge) badge.textContent = '⭐ '+predictScore.points+' pts · 🔥 '+predictScore.streak;
-  fetch('/data?type=fixtures&league='+league)
-    .then(function(r){ return r.json(); })
-    .then(function(data){
-      var upcoming = (data.matches||[]).filter(function(m){ return m.status==='SCHEDULED'||m.status==='TIMED'; }).slice(0,10);
-      if (!upcoming.length) {
-        el.innerHTML = '<div class="loading-center">No upcoming matches to predict</div>'; return;
-      }
-      el.innerHTML = upcoming.map(function(m){
-        var pid = 'p_'+m.id;
-        var saved = predictions[pid];
-        return '<div class="predict-card">'
-          +'<div class="predict-match">'
-          +'<div style="text-align:center;font-size:.54rem">'+escHtml(m.homeTeam)+'</div>'
-          +'<div style="font-size:.44rem;color:var(--t3)">'+fmtDate(m.utcDate)+'</div>'
-          +'<div style="text-align:center;font-size:.54rem">'+escHtml(m.awayTeam)+'</div>'
-          +'</div>'
-          +'<div class="predict-btns" id="pb_'+m.id+'">'
-          +'<div class="predict-btn'+(saved==='home'?' selected':'')+'" onclick="makePrediction(\''+m.id+'\',\'home\',\''+escHtml(m.homeTeam)+'\')">'
-          +'1 (Home)<div class="predict-pct" id="ph_'+m.id+'">—</div></div>'
-          +'<div class="predict-btn'+(saved==='draw'?' selected':'')+'" onclick="makePrediction(\''+m.id+'\',\'draw\',\'Draw\')">'
-          +'X (Draw)<div class="predict-pct" id="pd_'+m.id+'">—</div></div>'
-          +'<div class="predict-btn'+(saved==='away'?' selected':'')+'" onclick="makePrediction(\''+m.id+'\',\'away\',\''+escHtml(m.awayTeam)+'\')">'
-          +'2 (Away)<div class="predict-pct" id="pa_'+m.id+'">—</div></div>'
-          +'</div></div>';
-      }).join('');
-    })
-    .catch(function(){ el.innerHTML = '<div class="loading-center">Failed to load fixtures</div>'; });
-}
-
-function makePrediction(matchId, outcome, label) {
-  predictions['p_'+matchId] = outcome;
-  localStorage.setItem('copa_preds', JSON.stringify(predictions));
-  var container = document.getElementById('pb_'+matchId);
-  if (container) {
-    container.querySelectorAll('.predict-btn').forEach(function(b){ b.classList.remove('selected'); });
-    var idx = outcome==='home'?0:outcome==='draw'?1:2;
-    if (container.children[idx]) container.children[idx].classList.add('selected');
-  }
-  predictScore.points += 5;
-  predictScore.streak += 1;
-  localStorage.setItem('copa_score', JSON.stringify(predictScore));
-  var badge = document.getElementById('predict-score-badge');
-  if (badge) badge.textContent = '⭐ '+predictScore.points+' pts · 🔥 '+predictScore.streak;
-  toast('Predicted: '+label+' (+5 pts)');
-}
-
-/* ── NEWS ── */
-var newsPage = 1;
-var newsLoading = false;
-var newsHasMore = true;
-var newsFilter = 'all';
-
-
-
-
-
-
-
-
-
-/* News infinite scroll */
-if ('IntersectionObserver' in window) {
-  new IntersectionObserver(function(entries){
-    if (entries[0].isIntersecting) newsLoad();
-  }, { rootMargin:'400px' }).observe(document.getElementById('news-scroll-trigger'));
-}
-
-/* ── IMAGES ── */
-var IMG = {
-  category:'all', page:1, loading:false, hasMore:true,
-  cache:{}, allImages:[], current:null,
-};
-var imgLazyObs = 'IntersectionObserver' in window
-  ? new IntersectionObserver(function(entries){
-      entries.forEach(function(e){
-        if(e.isIntersecting){var el=e.target;var src=el.getAttribute('data-src');if(src){el.src=src;el.removeAttribute('data-src');}imgLazyObs.unobserve(el);}
-      });
-    },{ rootMargin:'300px' })
-  : { observe:function(){}, unobserve:function(){} };
-
-
-
-
-
-
-
-
-
-
-
-function imgCloseLightbox() {
-  var lb=document.getElementById('img-lightbox'); if(lb) lb.classList.remove('open');
-  var lbImg=document.getElementById('img-lb-img'); if(lbImg) lbImg.src='';
-  document.body.style.overflow='';
-}
-
-function imgDownload() {
-  var img=IMG.allImages[IMG.current]; if(!img) return;
-  var a=document.createElement('a'); a.href=img.fullUrl||img.url;
-  a.download='copa-'+Date.now()+'.jpg'; a.target='_blank';
-  document.body.appendChild(a); a.click(); document.body.removeChild(a);
-}
-
-function imgShare() {
-  var img=IMG.allImages[IMG.current]; if(!img) return;
-  if(navigator.share) navigator.share({ title:img.caption||'Copa.pi', url:img.url }).catch(function(){});
-  else if(navigator.clipboard) navigator.clipboard.writeText(img.url).then(function(){ toast('Link copied!'); });
-}
-
-/* Images infinite scroll */
-if ('IntersectionObserver' in window) {
-  new IntersectionObserver(function(entries){
-    if(entries[0].isIntersecting&&!IMG.loading&&IMG.hasMore) imgLoadPage();
-  },{ rootMargin:'400px' }).observe(document.getElementById('img-scroll-trigger'));
-}
-
-document.addEventListener('keydown',function(e){ if(e.key==='Escape') imgCloseLightbox(); });
-
-/* ── INIT ── */
-
-
-/* ================================================================
-   COPA.pi PAYMENT SYSTEM — EXACT WORLDCUP PATTERN
-   MAINNET · sandbox:false · Cloudflare Pages
-================================================================ */
-
-var _APPROVE = '/approve';
-var _COMPLETE = '/complete';
-var _CANCEL  = '/cancel-payment';
-
-var piUser      = null;
-var isCopaPass  = localStorage.getItem('copa_pass') === '1';
-var txLog       = JSON.parse(localStorage.getItem('copa_tx') || '[]');
-var copaScore   = JSON.parse(localStorage.getItem('copa_score') || '{"points":0,"streak":0}');
-var predictions = JSON.parse(localStorage.getItem('copa_preds') || '{}');
-
-/* ── PI LOGIN — EXACT WORLDCUP PATTERN ── */
-
-
-/* ── INCOMPLETE PAYMENT — EXACT WORLDCUP PATTERN ── */
-function onIncompletePayment(payment) {
-  if (!payment) return;
-  console.log('[Copa] Incomplete payment:', payment.identifier);
-  var txid = '';
-  try {
-    txid = (payment.transaction && payment.transaction.txid)
-      ? payment.transaction.txid : '';
-  } catch(e) { txid = ''; }
-  var pid = payment.identifier;
-
-  if (txid) {
-    /* Has txid — complete it */
-    console.log('[Copa] Completing incomplete payment, txid:', txid);
-    fetch(_COMPLETE, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ paymentId: pid, txid: txid })
-    })
-    .then(function(r) { return r.json(); })
-    .then(function(d) { console.log('[Copa] Incomplete completed:', d); })
-    .catch(function(e) { console.warn('[Copa] Complete error:', e); });
-  } else {
-    /* No txid — re-approve stuck payment */
-    console.log('[Copa] Re-approving stuck payment:', pid);
-    fetch(_CANCEL, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ paymentId: pid })
-    })
-    .then(function(r) { return r.json(); })
-    .then(function(d) { console.log('[Copa] Stuck payment handled:', d); })
-    .catch(function(e) { console.warn('[Copa] Cancel error:', e); });
-  }
-}
-
-/* ── COPA PASS — EXACT WORLDCUP buyPrem PATTERN ── */
-
-
-/* ── SEND PI — EXACT WORLDCUP _doSendPi PATTERN ── */
-
-
-
-
-/* ── REQUEST PI — receive button ── */
-function requestPi() {
-  if (!piUser) { toast('Login required'); return; }
-  var amt = parseFloat((document.getElementById('copa-req-amt') || {}).value) || 1;
-  var msg = 'Send ' + amt + 'π to copa.pi/' + piUser.username;
-  if (navigator.share) {
-    navigator.share({ title: 'Pay me on Copa.pi', text: msg, url: window.location.href })
-      .catch(function(){});
-  } else if (navigator.clipboard) {
-    navigator.clipboard.writeText(msg).then(function(){ toast('Payment request copied!'); });
-  } else {
-    toast(msg);
-  }
-}
-
-/* ── PAYMENT STATUS ── */
-function showPaymentStatus(status, message) {
-  var pst = document.getElementById('copa-payment-status');
-  if (!pst) return;
-  var configs = {
-    idle:       { icon:'\uD83D\uDCB3', text:'',                         color:'var(--t3)',   show:false },
-    approving:  { icon:'🔄', text:'Approving...',             color:'var(--c1)',   show:true  },
-    completing: { icon:'⏳',       text:'Completing...',            color:'var(--gold)', show:true  },
-    success:    { icon:'✅',       text:message||'Payment complete!',color:'var(--grn)', show:true  },
-    failed:     { icon:'❌',       text:message||'Payment failed',  color:'var(--red)',  show:true  },
-    cancelled:  { icon:'↩️', text:'Cancelled',                color:'var(--t3)',   show:true  },
-  };
-  var cfg = configs[status] || configs.idle;
-  pst.style.display = cfg.show ? 'flex' : 'none';
-  pst.innerHTML = '<span style="font-size:1rem">' + cfg.icon + '</span>'
-    + '<span style="font-family:var(--dm);font-size:.6rem;color:' + cfg.color + '">' + cfg.text + '</span>';
-}
-
-/* ── TX LOG ── */
-function addTx(text) {
-  var d = new Date().toLocaleString();
-  txLog.unshift({ t: text, d: d });
-  if (txLog.length > 60) txLog.pop();
-  localStorage.setItem('copa_tx', JSON.stringify(txLog));
-  renderTxHistory();
-}
-
-function renderTxHistory() {
-  var el = document.getElementById('tx-history');
-  if (!el) return;
-  if (!txLog.length) {
-    el.innerHTML = '<div style="font-size:.54rem;color:var(--t3);padding:.5rem">No transactions yet</div>';
-    return;
-  }
-  el.innerHTML = txLog.slice(0, 15).map(function(tx){
-    return '<div style="display:flex;justify-content:space-between;align-items:flex-start;'
-      + 'padding:.45rem 0;border-bottom:1px solid rgba(255,255,255,.05)">'
-      + '<div><div style="font-size:.54rem;color:var(--t1)">' + escHtml(tx.t) + '</div>'
-      + '<div style="font-size:.42rem;color:var(--t3)">' + escHtml(tx.d) + '</div></div>'
-      + '<span style="font-size:.5rem;color:var(--gold)">π</span>'
-      + '</div>';
-  }).join('');
-}
-
-/* ── COPA PASS STATUS ── */
-function renderCopaPassStatus() {
-  var btn   = document.getElementById('copa-pass-btn');
-  var badge = document.getElementById('copa-pass-badge');
-  if (isCopaPass) {
-    if (btn)   { btn.textContent = '🏆 Copa Pass Active'; btn.disabled = true; btn.style.opacity = '.75'; }
-    if (badge) { badge.style.display = 'flex'; }
-  } else {
-    if (btn)   { btn.textContent = 'Get Copa Pass — 1π'; btn.disabled = false; btn.style.opacity = '1'; }
-    if (badge) { badge.style.display = 'none'; }
-  }
-}
-
-function predictLoad(league) {
-  var el = document.getElementById('predict-body');
-  if (!el) return;
-  el.innerHTML = '<div class="loading-center"><div class="spin"></div></div>';
-  fetch('/data?type=fixtures&league=' + league)
-    .then(function(r){ return r.json(); })
-    .then(function(data){
-      var upcoming = (data.matches||[])
-        .filter(function(m){ return m.status==='SCHEDULED'||m.status==='TIMED'; })
-        .slice(0,10);
-      if (!upcoming.length) {
-        el.innerHTML = '<div class="loading-center">No upcoming matches</div>';
-        return;
-      }
-      el.innerHTML = '';
-      upcoming.forEach(function(m){
-        var saved = predictions['p_'+m.id] || '';
-        var card = document.createElement('div');
-        card.className = 'predict-card';
-        var hdr = document.createElement('div');
-        hdr.className = 'predict-match';
-        hdr.innerHTML =
-          '<div style="text-align:center;font-size:.54rem">'+escHtml(m.homeTeam)+'</div>'
-          +'<div style="font-size:.44rem;color:var(--t3)">'+fmtDate(m.utcDate)+'</div>'
-          +'<div style="text-align:center;font-size:.54rem">'+escHtml(m.awayTeam)+'</div>';
-        var btns = document.createElement('div');
-        btns.className = 'predict-btns';
-        btns.id = 'pb_'+m.id;
-        [['home','1 Home'],['draw','X Draw'],['away','2 Away']].forEach(function(pair){
-          var b = document.createElement('div');
-          b.className = 'predict-btn'+(saved===pair[0]?' selected':'');
-          b.textContent = pair[1];
-          b.setAttribute('data-mid', m.id);
-          b.setAttribute('data-out', pair[0]);
-          b.onclick = function(){
-            makePrediction(this.getAttribute('data-mid'), this.getAttribute('data-out'));
-          };
-          btns.appendChild(b);
-        });
-        card.appendChild(hdr);
-        card.appendChild(btns);
-        el.appendChild(card);
-      });
-    })
-    .catch(function(){
-      el.innerHTML = '<div class="loading-center">Failed to load</div>';
-    });
-}
-
 function makePrediction(matchId, outcome) {
-  predictions['p_'+matchId] = outcome;
-  localStorage.setItem('copa_preds', JSON.stringify(predictions));
-  var container = document.getElementById('pb_'+matchId);
-  if (container) {
-    Array.from(container.children).forEach(function(b){ b.classList.remove('selected'); });
-    var idx = outcome==='home'?0:outcome==='draw'?1:2;
-    if (container.children[idx]) container.children[idx].classList.add('selected');
-  }
-  copaScore.points += 5;
-  copaScore.streak += 1;
-  localStorage.setItem('copa_score', JSON.stringify(copaScore));
-  var badge = document.getElementById('predict-score-badge');
-  if (badge) badge.textContent = 'pts: '+copaScore.points+'  streak: '+copaScore.streak;
-  toast('Predicted! (+5 pts)');
+  predictions['p_'+matchId]=outcome;
+  localStorage.setItem('copa_preds',JSON.stringify(predictions));
+  var c=document.getElementById('pb_'+matchId);
+  if (c) { Array.from(c.children).forEach(function(b){ b.classList.remove('selected'); }); var idx=outcome==='home'?0:outcome==='draw'?1:2; if(c.children[idx]) c.children[idx].classList.add('selected'); }
+  copaScore.points+=5; copaScore.streak+=1;
+  localStorage.setItem('copa_score',JSON.stringify(copaScore));
+  var badge=document.getElementById('predict-score-badge');
+  if(badge) badge.textContent='pts: '+copaScore.points+' streak: '+copaScore.streak;
+  toast('Predicted! +5 pts');
 }
 
-
-
-
-
-
-
-window.addEventListener('load', function() {
-  if (localStorage.getItem('copa_pass') === '1') isCopaPass = true;
-  renderTxHistory();
-  var btn = document.getElementById('loginBtn');
-  if (btn) { btn.disabled = false; btn.style.opacity = '1'; }
-});
-
-
-/* ================================================================
-   COPA.pi PAYMENTS — PROVEN WORLDCUP PATTERN
-   MAINNET · sandbox:false
-   
-   KEY RULES:
-   1. onReadyForServerApproval: return fetch().then(r=>r.json()).then(d=>log)
-      NO .catch() inside approval — Pi SDK handles errors
-   2. onReadyForServerCompletion: return fetch().then().then(d=>{unlock}).catch()
-   3. onCancel: function()  — NOT async function()
-   4. onError: function(err)
-================================================================ */
-
-function buyCopaPass() {
-  if (isCopaPass) { toast('Copa Pass already active!'); return; }
-
-  var btn = document.getElementById('copa-pass-btn');
-  if (btn) { btn.textContent = 'Processing...'; btn.disabled = true; }
-
-  if (typeof Pi === 'undefined') {
-    toast('Open in Pi Browser');
-    if (btn) { btn.textContent = 'Get Copa Pass - 1Pi'; btn.disabled = false; }
-    return;
-  }
-
-  Pi.createPayment({
-    amount:   1,
-    memo:     'Copa Pass - copa.pi Premium',
-    metadata: { type: 'copa_pass', app: 'copa.pi', network: 'mainnet' }
-  }, {
-    onReadyForServerApproval: function(paymentId) {
-      console.log('[Copa] Approving payment:', paymentId);
-      return fetch(_APPROVE, {
-        method:  'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body:    JSON.stringify({ paymentId: paymentId, expectedAmount: 1 })
-      }).then(function(r) {
-        console.log('[Copa] Approve status:', r.status);
-        return r.json();
-      }).then(function(d) {
-        console.log('[Copa] Approve response:', JSON.stringify(d));
-      });
-    },
-    onReadyForServerCompletion: function(paymentId, txid) {
-      console.log('[Copa] Completing payment:', paymentId, txid);
-      return fetch(_COMPLETE, {
-        method:  'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body:    JSON.stringify({ paymentId: paymentId, txid: txid })
-      }).then(function(r) {
-        console.log('[Copa] Complete status:', r.status);
-        return r.json();
-      }).then(function(d) {
-        console.log('[Copa] Complete response:', JSON.stringify(d));
-        isCopaPass = true;
-        localStorage.setItem('copa_pass', '1');
-        addTx('Copa Pass 1Pi txid:' + txid.slice(0,12) + '...');
-        showPaymentStatus('success', 'Copa Pass activated!');
-        renderCopaPassStatus();
-        toast('Copa Pass activated!');
-      }).catch(function(err) {
-        console.error('[Copa] Complete error:', err);
-        showPaymentStatus('failed', 'Error - try again');
-        if (btn) { btn.textContent = 'Get Copa Pass - 1Pi'; btn.disabled = false; }
-      });
-    },
-    onCancel: function() {
-      if (btn) { btn.textContent = 'Get Copa Pass - 1Pi'; btn.disabled = false; }
-      showPaymentStatus('cancelled');
-      toast('Payment cancelled');
-    },
-    onError: function(err) {
-      console.error('[Copa] Payment error:', err);
-      if (btn) { btn.textContent = 'Get Copa Pass - 1Pi'; btn.disabled = false; }
-      showPaymentStatus('failed', 'Payment error - try again');
-      toast('Payment error - try again');
-    }
-  });
-}
-
-function sendPi() {
-  var to   = (document.getElementById('copa-send-to')   || {}).value || '';
-  var amt  = parseFloat((document.getElementById('copa-send-amt')  || {}).value) || 0;
-  var memo = (document.getElementById('copa-send-memo') || {}).value || 'Copa fan tip';
-  _doSendPi(to, amt, memo);
-}
-
-function _doSendPi(to, amt, memo) {
-  if (!to.trim())      { toast('Enter recipient username'); return; }
-  if (!amt || amt <= 0){ toast('Enter valid amount'); return; }
-  if (typeof Pi === 'undefined') { toast('Open in Pi Browser'); return; }
-
-  Pi.createPayment({
-    amount:   amt,
-    memo:     memo || 'Copa.pi fan tip',
-    metadata: { type: 'send', app: 'copa.pi', network: 'mainnet' }
-  }, {
-    onReadyForServerApproval: function(paymentId) {
-      console.log('[Copa] Send approve:', paymentId);
-      return fetch(_APPROVE, {
-        method:  'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body:    JSON.stringify({ paymentId: paymentId })
-      }).then(function(r) {
-        console.log('[Copa] Send approve status:', r.status);
-        return r.json();
-      }).then(function(d) {
-        console.log('[Copa] Send approve response:', JSON.stringify(d));
-      });
-    },
-    onReadyForServerCompletion: function(paymentId, txid) {
-      console.log('[Copa] Send complete:', paymentId, txid);
-      return fetch(_COMPLETE, {
-        method:  'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body:    JSON.stringify({ paymentId: paymentId, txid: txid })
-      }).then(function(r) {
-        console.log('[Copa] Send complete status:', r.status);
-        return r.json();
-      }).then(function(d) {
-        console.log('[Copa] Send complete response:', JSON.stringify(d));
-        addTx(amt + 'Pi sent to @' + to + ' txid:' + txid.slice(0,8) + '...');
-        showPaymentStatus('success', amt + 'Pi sent!');
-        toast(amt + 'Pi sent!');
-        var tEl = document.getElementById('copa-send-to');
-        var aEl = document.getElementById('copa-send-amt');
-        if (tEl) tEl.value = '';
-        if (aEl) aEl.value = '0.1';
-      }).catch(function(err) {
-        console.error('[Copa] Send complete error:', err);
-        addTx(amt + 'Pi sent to @' + to);
-        toast('Sent!');
-      });
-    },
-    onCancel: function() {
-      showPaymentStatus('cancelled');
-      toast('Payment cancelled');
-    },
-    onError: function(err) {
-      console.error('[Copa] Send error:', err);
-      showPaymentStatus('failed', 'Payment error - try again');
-      toast('Payment error - try again');
-    }
-  });
-}
-
-
-
-
-
-
-
-
-
-/* ================================================================
-   COPA HOME — LIVESCORE STYLE
-   Sections: LIVE | TODAY | UPCOMING | RECENT
-   Match detail: tap → lineup + stats
-================================================================ */
-
-var homeLeague   = 'WC';
-var homeData     = null;
-var openMatchId  = null;
-
-function fmtDate(d) {
-  if (!d) return '';
-  try {
-    var dt   = new Date(d);
-    var now  = new Date();
-    var diff = dt - now;
-    var mins = Math.round(diff / 60000);
-    if (diff > 0 && mins < 90)  return 'in ' + mins + 'm';
-    if (diff < 0 && mins > -90) return Math.abs(mins) + 'm ago';
-    var today = now.toISOString().slice(0,10);
-    var mDate = dt.toISOString().slice(0,10);
-    var timeStr = dt.toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'});
-    if (mDate === today) return 'Today ' + timeStr;
-    var tom = new Date(now); tom.setDate(tom.getDate()+1);
-    if (mDate === tom.toISOString().slice(0,10)) return 'Tomorrow ' + timeStr;
-    return dt.toLocaleDateString('en-GB',{weekday:'short',day:'numeric',month:'short'}) + ' ' + timeStr;
-  } catch(e) { return d; }
+function homeLoad(league) {
+  var el = document.getElementById('home-matches');
+  if (!el) return;
+  el.innerHTML = '<div class="loading-center"><div class="spin"></div><span>Loading...</span></div>';
+  fetch('/data?type=fixtures&league=' + (league||'WC'))
+    .then(function(r){ return r.json(); })
+    .then(function(data){ homeData = data; renderHome(data, el); })
+    .catch(function(){
+      el.innerHTML = '<div class="loading-center" style="flex-direction:column;gap:.5rem">'
+        + '<div>Failed to load</div>'
+        + '<button onclick="homeLoad(\'' + (league||'WC') + '\')" style="background:var(--c1);border:none;border-radius:8px;color:#000;padding:.35rem .75rem;font-size:.62rem;cursor:pointer">Retry</button>'
+        + '</div>';
+    });
 }
 
 function homeSetLeague(league, btn) {
@@ -1469,113 +1097,134 @@ function homeSetLeague(league, btn) {
   homeLoad(league);
 }
 
-function homeLoad(league) {
-  var el = document.getElementById('home-matches');
-  if (!el) return;
-  el.innerHTML = '<div class="loading-center"><div class="spin"></div><span>Loading...</span></div>';
-  fetch('/data?type=fixtures&league=' + (league||'WC'))
-    .then(function(r){ return r.json(); })
-    .then(function(data){
-      homeData = data;
-      renderHome(data, el);
-    })
-    .catch(function(){
-      el.innerHTML = '<div class="loading-center" style="flex-direction:column;gap:.5rem">'
-        + '<div>Failed to load</div>'
-        + '<button onclick="homeLoad(\'' + (league||'WC') + '\')" style="background:var(--c1);border:none;border-radius:8px;color:#000;padding:.35rem .75rem;font-size:.56rem;cursor:pointer">Retry</button>'
-        + '</div>';
-    });
+function renderHome(data, el) {
+  var g = data.groups || {live:[],today:[],upcoming:[],recent:[]};
+  var html = '';
+  if (data.competition) {
+    html += '<div style="font-family:var(--dm);font-size:.52rem;color:var(--c1);padding:.4rem .65rem .1rem;letter-spacing:.06em;text-transform:uppercase">'
+      + escHtml(data.competition) + '</div>';
+  }
+  if (!data.total) {
+    html += '<div class="loading-center" style="flex-direction:column;gap:.5rem;padding:2.5rem 1rem">'
+      + '<div style="font-size:2rem">📅</div>'
+      + '<div style="font-size:.7rem">No matches scheduled</div>'
+      + '<div style="font-size:.56rem;color:var(--t3)">Try World Cup or Brasileirao</div>'
+      + '</div>';
+    el.innerHTML = html; return;
+  }
+  if (g.live && g.live.length) {
+    html += '<div class="match-section-hdr" style="background:rgba(255,59,59,.08);border-left:3px solid var(--red)">'
+      + '<span class="pulse-dot"></span><span>LIVE NOW</span>'
+      + '<span style="font-size:.5rem;color:rgba(255,255,255,.4)">' + g.live.length + '</span></div>';
+    g.live.forEach(function(m){ html += renderMatchCard(m,true); });
+  }
+  if (g.today && g.today.length) {
+    html += '<div class="match-section-hdr" style="background:rgba(232,255,0,.05);border-left:3px solid var(--c1)">'
+      + '<span>TODAY</span><span style="font-size:.5rem;color:rgba(255,255,255,.4)">' + g.today.length + '</span></div>';
+    g.today.forEach(function(m){ html += renderMatchCard(m,false); });
+  }
+  if (g.upcoming && g.upcoming.length) {
+    html += '<div class="match-section-hdr" style="background:rgba(255,255,255,.02);border-left:3px solid rgba(255,255,255,.15)">'
+      + '<span>UPCOMING</span><span style="font-size:.5rem;color:rgba(255,255,255,.4)">' + g.upcoming.length + '</span></div>';
+    g.upcoming.forEach(function(m){ html += renderMatchCard(m,false); });
+  }
+  if (g.recent && g.recent.length) {
+    var rid = 'acc_' + Date.now();
+    html += '<div class="results-accordion">'
+      + '<div class="results-accordion-hdr" onclick="toggleAccordion(\'' + rid + '\')">'
+      + '<div style="display:flex;align-items:center;gap:.4rem"><span class="results-title">RECENT RESULTS</span>'
+      + '<span class="results-count">' + g.recent.length + '</span></div>'
+      + '<span class="chevron" id="chev_' + rid + '">▼</span></div>'
+      + '<div class="results-body" id="' + rid + '">';
+    g.recent.forEach(function(m){ html += renderMatchCard(m,false); });
+    html += '</div></div>';
+  }
+  if (!g.live.length && !g.today.length && !g.upcoming.length && !g.recent.length) {
+    (data.matches||[]).forEach(function(m){ html += renderMatchCard(m,false); });
+  }
+  el.innerHTML = html;
+  el.querySelectorAll('.match-card').forEach(function(card) {
+    card.addEventListener('click', function(){ var mid=this.getAttribute('data-id'); if(mid) openMatchDetail(mid); });
+  });
 }
 
-
-
-
-
-
-
-function fmtTime(d) {
-  if (!d) return '--:--';
-  try {
-    return new Date(d).toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'});
-  } catch(e) { return '--:--'; }
+function renderMatchCard(m, isLive) {
+  var hasScore = m.homeScore !== null && m.homeScore !== undefined && m.awayScore !== null && m.awayScore !== undefined;
+  var isDone   = m.status==='FINISHED'||m.status==='FT'||m.status==='post';
+  var ph       = 'width:20px;height:20px;display:flex;align-items:center;justify-content:center;font-size:.75rem';
+  return '<div class="match-card" data-id="' + m.id + '">'
+    + '<div class="mc-row">'
+    + (isLive ? '<div class="mc-time mc-live">' + (m.minute ? m.minute+"'" : 'LIVE') + '</div>'
+              : '<div class="mc-time">' + (isDone ? 'FT' : fmtTime(m.utcDate)) + '</div>')
+    + '<div class="mc-teams">'
+    + '<div class="mc-team">'
+    + (m.homeCrest ? '<img class="mc-crest" src="'+m.homeCrest+'" loading="lazy" onerror="this.style.display=\'none\'">'
+                   : '<div style="'+ph+'">⚽</div>')
+    + '<span class="mc-name">' + escHtml(m.homeTeam||m.homeFull||'') + '</span></div>'
+    + '<div class="mc-team">'
+    + (m.awayCrest ? '<img class="mc-crest" src="'+m.awayCrest+'" loading="lazy" onerror="this.style.display=\'none\'">'
+                   : '<div style="'+ph+'">⚽</div>')
+    + '<span class="mc-name">' + escHtml(m.awayTeam||m.awayFull||'') + '</span></div>'
+    + '</div>'
+    + (hasScore ? '<div class="mc-score">' + m.homeScore + '<span class="mc-sep">-</span>' + m.awayScore + '</div>'
+                : '<div class="mc-score mc-score-dash">-</div>')
+    + '</div>'
+    + (m.group ? '<div class="mc-group">' + escHtml(m.group) + '</div>' : '')
+    + '</div>';
 }
 
-/* ── MATCH DETAIL PANEL ── */
+function toggleAccordion(id) {
+  var body = document.getElementById(id);
+  var chev = document.getElementById('chev_' + id);
+  if (!body) return;
+  var open = body.classList.contains('open');
+  body.classList.toggle('open', !open);
+  if (chev) chev.classList.toggle('open', !open);
+}
+
 function openMatchDetail(matchId) {
   openMatchId = matchId;
   var panel = document.getElementById('match-detail-panel');
   if (!panel) return;
-
-  panel.innerHTML = '<div class="loading-center"><div class="spin"></div></div>';
   panel.style.display = 'block';
-
-  /* Find match in current data */
-  var match = null;
-  if (homeData && homeData.matches) {
-    match = homeData.matches.find(function(m){ return String(m.id) === String(matchId); });
-  }
-
-  if (!match) {
-    panel.innerHTML = '<div class="loading-center">Match not found</div>';
-    return;
-  }
-
+  var match = homeData && homeData.matches ? homeData.matches.find(function(m){ return String(m.id)===String(matchId); }) : null;
+  if (!match) { panel.innerHTML = '<div class="loading-center">Match not found</div>'; return; }
   var html = '<div class="md-header">'
-    + '<button onclick="closeMatchDetail()" class="md-back">&#x2190; Back</button>'
-    + '<div class="md-comp">' + escHtml(homeData.competition || '') + '</div>'
-    + '</div>'
-
-    /* Scoreboard */
+    + '<button onclick="closeMatchDetail()" class="md-back">← Back</button>'
+    + '<div class="md-comp">' + escHtml((homeData.competition||'')) + '</div></div>'
     + '<div class="md-scoreboard">'
     + '<div class="md-team-block">'
-    + (match.homeCrest ? '<img class="md-crest" src="' + match.homeCrest + '" onerror="this.style.display=\'none\'">' : '')
-    + '<div class="md-team-name">' + escHtml(match.homeFull || match.homeTeam) + '</div>'
-    + '</div>'
+    + (match.homeCrest ? '<img class="md-crest" src="'+match.homeCrest+'" onerror="this.style.display=\'none\'">' : '')
+    + '<div class="md-team-name">' + escHtml(match.homeFull||match.homeTeam) + '</div></div>'
     + '<div class="md-score-block">'
     + '<div class="md-score-main">'
-    + (match.homeScore !== null && match.homeScore !== undefined
-        ? match.homeScore + '<span class="md-score-sep"> - </span>' + match.awayScore
-        : '<span style="font-size:.85rem;color:var(--t3)">vs</span>')
+    + (match.homeScore!==null&&match.homeScore!==undefined
+      ? match.homeScore+'<span class="md-score-sep"> - </span>'+match.awayScore
+      : '<span style="font-size:.85rem;color:var(--t3)">vs</span>')
     + '</div>'
     + '<div class="md-status">'
-    + (match.status === 'IN_PLAY' || match.status === 'LIVE' || match.status === 'PAUSED'
-        ? '<span class="mc-live">' + (match.minute ? match.minute + "'" : 'LIVE') + '</span>'
-        : match.status === 'FINISHED' ? 'Full Time'
-        : fmtDate(match.utcDate))
+    + (match.status==='IN_PLAY'||match.status==='LIVE'||match.status==='PAUSED'
+      ? '<span class="mc-live">'+(match.minute?match.minute+"'":'LIVE')+'</span>'
+      : match.status==='FINISHED'?'Full Time':fmtDate(match.utcDate))
     + '</div>'
-    + (match.group ? '<div class="md-group">' + escHtml(match.group) + '</div>' : '')
+    + (match.group ? '<div class="md-group">'+escHtml(match.group)+'</div>' : '')
     + '</div>'
     + '<div class="md-team-block">'
-    + (match.awayCrest ? '<img class="md-crest" src="' + match.awayCrest + '" onerror="this.style.display=\'none\'">' : '')
-    + '<div class="md-team-name">' + escHtml(match.awayFull || match.awayTeam) + '</div>'
-    + '</div>'
-    + '</div>'
-
-    /* Tabs */
+    + (match.awayCrest ? '<img class="md-crest" src="'+match.awayCrest+'" onerror="this.style.display=\'none\'">' : '')
+    + '<div class="md-team-name">' + escHtml(match.awayFull||match.awayTeam) + '</div></div></div>'
     + '<div class="md-tabs">'
     + '<button class="md-tab on" onclick="mdShowTab(\'lineup\',this)">Lineup</button>'
     + '<button class="md-tab" onclick="mdShowTab(\'h2h\',this)">H2H</button>'
     + '</div>'
-
-    /* Lineup pane */
-    + '<div id="md-lineup" class="md-pane">'
-    + '<div class="loading-center"><div class="spin"></div></div>'
-    + '</div>'
-
-    /* H2H pane */
-    + '<div id="md-h2h" class="md-pane" style="display:none">'
-    + '<div class="loading-center" style="color:var(--t3);font-size:.56rem">Tap to load H2H</div>'
-    + '</div>';
-
+    + '<div id="md-lineup" class="md-pane"><div class="loading-center"><div class="spin"></div></div></div>'
+    + '<div id="md-h2h" class="md-pane" style="display:none"><div class="loading-center" style="color:var(--t3);font-size:.62rem">Tap H2H to load</div></div>';
   panel.innerHTML = html;
-
-  /* Load lineup */
   loadLineup(matchId, match);
 }
 
 function closeMatchDetail() {
-  var panel = document.getElementById('match-detail-panel');
-  if (panel) panel.style.display = 'none';
+  var p = document.getElementById('match-detail-panel');
+  if (p) p.style.display = 'none';
   openMatchId = null;
 }
 
@@ -1583,603 +1232,144 @@ function mdShowTab(tab, btn) {
   document.querySelectorAll('.md-tab').forEach(function(b){ b.classList.remove('on'); });
   document.querySelectorAll('.md-pane').forEach(function(p){ p.style.display='none'; });
   if (btn) btn.classList.add('on');
-  var pane = document.getElementById('md-' + tab);
-  if (pane) pane.style.display = 'block';
-  if (tab === 'h2h' && openMatchId) loadH2H(openMatchId);
+  var pane = document.getElementById('md-'+tab);
+  if (pane) pane.style.display='block';
+  if (tab==='h2h' && openMatchId) loadH2H(openMatchId);
 }
 
 function loadLineup(matchId, match) {
   var pane = document.getElementById('md-lineup');
   if (!pane) return;
-
   fetch('/data?type=lineup&match=' + matchId)
     .then(function(r){ return r.json(); })
     .then(function(data){
-      if (!data.home || (!data.home.players.length && !data.away.players.length)) {
-        pane.innerHTML = '<div class="loading-center" style="color:var(--t3);font-size:.56rem">Lineup not available yet</div>';
-        return;
+      if (!data.home||(!data.home.players.length&&!data.away.players.length)) {
+        pane.innerHTML = '<div class="loading-center" style="color:var(--t3)">Lineup not available</div>'; return;
       }
-      renderLineup(data, pane, match);
+      var html = '';
+      if (data.home.formation||data.away.formation) {
+        html += '<div style="display:flex;justify-content:space-between;padding:.5rem .85rem">'
+          + '<div style="font-size:.58rem;color:var(--c1)">' + escHtml(data.home.formation||'') + '</div>'
+          + '<div style="font-size:.5rem;color:var(--t3)">Formation</div>'
+          + '<div style="font-size:.58rem;color:var(--gold)">' + escHtml(data.away.formation||'') + '</div></div>';
+      }
+      html += '<div style="padding:.3rem .85rem">';
+      var max = Math.max(data.home.players.length, data.away.players.length);
+      for (var i=0; i<max; i++) {
+        var hp=data.home.players[i], ap=data.away.players[i];
+        html += '<div style="display:flex;align-items:center;padding:.28rem 0;border-bottom:1px solid rgba(255,255,255,.04)">'
+          + '<div style="flex:1;display:flex;align-items:center;gap:.35rem">'
+          + (hp ? '<span style="font-family:var(--df);font-size:.6rem;color:var(--c1);width:20px">'+escHtml(String(hp.number||''))+'</span>'
+               + '<span style="font-size:.58rem;color:var(--t1)">'+escHtml(hp.name||'')+'</span>' : '')
+          + '</div>'
+          + '<div style="width:32px;text-align:center;font-size:.44rem;color:var(--t3)">'
+          + (hp&&hp.position?escHtml(hp.position.slice(0,2)):'')+'</div>'
+          + '<div style="flex:1;display:flex;align-items:center;gap:.35rem;justify-content:flex-end">'
+          + (ap ? '<span style="font-size:.58rem;color:var(--t1)">'+escHtml(ap.name||'')+'</span>'
+               + '<span style="font-family:var(--df);font-size:.6rem;color:var(--gold);width:20px;text-align:right">'+escHtml(String(ap.number||''))+'</span>' : '')
+          + '</div></div>';
+      }
+      html += '</div>';
+      pane.innerHTML = html;
     })
-    .catch(function(){
-      pane.innerHTML = '<div class="loading-center" style="color:var(--t3);font-size:.56rem">Lineup unavailable</div>';
-    });
-}
-
-function renderLineup(data, pane, match) {
-  var home = data.home;
-  var away = data.away;
-  var html = '';
-
-  /* Formations */
-  if (home.formation || away.formation) {
-    html += '<div style="display:flex;justify-content:space-between;padding:.5rem .85rem .2rem">'
-      + '<div style="font-size:.52rem;color:var(--c1)">' + escHtml(home.formation || '') + '</div>'
-      + '<div style="font-size:.46rem;color:var(--t3)">Formation</div>'
-      + '<div style="font-size:.52rem;color:var(--gold)">' + escHtml(away.formation || '') + '</div>'
-      + '</div>';
-  }
-
-  /* Split players into rows by position */
-  html += '<div style="padding:.3rem .85rem">';
-
-  /* Table format */
-  var maxRows = Math.max(home.players.length, away.players.length);
-  for (var i = 0; i < maxRows; i++) {
-    var hp = home.players[i];
-    var ap = away.players[i];
-    html += '<div style="display:flex;align-items:center;padding:.25rem 0;border-bottom:1px solid rgba(255,255,255,.04)">'
-      + '<div style="flex:1;display:flex;align-items:center;gap:.35rem">'
-      + (hp ? '<span style="font-family:var(--df);font-size:.6rem;color:var(--c1);width:18px">' + escHtml(String(hp.number||'')) + '</span>'
-           + '<span style="font-size:.54rem;color:var(--t1)">' + escHtml(hp.name||'') + '</span>' : '')
-      + '</div>'
-      + '<div style="width:40px;text-align:center;font-size:.42rem;color:var(--t3)">'
-      + (hp && hp.position ? escHtml(hp.position.slice(0,2)) : '') + '</div>'
-      + '<div style="flex:1;display:flex;align-items:center;gap:.35rem;justify-content:flex-end">'
-      + (ap ? '<span style="font-size:.54rem;color:var(--t1)">' + escHtml(ap.name||'') + '</span>'
-           + '<span style="font-family:var(--df);font-size:.6rem;color:var(--gold);width:18px;text-align:right">' + escHtml(String(ap.number||'')) + '</span>' : '')
-      + '</div>'
-      + '</div>';
-  }
-  html += '</div>';
-
-  /* Home subs */
-  if (home.subs && home.subs.length) {
-    html += '<div style="padding:.4rem .85rem .1rem;font-size:.44rem;color:var(--t3);border-top:1px solid var(--bd)">Substitutes</div>';
-    home.subs.forEach(function(p) {
-      html += '<div style="padding:.2rem .85rem;font-size:.5rem;color:var(--t3)">'
-        + '<span style="color:var(--c1);margin-right:.3rem">' + escHtml(String(p.number||'')) + '</span>'
-        + escHtml(p.name||'') + '</div>';
-    });
-  }
-
-  pane.innerHTML = html;
+    .catch(function(){ pane.innerHTML = '<div class="loading-center" style="color:var(--t3)">Lineup unavailable</div>'; });
 }
 
 function loadH2H(matchId) {
   var pane = document.getElementById('md-h2h');
-  if (!pane || pane.innerHTML.indexOf('spin') > -1) return;
+  if (!pane||pane.innerHTML.indexOf('spin')>-1) return;
   pane.innerHTML = '<div class="loading-center"><div class="spin"></div></div>';
-
-  /* Get teams from current match */
-  var match = homeData && homeData.matches
-    ? homeData.matches.find(function(m){ return String(m.id) === String(matchId); })
-    : null;
-  if (!match) {
-    pane.innerHTML = '<div class="loading-center" style="color:var(--t3);font-size:.56rem">H2H unavailable</div>';
-    return;
-  }
-
-  fetch('/data?type=h2h&home=' + encodeURIComponent(match.homeTeam) + '&away=' + encodeURIComponent(match.awayTeam))
+  var match = homeData&&homeData.matches ? homeData.matches.find(function(m){ return String(m.id)===String(matchId); }) : null;
+  if (!match) { pane.innerHTML = '<div class="loading-center" style="color:var(--t3)">Unavailable</div>'; return; }
+  fetch('/data?type=h2h&home='+encodeURIComponent(match.homeTeam)+'&away='+encodeURIComponent(match.awayTeam))
     .then(function(r){ return r.json(); })
     .then(function(data){
-      if (!data.matches || !data.matches.length) {
-        pane.innerHTML = '<div class="loading-center" style="color:var(--t3);font-size:.56rem">No H2H data</div>';
-        return;
-      }
-      var html = '<div style="padding:.4rem .85rem .2rem;font-size:.44rem;color:var(--t3)">LAST ' + data.matches.length + ' MEETINGS</div>';
-      data.matches.forEach(function(m) {
-        var wr = m.result === 'home' ? 'H' : m.result === 'away' ? 'A' : 'D';
-        var wrColor = wr==='H'?'var(--grn)':wr==='A'?'var(--red)':'var(--t3)';
-        html += '<div style="display:flex;align-items:center;padding:.3rem .85rem;border-bottom:1px solid rgba(255,255,255,.04)">'
-          + '<div style="flex:1;font-size:.5rem;color:var(--t1)">' + escHtml(m.home||'') + '</div>'
-          + '<div style="font-family:var(--df);font-size:.65rem;color:var(--gold);padding:0 .5rem">' + (m.scoreH||0) + '-' + (m.scoreA||0) + '</div>'
-          + '<div style="flex:1;font-size:.5rem;color:var(--t1);text-align:right">' + escHtml(m.away||'') + '</div>'
-          + '<div style="width:18px;height:18px;border-radius:3px;background:' + wrColor + ';color:#fff;font-size:.4rem;font-weight:700;display:flex;align-items:center;justify-content:center;margin-left:.4rem">' + wr + '</div>'
+      if (!data.matches||!data.matches.length) { pane.innerHTML='<div class="loading-center" style="color:var(--t3)">No H2H data</div>'; return; }
+      var html = '<div style="padding:.4rem .85rem .2rem;font-size:.48rem;color:var(--t3)">LAST '+data.matches.length+' MEETINGS</div>';
+      data.matches.forEach(function(m){
+        var wr=m.result==='home'?'H':m.result==='away'?'A':'D';
+        var wc=wr==='H'?'var(--grn)':wr==='A'?'var(--red)':'var(--t3)';
+        html += '<div style="display:flex;align-items:center;padding:.32rem .85rem;border-bottom:1px solid rgba(255,255,255,.04)">'
+          + '<div style="flex:1;font-size:.56rem;color:var(--t1)">'+escHtml(m.home||'')+'</div>'
+          + '<div style="font-family:var(--df);font-size:.7rem;color:var(--gold);padding:0 .5rem">'+(m.scoreH||0)+'-'+(m.scoreA||0)+'</div>'
+          + '<div style="flex:1;font-size:.56rem;color:var(--t1);text-align:right">'+escHtml(m.away||'')+'</div>'
+          + '<div style="width:20px;height:20px;border-radius:3px;background:'+wc+';color:#fff;font-size:.42rem;font-weight:800;display:flex;align-items:center;justify-content:center;margin-left:.4rem">'+wr+'</div>'
           + '</div>';
       });
       pane.innerHTML = html;
     })
-    .catch(function(){
-      pane.innerHTML = '<div class="loading-center" style="color:var(--t3);font-size:.56rem">H2H unavailable</div>';
-    });
+    .catch(function(){ pane.innerHTML='<div class="loading-center" style="color:var(--t3)">H2H unavailable</div>'; });
 }
 
-/* ================================================================
-   COPA — PROFESSIONAL RENDER FUNCTIONS
-   Home: Live/Today/Upcoming/Results-Accordion
-   News: Full-card Facebook/X style
-   Images: Instagram post style, infinite scroll
-================================================================ */
-
-/* ── HOME ── */
-function renderHome(data, el) {
-  var g = data.groups || { live:[], today:[], upcoming:[], recent:[] };
-  var html = '';
-  if (data.competition) {
-    html += '<div style="font-family:var(--dm);font-size:.48rem;color:var(--c1);padding:.35rem .6rem .05rem;letter-spacing:.06em;text-transform:uppercase">'
-      + escHtml(data.competition) + '</div>';
-  }
-  if (!data.total) {
-    html += '<div class="loading-center" style="flex-direction:column;gap:.5rem;padding:2.5rem 1rem">'
-      + '<div style="font-size:2rem">&#x1F4C5;</div>'
-      + '<div style="font-size:.65rem">No matches scheduled</div>'
-      + '<div style="font-size:.5rem;color:var(--t3)">Season may be on break. Try World Cup or Brasileirao.</div>'
-      + '</div>';
-    el.innerHTML = html;
-    return;
-  }
-  /* LIVE */
-  if (g.live && g.live.length) {
-    html += '<div class="match-section-hdr" style="background:rgba(239,68,68,.1);border-left:3px solid var(--red)">'
-      + '<span class="pulse-dot"></span><span>LIVE NOW</span>'
-      + '<span style="font-size:.44rem;color:rgba(255,255,255,.4)">' + g.live.length + '</span></div>';
-    g.live.forEach(function(m){ html += renderMatchCard(m, true); });
-  }
-  /* TODAY */
-  if (g.today && g.today.length) {
-    html += '<div class="match-section-hdr" style="background:rgba(0,212,255,.06);border-left:3px solid var(--c1)">'
-      + '<span>TODAY</span>'
-      + '<span style="font-size:.44rem;color:rgba(255,255,255,.4)">' + g.today.length + '</span></div>';
-    g.today.forEach(function(m){ html += renderMatchCard(m, false); });
-  }
-  /* UPCOMING */
-  if (g.upcoming && g.upcoming.length) {
-    html += '<div class="match-section-hdr" style="background:rgba(255,255,255,.03);border-left:3px solid rgba(255,255,255,.2)">'
-      + '<span>UPCOMING</span>'
-      + '<span style="font-size:.44rem;color:rgba(255,255,255,.4)">' + g.upcoming.length + '</span></div>';
-    g.upcoming.forEach(function(m){ html += renderMatchCard(m, false); });
-  }
-  /* RECENT RESULTS — collapsible accordion */
-  if (g.recent && g.recent.length) {
-    var rid = 'acc_' + Date.now();
-    html += '<div class="results-accordion">'
-      + '<div class="results-accordion-hdr" onclick="toggleAccordion(\'' + rid + '\')">'
-      + '<div style="display:flex;align-items:center;gap:.4rem">'
-      + '<span class="results-title">RECENT RESULTS</span>'
-      + '<span class="results-count">' + g.recent.length + '</span>'
-      + '</div>'
-      + '<span class="chevron" id="chev_' + rid + '">&#x25BC;</span>'
-      + '</div>'
-      + '<div class="results-body" id="' + rid + '">';
-    g.recent.forEach(function(m){ html += renderMatchCard(m, false); });
-    html += '</div></div>';
-  }
-  /* Fallback - all matches */
-  if (!g.live.length && !g.today.length && !g.upcoming.length && !g.recent.length) {
-    (data.matches||[]).forEach(function(m){ html += renderMatchCard(m, false); });
-  }
-  el.innerHTML = html;
-  el.querySelectorAll('.match-card').forEach(function(card) {
-    card.addEventListener('click', function() {
-      var mid = this.getAttribute('data-id');
-      if (mid) openMatchDetail(mid);
-    });
-  });
+function fmtDate(d) {
+  if (!d) return '';
+  try {
+    var dt  = new Date(d);
+    var now = new Date();
+    var diff= dt - now;
+    var mins= Math.round(diff / 60000);
+    if (diff > 0 && mins < 90)  return 'in ' + mins + 'm';
+    if (diff < 0 && mins > -90) return Math.abs(mins) + 'm ago';
+    var today = now.toISOString().slice(0,10);
+    var mDate = dt.toISOString().slice(0,10);
+    var time  = dt.toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'});
+    if (mDate === today) return 'Today ' + time;
+    var tom = new Date(now); tom.setDate(tom.getDate()+1);
+    if (mDate === tom.toISOString().slice(0,10)) return 'Tomorrow ' + time;
+    return dt.toLocaleDateString('en-GB',{weekday:'short',day:'numeric',month:'short'}) + ' ' + time;
+  } catch(e) { return d; }
 }
 
-function toggleAccordion(id) {
-  var body  = document.getElementById(id);
-  var chev  = document.getElementById('chev_' + id);
-  if (!body) return;
-  var isOpen = body.classList.contains('open');
-  body.classList.toggle('open', !isOpen);
-  if (chev) chev.classList.toggle('open', !isOpen);
+function fmtTime(d) {
+  if (!d) return '--:--';
+  try { return new Date(d).toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'}); }
+  catch(e) { return '--:--'; }
 }
 
-function renderSection(title, matches, color, isLive) {
-  var html = '<div class="match-section-hdr" style="background:' + color + '22;border-left:3px solid ' + color + '">'
-    + (isLive ? '<span class="pulse-dot"></span>' : '')
-    + '<span>' + title + '</span>'
-    + '<span style="font-size:.44rem;color:rgba(255,255,255,.4)">' + matches.length + '</span>'
-    + '</div>';
-  matches.forEach(function(m){ html += renderMatchCard(m, isLive); });
-  return html;
+function escHtml(s) {
+  return (s||'').toString()
+    .replace(/&/g,'&amp;').replace(/</g,'&lt;')
+    .replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 }
 
-function renderMatchCard(m, isLive) {
-  var hasScore = m.homeScore !== null && m.homeScore !== undefined
-              && m.awayScore !== null && m.awayScore !== undefined;
-  var isDone = m.status === 'FINISHED' || m.status === 'FT' || m.status === 'post';
-  var cph = 'width:20px;height:20px;display:flex;align-items:center;justify-content:center;font-size:.75rem';
-  return '<div class="match-card" data-id="' + m.id + '">'
-    + '<div class="mc-row">'
-    + (isLive
-      ? '<div class="mc-time mc-live">' + (m.minute ? m.minute + "'" : 'LIVE') + '</div>'
-      : '<div class="mc-time">' + (isDone ? 'FT' : fmtTime(m.utcDate)) + '</div>')
-    + '<div class="mc-teams">'
-    + '<div class="mc-team">'
-    + (m.homeCrest ? '<img class="mc-crest" src="' + m.homeCrest + '" loading="lazy" onerror="this.style.display=\'none\'">' : '<div style="' + cph + '">&#x26BD;</div>')
-    + '<span class="mc-name">' + escHtml(m.homeTeam || m.homeFull || '') + '</span>'
-    + '</div>'
-    + '<div class="mc-team">'
-    + (m.awayCrest ? '<img class="mc-crest" src="' + m.awayCrest + '" loading="lazy" onerror="this.style.display=\'none\'">' : '<div style="' + cph + '">&#x26BD;</div>')
-    + '<span class="mc-name">' + escHtml(m.awayTeam || m.awayFull || '') + '</span>'
-    + '</div></div>'
-    + (hasScore
-      ? '<div class="mc-score">' + m.homeScore + '<span class="mc-sep">-</span>' + m.awayScore + '</div>'
-      : '<div class="mc-score mc-score-dash">-</div>')
-    + '</div>'
-    + (m.group ? '<div class="mc-group">' + escHtml(m.group) + '</div>' : '')
-    + '</div>';
-}
-
-/* ── NEWS — Facebook/X card style ── */
-var newsPage    = 1;
-var newsLoading = false;
-var newsHasMore = true;
-var newsFilter  = 'all';
-var newsTimer   = null;
-
-
-
-
-
-
-
-
-
-/* ── IMAGES — Instagram post style ── */
-var IMG = { category:'all', page:1, loading:false, hasMore:true, cache:{}, allImages:[], current:null };
-
-var imgLazyObs = 'IntersectionObserver' in window
-  ? new IntersectionObserver(function(entries){
-      entries.forEach(function(e){
-        if(e.isIntersecting){
-          var el=e.target; var src=el.getAttribute('data-src');
-          if(src){ el.src=src; el.removeAttribute('data-src'); }
-          imgLazyObs.unobserve(el);
-        }
-      });
-    },{ rootMargin:'400px' })
-  : { observe:function(){}, unobserve:function(){} };
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-/* Infinite scroll */
-
-
-/* Auto-refresh news every 2 min */
-
-
-
-
-function piLogin() {
-  var btn     = document.getElementById('loginBtn');
-  var btnText = document.getElementById('signin-txt');
-  var lmsg    = document.getElementById('lmsg');
-
-  /* Disable only AFTER user taps */
-  if (btn)     { btn.disabled = true; btn.style.opacity = '0.7'; }
-  if (btnText) btnText.textContent = 'Authenticating...';
-  if (lmsg)    lmsg.textContent = 'Connecting to Pi Network...';
-
-  /* Demo mode outside Pi Browser */
-  if (typeof Pi === 'undefined') {
-    setTimeout(function() {
-      piUser = { username: 'Pioneer' };
-      localStorage.setItem('copa_user', JSON.stringify(piUser));
-      launchApp();
-      toast('Demo mode — open in Pi Browser for Pi!');
-    }, 500);
-    return;
-  }
-
-  /* MAINNET */
-  Pi.init({ version: '2.0', sandbox: false });
-
-  Pi.authenticate(['username', 'payments'], onIncompletePayment)
-    .then(function(auth) {
-      piUser = auth.user;
-      console.log('[Copa] Auth OK:', piUser.username);
-      localStorage.setItem('copa_user', JSON.stringify(piUser));
-      launchApp();
-    })
-    .catch(function(err) {
-      console.error('[Copa] Auth error:', err);
-      /* Re-enable button so user can try again */
-      if (btn)     { btn.disabled = false; btn.style.opacity = '1'; }
-      if (btnText) btnText.textContent = 'Sign In with Pi';
-      if (lmsg)    lmsg.textContent = 'Authentication failed — try again';
-    });
-}
-
-function launchApp() {
-  /* Hide login */
-  var loginEl = document.getElementById('login');
-  var appEl   = document.getElementById('app');
-  if (loginEl) loginEl.style.display = 'none';
-  if (appEl)   {
-    appEl.style.display       = 'flex';
-    appEl.style.flexDirection = 'column';
-    appEl.style.height        = '100vh';
-  }
-
-  /* Update username */
-  if (piUser) {
-    var u     = piUser.username || 'Pioneer';
-    var chip  = document.getElementById('user-chip');
-    var moreU = document.getElementById('more-user');
-    if (chip)  chip.textContent  = '@' + u;
-    if (moreU) moreU.textContent = '@' + u;
-  }
-
-  /* Restore Copa Pass */
-  if (localStorage.getItem('copa_pass') === '1') isCopaPass = true;
-  renderCopaPassStatus();
-  renderTxHistory();
-
-  /* Load home data - WC default */
-  homeLoad('WC');
-
-  /* Auto-refresh live data every 60s */
-  setInterval(function() {
-    var active = document.querySelector('.scr.on');
-    if (active && active.id === 's-home') homeLoad(homeLeague);
-  }, 60000);
-
-  toast('Welcome ' + (piUser ? '@' + piUser.username : 'Pioneer') + '!');
-}
-
-/* ── NEWS — in-app reader, no external opens ── */
-function renderNews(articles) {
-  var el = document.getElementById('news-body');
+function toast(msg, dur) {
+  var el = document.getElementById('toast');
   if (!el) return;
-  var first = !el.children.length;
-  articles.forEach(function(a, idx) {
-    var isNew   = (Date.now() - new Date(a.date).getTime()) < 1800000;
-    var hasImg  = !!(a.image);
-    var card    = document.createElement('div');
-
-    if (hasImg) {
-      /* Big card with full-width image */
-      card.className = 'news-card2';
-      card.onclick = function(){ newsOpenReader(a); };
-      var imgHtml = '<img class="news-card2-img" src="' + a.image
-        + '" loading="lazy" onerror="this.parentNode.removeChild(this)">';
-      var body = '<div class="news-card2-body">'
-        + '<div class="news-card2-meta">'
-        + '<span class="news-tag">' + escHtml(a.source||'') + '</span>'
-        + '<span class="news-ago">' + fmtDate(a.date) + '</span>'
-        + '</div>'
-        + '<div class="news-card2-title">'
-        + (isNew ? '<span class="news-breaking">LIVE</span>' : '')
-        + escHtml(a.title||'') + '</div>'
-        + (a.summary ? '<div class="news-card2-summary">' + escHtml(a.summary) + '</div>' : '')
-        + '</div>';
-      card.innerHTML = imgHtml + body;
-    } else {
-      /* Compact text card */
-      card.className = 'news-card2-compact';
-      card.onclick = function(){ newsOpenReader(a); };
-      card.innerHTML = '<div class="news-card2-meta">'
-        + '<span class="news-tag">' + escHtml(a.source||'') + '</span>'
-        + '<span class="news-ago">' + fmtDate(a.date) + '</span>'
-        + '</div>'
-        + '<div class="news-card2-title" style="font-size:.76rem">'
-        + (isNew ? '<span class="news-breaking">LIVE</span>' : '')
-        + escHtml(a.title||'') + '</div>'
-        + (a.summary ? '<div class="news-card2-summary">' + escHtml(a.summary) + '</div>' : '');
-    }
-    el.appendChild(card);
-  });
+  el.textContent = msg;
+  el.classList.add('show');
+  clearTimeout(el._t);
+  el._t = setTimeout(function(){ el.classList.remove('show'); }, dur||2400);
 }
 
-/* ── NEWS IN-APP READER ── */
 function newsOpenReader(article) {
   var panel = document.getElementById('news-reader-panel');
   if (!panel) return;
-  panel.innerHTML =
-    '<div style="display:flex;align-items:center;gap:.5rem;padding:.55rem .75rem;'
-    + 'background:rgba(14,14,14,.97);border-bottom:1px solid var(--bd);'
-    + 'position:sticky;top:0;z-index:5">'
-    + '<button onclick="newsCloseReader()" style="color:var(--c1);font-size:.65rem;'
-    + 'font-family:var(--dm);font-weight:700;cursor:pointer">&#x2190; Back</button>'
-    + '<div style="flex:1;font-family:var(--dm);font-size:.48rem;color:var(--t3);'
-    + 'text-align:center;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'
-    + escHtml(article.source||'') + '</div>'
-    + '<button onclick="newsOpenExternal(\'' + encodeURIComponent(article.url||'') + '\')" '
-    + 'style="color:var(--t3);font-family:var(--dm);font-size:.5rem;cursor:pointer">'
-    + 'Open &#x2197;</button>'
-    + '</div>'
-    + (article.image
-      ? '<img src="' + article.image + '" style="width:100%;max-height:220px;object-fit:cover;display:block;background:var(--bg3)">'
-      : '')
-    + '<div style="padding:.85rem">'
-    + '<div style="font-family:var(--dm);font-size:.46rem;color:var(--c2);font-weight:700;'
-    + 'text-transform:uppercase;letter-spacing:.06em;margin-bottom:.4rem">'
-    + escHtml(article.source||'') + ' &nbsp;&#xB7;&nbsp; ' + fmtDate(article.date) + '</div>'
-    + '<div style="font-family:var(--df);font-size:1rem;font-weight:800;'
-    + 'line-height:1.28;color:var(--t1);margin-bottom:.65rem;letter-spacing:-.01em">'
-    + escHtml(article.title||'') + '</div>'
-    + (article.summary
-      ? '<div style="font-family:var(--dm);font-size:.6rem;color:var(--t2);'
-        + 'line-height:1.65;margin-bottom:.85rem;padding:.65rem;'
-        + 'background:var(--bg2);border-radius:10px;border-left:3px solid var(--c1)">'
-        + escHtml(article.summary) + '</div>'
-      : '')
-    + '<button onclick="newsOpenExternal(\'' + encodeURIComponent(article.url||'') + '\')" '
-    + 'style="width:100%;padding:.6rem;background:var(--c1);border:none;border-radius:10px;'
-    + 'font-family:var(--df);font-size:.75rem;font-weight:800;color:#000;cursor:pointer;'
-    + 'touch-action:manipulation">Read full article &#x2197;</button>'
-    + '</div>';
-  panel.style.display = 'block';
+  panel.style.display='block';
+  panel.innerHTML='<div style="display:flex;align-items:center;gap:.5rem;padding:.6rem .85rem;background:rgba(14,14,14,.98);border-bottom:1px solid var(--bd);position:sticky;top:0;z-index:5">'
+    +'<button onclick="newsCloseReader()" style="color:var(--c1);font-family:var(--dm);font-size:.7rem;font-weight:700;cursor:pointer;padding:.2rem .4rem">← Back</button>'
+    +'<div style="flex:1;font-family:var(--dm);font-size:.5rem;color:var(--t3);text-align:center">'+escHtml(article.source||'')+'</div>'
+    +(article.url?'<button onclick="window.open(\''+article.url.replace(/'/g,"\\'")+'\')" style="color:var(--t3);font-family:var(--dm);font-size:.52rem;cursor:pointer;padding:.2rem .4rem">Open ↗</button>':'')
+    +'</div>'
+    +(article.image?'<img src="'+article.image+'" style="width:100%;max-height:230px;object-fit:cover;display:block">':'')
+    +'<div style="padding:.85rem 1rem 2rem">'
+    +'<div style="font-family:var(--dm);font-size:.52rem;color:var(--c2);font-weight:700;text-transform:uppercase;letter-spacing:.06em;margin-bottom:.45rem">'+escHtml(article.source||'')+' · '+fmtDate(article.date)+'</div>'
+    +'<div style="font-family:var(--df);font-size:1.05rem;font-weight:800;line-height:1.28;color:var(--t1);margin-bottom:.75rem">'+escHtml(article.title||'')+'</div>'
+    +(article.summary?'<div style="font-family:var(--dm);font-size:.65rem;color:var(--t2);line-height:1.65;padding:.75rem;background:var(--bg2);border-radius:10px;border-left:3px solid var(--c1);margin-bottom:.85rem">'+escHtml(article.summary)+'</div>':'')
+    +(article.url?'<button onclick="window.open(\''+article.url.replace(/'/g,"\\'")+'\')" style="width:100%;padding:.7rem;background:var(--c1);border:none;border-radius:12px;font-family:var(--df);font-size:.8rem;font-weight:800;color:#000;cursor:pointer;touch-action:manipulation">Read full article ↗</button>':'')
+    +'</div>';
 }
 
 function newsCloseReader() {
-  var panel = document.getElementById('news-reader-panel');
-  if (panel) { panel.style.display = 'none'; panel.innerHTML = ''; }
+  var p=document.getElementById('news-reader-panel');
+  if(p){ p.style.display='none'; p.innerHTML=''; }
 }
 
-function newsOpenExternal(encodedUrl) {
-  var url = decodeURIComponent(encodedUrl);
-  if (url) window.open(url, '_blank');
-}
-
-/* ── IMAGES — full-bleed Instagram style ── */
-function imgRender(images) {
-  var grid = document.getElementById('img-grid');
-  if (!grid) return;
-  images.forEach(function(img) {
-    IMG.allImages.push(img);
-    var idx  = IMG.allImages.length - 1;
-    var src  = img.source || 'Copa Images';
-    var initials = src.slice(0,2).toUpperCase();
-    var post = document.createElement('div');
-    post.className = 'img-post';
-    /* Header */
-    post.innerHTML =
-      '<div class="img-post-hdr">'
-      + '<div class="img-post-avatar">' + escHtml(initials) + '</div>'
-      + '<div style="flex:1;min-width:0">'
-      + '<div class="img-post-source">' + escHtml(src) + '</div>'
-      + '<div class="img-post-time">' + escHtml(img.license||'CC Licensed') + '</div>'
-      + '</div>'
-      + '</div>'
-      /* Full-width image */
-      + '<img class="img-post-img" data-src="' + (img.thumb||img.url) + '" src="" '
-      + 'alt="' + escHtml((img.caption||'').slice(0,60)) + '" loading="lazy" '
-      + 'onerror="this.style.display=\'none\'">'
-      /* Caption */
-      + (img.caption
-        ? '<div class="img-post-caption">' + escHtml(img.caption.slice(0,120)) + '</div>'
-        : '')
-      /* Actions */
-      + '<div class="img-post-actions">'
-      + '<span class="img-act" onclick="imgOpen(' + idx + ')">&#x1F50D; View</span>'
-      + '<span class="img-act" onclick="imgShare2(' + idx + ')">&#x2B06; Share</span>'
-      + '<span class="img-act" onclick="imgDl(' + idx + ')">&#x2B07; Save</span>'
-      + '</div>';
-    /* Lazy load image */
-    var lazyImg = post.querySelector('img');
-    if (lazyImg) imgLazyObs.observe(lazyImg);
-    grid.appendChild(post);
-  });
-}
-
-function imgOpen(i) {
-  var img = IMG.allImages[i]; if (!img) return;
-  IMG.current = i;
-  var lb  = document.getElementById('img-lightbox');
-  var lbi = document.getElementById('img-lb-img');
-  if (!lb || !lbi) return;
-  lbi.src = img.fullUrl || img.url;
-  lbi.alt = img.caption || '';
-  document.getElementById('img-lb-caption').textContent = img.caption || '';
-  document.getElementById('img-lb-meta').textContent = (img.source||'') + (img.author ? ' · ' + img.author : '');
-  lb.classList.add('open');
-  document.body.style.overflow = 'hidden';
-}
-
-function imgShare2(i) {
-  var img = IMG.allImages[i]; if (!img) return;
-  if (navigator.share) {
-    navigator.share({ title: img.caption||'Copa.pi', url: img.url }).catch(function(){});
-  } else if (navigator.clipboard) {
-    navigator.clipboard.writeText(img.url).then(function(){ toast('Link copied!'); });
-  }
-}
-
-function imgDl(i) {
-  var img = IMG.allImages[i]; if (!img) return;
-  var a = document.createElement('a');
-  a.href = img.fullUrl || img.url;
-  a.download = 'copa-' + Date.now() + '.jpg';
-  a.target = '_blank';
-  document.body.appendChild(a); a.click(); document.body.removeChild(a);
-}
-
-
-/* ================================================================
-   COPA — INFINITE SCROLL ENGINE v2
-   News: unlimited pages, auto-load, in-app reader
-   Images: unlimited, lazy, Instagram-style, in-app lightbox
-================================================================ */
-
-/* ── NEWS ── */
-var newsPage    = 1;
-var newsLoading = false;
-var newsHasMore = true;
-var newsFilter  = 'all';
-var _newsObs    = null;
-
-
-
-
-
-
-
-
-
-/* Setup news observer once */
-
-
-/* ── IMAGES ── */
-var IMG = {
-  category: 'all',
-  page:     1,
-  loading:  false,
-  hasMore:  true,
-  cache:    {},
-  allImages:[],
-  current:  null,
-};
-var _imgObs  = null;
-var _lazyObs = null;
-
-
-
-
-
-
-
-
-
-
-
-/* Setup img observer once per category */
-
-
-/* Auto-refresh news every 90 seconds while on news tab */
-setInterval(function() {
-  var active = document.querySelector('.scr.on');
-  if (active && active.id === 's-news' && !newsLoading) {
-    newsPage   = 1;
-    newsHasMore= true;
-    var nb = document.getElementById('news-body');
-    if (nb) nb.innerHTML = '';
-    newsLoad();
-  }
-}, 90000);
-
-/* imgOpen, imgShare2, imgDl already defined above */
-
-
-
-
-
+window.addEventListener('load', function() {
+  if (localStorage.getItem('copa_pass')==='1') isCopaPass=true;
+  renderTxHistory();
+  var btn=document.getElementById('loginBtn');
+  if(btn){ btn.disabled=false; btn.style.opacity='1'; }
+})
 /* ================================================================
    COPA SCROLL ENGINE v3 — DEFINITIVE FIX
    
@@ -2478,6 +1668,166 @@ function goS(id, btn) {
     var grid = document.getElementById('img-grid');
     if (!grid || !grid.innerHTML.trim() || !IMG.allImages.length) imgLoadPage();
   }
+}
+
+function renderSection(title, matches, color, isLive) {
+  var html = '<div class="match-section-hdr" style="background:' + color + '22;border-left:3px solid ' + color + '">'
+    + (isLive ? '<span class="pulse-dot"></span>' : '')
+    + '<span>' + title + '</span>'
+    + '<span style="font-size:.5rem;color:rgba(255,255,255,.4)">' + matches.length + '</span>'
+    + '</div>';
+  matches.forEach(function(m){ html += renderMatchCard(m, isLive); });
+  return html;
+}
+
+function renderLineup(data, pane, match) {
+  var home = data.home || {};
+  var away = data.away || {};
+  var html = '';
+  if (home.formation || away.formation) {
+    html += '<div style="display:flex;justify-content:space-between;padding:.5rem .85rem .2rem">'
+      + '<div style="font-size:.6rem;color:var(--c1)">' + escHtml(home.formation||'') + '</div>'
+      + '<div style="font-size:.5rem;color:var(--t3)">Formation</div>'
+      + '<div style="font-size:.6rem;color:var(--gold)">' + escHtml(away.formation||'') + '</div>'
+      + '</div>';
+  }
+  html += '<div style="padding:.3rem .85rem">';
+  var max = Math.max((home.players||[]).length, (away.players||[]).length);
+  for (var i=0; i<max; i++) {
+    var hp = (home.players||[])[i];
+    var ap = (away.players||[])[i];
+    html += '<div style="display:flex;align-items:center;padding:.28rem 0;border-bottom:1px solid rgba(255,255,255,.04)">'
+      + '<div style="flex:1;display:flex;align-items:center;gap:.35rem">'
+      + (hp ? '<span style="font-size:.65rem;color:var(--c1);width:20px">' + escHtml(String(hp.number||'')) + '</span>'
+           + '<span style="font-size:.6rem;color:var(--t1)">' + escHtml(hp.name||'') + '</span>' : '')
+      + '</div>'
+      + '<div style="width:32px;text-align:center;font-size:.46rem;color:var(--t3)">'
+      + (hp && hp.position ? escHtml(hp.position.slice(0,3)) : '') + '</div>'
+      + '<div style="flex:1;display:flex;align-items:center;gap:.35rem;justify-content:flex-end">'
+      + (ap ? '<span style="font-size:.6rem;color:var(--t1)">' + escHtml(ap.name||'') + '</span>'
+           + '<span style="font-size:.65rem;color:var(--gold);width:20px;text-align:right">' + escHtml(String(ap.number||'')) + '</span>' : '')
+      + '</div></div>';
+  }
+  html += '</div>';
+  pane.innerHTML = html;
+}
+
+function newsOpenExternal(encodedUrl) {
+  var url = decodeURIComponent(encodedUrl);
+  if (url) window.open(url, '_blank');
+}
+
+function renderNews(articles) {
+  var el = document.getElementById('news-body');
+  if (!el) return;
+  articles.forEach(function(a) {
+    var isNew = (Date.now() - new Date(a.date).getTime()) < 1800000;
+    var card  = document.createElement('div');
+    if (a.image) {
+      card.className = 'news-card2';
+      card.onclick = function(){ newsOpenReader(a); };
+      var imgEl = document.createElement('img');
+      imgEl.className = 'news-card2-img';
+      imgEl.src = a.image;
+      imgEl.loading = 'lazy';
+      imgEl.onerror = function(){ this.parentNode.removeChild(this); };
+      var body = document.createElement('div');
+      body.className = 'news-card2-body';
+      var meta = '<div class="news-card2-meta">'
+        + '<span class="news-tag">' + escHtml(a.source||'') + '</span>'
+        + '<span class="news-ago">' + fmtDate(a.date) + '</span>'
+        + '</div>';
+      var title = '<div class="news-card2-title">'
+        + (isNew ? '<span class="news-breaking">LIVE</span>' : '')
+        + escHtml(a.title||'') + '</div>';
+      var summary = a.summary
+        ? '<div class="news-card2-summary">' + escHtml(a.summary) + '</div>'
+        : '';
+      body.innerHTML = meta + title + summary;
+      card.appendChild(imgEl);
+      card.appendChild(body);
+    } else {
+      card.className = 'news-card2-compact';
+      card.onclick = function(){ newsOpenReader(a); };
+      card.innerHTML = '<div class="news-card2-meta">'
+        + '<span class="news-tag">' + escHtml(a.source||'') + '</span>'
+        + '<span class="news-ago">' + fmtDate(a.date) + '</span>'
+        + '</div>'
+        + '<div class="news-card2-title" style="font-size:.82rem">'
+        + (isNew ? '<span class="news-breaking">LIVE</span>' : '')
+        + escHtml(a.title||'') + '</div>'
+        + (a.summary ? '<div class="news-card2-summary">' + escHtml(a.summary) + '</div>' : '');
+    }
+    el.appendChild(card);
+  });
+}
+
+function imgRender(images) {
+  var grid = document.getElementById('img-grid');
+  if (!grid) return;
+  images.forEach(function(img) {
+    IMG.allImages.push(img);
+    var idx = IMG.allImages.length - 1;
+    var initials = (img.source||'FO').slice(0,2).toUpperCase();
+    var post = document.createElement('div');
+    post.className = 'img-post';
+    var hdr = document.createElement('div');
+    hdr.className = 'img-post-hdr';
+    hdr.innerHTML = '<div class="img-post-avatar">' + escHtml(initials) + '</div>'
+      + '<div style="flex:1;min-width:0">'
+      + '<div class="img-post-source">' + escHtml(img.source||'Football') + '</div>'
+      + '<div class="img-post-time">' + escHtml(img.license||'CC Licensed') + '</div>'
+      + '</div>';
+    var imgEl = document.createElement('img');
+    imgEl.className = 'img-post-img';
+    imgEl.setAttribute('data-src', img.thumb||img.url);
+    imgEl.alt = (img.caption||'').slice(0,60);
+    imgEl.loading = 'lazy';
+    imgEl.onerror = function(){ this.style.display='none'; };
+    imgEl.onclick = (function(i){ return function(){ imgOpen(i); }; })(idx);
+    _lazyObs.observe(imgEl);
+    var cap = img.caption ? '<div class="img-post-caption">' + escHtml(img.caption.slice(0,120)) + '</div>' : '';
+    var acts = document.createElement('div');
+    acts.className = 'img-post-actions';
+    acts.innerHTML = '<span class="img-act" onclick="imgOpen(' + idx + ')">&#x1F50D; View</span>'
+      + '<span class="img-act" onclick="imgShare2(' + idx + ')">&#x2B06; Share</span>'
+      + '<span class="img-act" onclick="imgDl(' + idx + ')">&#x2B07; Save</span>';
+    post.appendChild(hdr);
+    post.appendChild(imgEl);
+    if (img.caption) { var capEl=document.createElement('div'); capEl.className='img-post-caption'; capEl.textContent=img.caption.slice(0,120); post.appendChild(capEl); }
+    post.appendChild(acts);
+    grid.appendChild(post);
+  });
+}
+
+function imgOpen(i) {
+  var img = IMG.allImages[i]; if (!img) return;
+  IMG.current = i;
+  var lb  = document.getElementById('img-lightbox');
+  var lbi = document.getElementById('img-lb-img');
+  if (!lb||!lbi) return;
+  lbi.src = img.fullUrl||img.url; lbi.alt = img.caption||'';
+  document.getElementById('img-lb-caption').textContent = img.caption||'';
+  document.getElementById('img-lb-meta').textContent = (img.source||'') + (img.author?' · '+img.author:'');
+  lb.classList.add('open');
+}
+
+function imgShare2(i) {
+  var img = IMG.allImages[i]; if (!img) return;
+  if (navigator.share) navigator.share({ title:img.caption||'Copa.pi', url:img.url }).catch(function(){});
+  else if (navigator.clipboard) navigator.clipboard.writeText(img.url).then(function(){ toast('Link copied!'); });
+}
+
+function imgDl(i) {
+  var img = IMG.allImages[i]; if (!img) return;
+  var a=document.createElement('a'); a.href=img.fullUrl||img.url;
+  a.download='copa-'+Date.now()+'.jpg'; a.target='_blank';
+  document.body.appendChild(a); a.click(); document.body.removeChild(a);
+}
+
+function imgCloseLightbox() {
+  var lb = document.getElementById('img-lightbox');
+  if (lb) lb.classList.remove('open');
 }
 
 </script>
