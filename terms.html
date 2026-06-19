@@ -1,0 +1,400 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Copa — Terms of Service</title>
+<style>
+  :root{
+    --bg:#08080a;--bg2:#111116;--bg3:#18181f;
+    --lime:#e8ff00;--amber:#ff6b00;--t1:#f0f0f0;
+    --t2:rgba(240,240,240,.65);--t3:rgba(240,240,240,.35);
+    --bd:rgba(255,255,255,.08);
+  }
+  *{box-sizing:border-box;margin:0;padding:0;-webkit-font-smoothing:antialiased}
+  body{font-family:'Inter',system-ui,-apple-system,sans-serif;
+    background:var(--bg);color:var(--t1);line-height:1.7;font-size:16px}
+  a{color:var(--lime);text-decoration:none}
+  a:hover{text-decoration:underline}
+
+  .topbar{background:rgba(8,8,10,.97);border-bottom:1px solid var(--bd);
+    padding:.75rem 1.5rem;display:flex;align-items:center;gap:.75rem;
+    position:sticky;top:0;z-index:100;backdrop-filter:blur(16px)}
+  .topbar-logo{font-size:1.4rem;font-weight:900;color:var(--lime);letter-spacing:-.02em}
+  .topbar-doc{font-size:.78rem;font-weight:600;color:var(--t3);
+    text-transform:uppercase;letter-spacing:.08em}
+  .topbar-badge{margin-left:auto;background:rgba(255,107,0,.1);
+    border:1px solid rgba(255,107,0,.25);border-radius:99px;
+    padding:.2rem .65rem;font-size:.7rem;font-weight:700;color:var(--amber);
+    letter-spacing:.04em}
+
+  .hero{padding:3rem 1.5rem 2rem;border-bottom:1px solid var(--bd);
+    background:linear-gradient(180deg,rgba(255,107,0,.04) 0%,transparent 100%)}
+  .hero-eyebrow{font-size:.72rem;font-weight:700;color:var(--amber);
+    text-transform:uppercase;letter-spacing:.12em;margin-bottom:.6rem}
+  .hero-title{font-size:2.2rem;font-weight:900;letter-spacing:-.03em;
+    line-height:1.1;margin-bottom:.75rem}
+  .hero-title span{color:var(--lime)}
+  .hero-sub{font-size:.9rem;color:var(--t2);max-width:540px;line-height:1.65;margin-bottom:.85rem}
+  .hero-meta{display:flex;flex-wrap:wrap;gap:.5rem}
+  .meta-pill{background:var(--bg3);border:1px solid var(--bd);border-radius:99px;
+    padding:.25rem .75rem;font-size:.72rem;color:var(--t3);font-weight:500}
+
+  .tldr{background:var(--bg2);border-top:3px solid var(--lime);
+    padding:1.25rem 1.5rem;border-bottom:1px solid var(--bd)}
+  .tldr-title{font-size:.72rem;font-weight:800;color:var(--lime);
+    text-transform:uppercase;letter-spacing:.1em;margin-bottom:.75rem}
+  .tldr-grid{display:grid;grid-template-columns:1fr 1fr;gap:.5rem}
+  .tldr-item{display:flex;align-items:flex-start;gap:.4rem;
+    font-size:.8rem;color:var(--t2);line-height:1.4}
+
+  .compat-box{background:var(--bg3);border:1px solid var(--bd);
+    border-radius:14px;padding:1rem;margin:1.5rem;
+    display:flex;flex-direction:column;gap:.5rem}
+  .compat-title{font-size:.75rem;font-weight:800;color:var(--t3);
+    text-transform:uppercase;letter-spacing:.1em}
+  .compat-item{display:flex;align-items:flex-start;gap:.5rem;
+    font-size:.8rem;color:var(--t2)}
+  .compat-check{color:#00e5a0;font-size:.9rem;flex-shrink:0;margin-top:.05rem}
+
+  .content{max-width:720px;margin:0 auto;padding:2rem 1.5rem 4rem}
+  .section{margin-bottom:2.5rem}
+  .section-num{display:inline-flex;align-items:center;justify-content:center;
+    width:28px;height:28px;border-radius:8px;background:rgba(255,107,0,.12);
+    border:1px solid rgba(255,107,0,.25);font-size:.72rem;font-weight:800;
+    color:var(--amber);flex-shrink:0}
+  .section-title{font-size:1.05rem;font-weight:800;color:var(--t1);
+    margin-bottom:.75rem;display:flex;align-items:center;gap:.6rem}
+  .section-body{font-size:.88rem;color:var(--t2);line-height:1.75}
+  .section-body p{margin-bottom:.75rem}
+  .section-body p:last-child{margin-bottom:0}
+
+  .data-table{width:100%;border-collapse:collapse;font-size:.82rem;
+    margin:.75rem 0;border-radius:10px;overflow:hidden;border:1px solid var(--bd)}
+  .data-table th{background:var(--bg3);color:var(--t3);font-weight:700;
+    text-transform:uppercase;font-size:.68rem;letter-spacing:.06em;
+    padding:.6rem .85rem;text-align:left;border-bottom:1px solid var(--bd)}
+  .data-table td{padding:.6rem .85rem;border-bottom:1px solid rgba(255,255,255,.04);
+    color:var(--t2);vertical-align:top}
+  .data-table tr:last-child td{border-bottom:none}
+  .data-table td:first-child{color:var(--t1);font-weight:600}
+
+  .highlight{background:rgba(232,255,0,.06);border:1px solid rgba(232,255,0,.2);
+    border-radius:12px;padding:1rem 1.1rem;margin:.75rem 0;
+    font-size:.85rem;color:var(--t1);line-height:1.65}
+  .highlight strong{color:var(--lime)}
+
+  .amber-box{background:rgba(255,107,0,.06);border:1px solid rgba(255,107,0,.2);
+    border-radius:12px;padding:1rem 1.1rem;margin:.75rem 0;
+    font-size:.85rem;color:var(--t2);line-height:1.65}
+  .amber-box strong{color:var(--amber)}
+
+  .warn-box{background:rgba(255,59,59,.06);border:1px solid rgba(255,59,59,.2);
+    border-radius:12px;padding:1rem 1.1rem;margin:.75rem 0;
+    font-size:.85rem;color:var(--t2);line-height:1.65}
+
+  ul.clean{list-style:none;padding:0;margin:.5rem 0}
+  ul.clean li{display:flex;align-items:flex-start;gap:.5rem;
+    padding:.3rem 0;font-size:.86rem;color:var(--t2);
+    border-bottom:1px solid rgba(255,255,255,.04)}
+  ul.clean li:last-child{border-bottom:none}
+  ul.clean li::before{content:'—';color:var(--t3);flex-shrink:0}
+
+  hr{border:none;border-top:1px solid var(--bd);margin:2rem 0}
+
+  .footer{background:var(--bg2);border-top:1px solid var(--bd);
+    padding:1.5rem;text-align:center}
+  .footer p{font-size:.75rem;color:var(--t3);line-height:1.9}
+  .footer a{color:var(--lime)}
+
+  @media(max-width:480px){
+    .tldr-grid{grid-template-columns:1fr}
+    .hero-title{font-size:1.7rem}
+  }
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="topbar-logo">Copa</div>
+  <div class="topbar-doc">Terms of Service</div>
+  <div class="topbar-badge">Pi Ecosystem App</div>
+</div>
+
+<div class="hero">
+  <div style="max-width:720px;margin:0 auto">
+    <div class="hero-eyebrow">Legal · Terms</div>
+    <h1 class="hero-title">Clear, Fair<br><span>Terms of Service</span></h1>
+    <p class="hero-sub">
+      These Terms are written in plain language. By using Copa you agree to
+      these Terms. Please take a moment to read them — it takes about 3 minutes.
+    </p>
+    <div class="hero-meta">
+      <span class="meta-pill">Effective: June 2026</span>
+      <span class="meta-pill">copa-pi.pages.dev</span>
+      <span class="meta-pill">support.copa.pi@gmail.com</span>
+    </div>
+  </div>
+</div>
+
+<div class="tldr">
+  <div class="tldr-title">Quick Summary — 6 Key Points</div>
+  <div class="tldr-grid">
+    <div class="tldr-item">⚽&nbsp; Copa is a football information app for Pi Pioneers.</div>
+    <div class="tldr-item">π&nbsp; All payments use Pi only. Pricing is shown before every transaction.</div>
+    <div class="tldr-item">🔒&nbsp; Copa currently uses Pi SDK authentication exclusively.</div>
+    <div class="tldr-item">🚫&nbsp; Copa does not currently support betting or gambling activities.</div>
+    <div class="tldr-item">📱&nbsp; Works in Pi Browser. Copa is independent of Pi Core Team.</div>
+    <div class="tldr-item">⚙️&nbsp; Features may be updated, improved, or changed over time.</div>
+  </div>
+</div>
+
+<div class="compat-box">
+  <div class="compat-title">Pi Ecosystem Compatibility</div>
+  <div class="compat-item"><span class="compat-check">✓</span>Pi SDK used exclusively for authentication — no third-party login currently implemented</div>
+  <div class="compat-item"><span class="compat-check">✓</span>Pi used exclusively for in-app transactions — no fiat or other cryptocurrency processing</div>
+  <div class="compat-item"><span class="compat-check">✓</span>Pi Network names and branding belong to their respective owners — Copa makes no affiliation claims</div>
+  <div class="compat-item"><span class="compat-check">✓</span>Copa currently does not support betting, gambling, or wagering activities</div>
+  <div class="compat-item"><span class="compat-check">✓</span>Payment amounts and purpose disclosed before every transaction</div>
+  <div class="compat-item"><span class="compat-check">✓</span>App content complies with Pi ecosystem content guidelines currently in effect</div>
+</div>
+
+<div class="content">
+
+  <div class="section">
+    <div class="section-title"><span class="section-num">1</span>Acceptance of Terms</div>
+    <div class="section-body">
+      <p>By accessing or using Copa ("the App") through the Pi Browser, you confirm that
+      you have read, understood, and agree to be bound by these Terms of Service ("Terms")
+      and Copa's <a href="privacy.html">Privacy Policy</a>.</p>
+      <p>If you do not agree to these Terms, please do not use Copa. These Terms apply
+      to all users of Copa, including visitors and Copa Pass holders.</p>
+      <div class="amber-box">
+        <strong>Age Requirement:</strong> You must meet the minimum age requirements
+        set by Pi Network and applicable law in your jurisdiction to use Copa. Copa
+        inherits Pi Network's eligibility requirements through exclusive Pi SDK authentication.
+      </div>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-title"><span class="section-num">2</span>About Copa</div>
+    <div class="section-body">
+      <p>Copa is an independent football application built for the Pi ecosystem,
+      developed by Abdallah Elbaggari. Copa provides live football scores, league tables,
+      top scorers, match predictions, football news, football images, and Pi payment features.</p>
+      <div class="highlight">
+        <strong>Independence Notice:</strong> Copa is not affiliated with, endorsed by,
+        or officially connected to Pi Core Team, Inc. Copa is an independent developer
+        application operating within the Pi ecosystem. Pi Network names, logos, and related
+        branding belong to their respective owners.
+      </div>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-title"><span class="section-num">3</span>Pi SDK Authentication</div>
+    <div class="section-body">
+      <p>Copa currently uses the Pi Network SDK exclusively for user authentication.
+      No alternative authentication methods are currently available within Copa.</p>
+      <table class="data-table">
+        <tr><th>Requirement</th><th>Copa Implementation</th></tr>
+        <tr><td>Authentication Method</td><td>Pi.authenticate() — Pi SDK only</td></tr>
+        <tr><td>Requested Scopes</td><td>username, payments</td></tr>
+        <tr><td>Data from Auth</td><td>Pi username only (for display purposes)</td></tr>
+        <tr><td>Alternative Login</td><td>Not currently available</td></tr>
+      </table>
+      <p>Your Pi Network credentials are managed by Pi Network. Copa does not store,
+      process, or transmit your Pi password or private keys.</p>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-title"><span class="section-num">4</span>Pi Payments</div>
+    <div class="section-body">
+      <p>All payments within Copa are currently processed through the Pi Network SDK.
+      Copa currently processes transactions in Pi only, in line with Pi ecosystem
+      practices for Pi-exclusive applications.</p>
+
+      <div class="highlight">
+        <strong>Before every payment, Copa displays:</strong> the amount in Pi,
+        the purpose of the payment, and a confirmation button.
+        You are never charged without explicit confirmation.
+        Pricing may change and will always be displayed before payment.
+      </div>
+
+      <table class="data-table">
+        <tr><th>Feature</th><th>Current Price</th><th>Purpose</th></tr>
+        <tr><td>Copa Pass</td><td>1π (subject to change — price always shown before payment)</td><td>Access to premium Copa features</td></tr>
+        <tr><td>Send Pi</td><td>User-defined</td><td>Pi transfer to another Pioneer</td></tr>
+        <tr><td>Quick Tip</td><td>0.1π / 0.5π / 1π</td><td>Quick Pi tip to a Pioneer</td></tr>
+      </table>
+
+      <div class="warn-box">
+        <strong>Transaction Finality:</strong> Completed Pi transactions may not be
+        reversible depending on Pi Network transaction status and Pi Network's applicable
+        policies. Copa does not independently control Pi Blockchain transaction finality.
+        Please confirm your intent before approving any payment.
+      </div>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-title"><span class="section-num">5</span>Copa Pass — Premium Access</div>
+    <div class="section-body">
+      <p>Copa Pass is a premium access purchase that unlocks full Copa features.
+      Access to premium features is subject to service availability and future updates.
+      Copa reserves the right to evolve, expand, or adjust Copa Pass features over time,
+      with reasonable notice to Copa Pass holders where possible.</p>
+      <table class="data-table">
+        <tr><th>Copa Pass Feature</th><th>Status</th></tr>
+        <tr><td>Live Scores, Tables, Scorers</td><td>Available to all users</td></tr>
+        <tr><td>Match Predictions</td><td>Available to all users</td></tr>
+        <tr><td>News &amp; Images</td><td>Available to all users</td></tr>
+        <tr><td>Send / Receive Pi</td><td>Available to all users</td></tr>
+        <tr><td>AI Predictions &amp; Advanced Analysis</td><td>Copa Pass — priority access</td></tr>
+        <tr><td>Full Lineups &amp; H2H History</td><td>Copa Pass — extended access</td></tr>
+      </table>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-title"><span class="section-num">6</span>Acceptable Use</div>
+    <div class="section-body">
+      <p>Copa is provided for personal, non-commercial use as a football information
+      and Pi utility application. You agree to use Copa only for its intended purpose
+      and in compliance with applicable laws and Pi Network's terms.</p>
+      <ul class="clean">
+        <li>Do not attempt to reverse-engineer, hack, or disrupt Copa or its infrastructure</li>
+        <li>Do not use Copa to facilitate illegal activity under applicable law</li>
+        <li>Do not attempt to manipulate Copa's prediction scoring system</li>
+        <li>Do not use automated tools or bots to interact with Copa</li>
+        <li>Do not impersonate other Pioneers or Copa's developer</li>
+        <li>Do not use Copa's payment features to deceive or defraud other users</li>
+        <li>Do not use Copa in any way that violates Pi Network's Terms of Use</li>
+      </ul>
+      <div class="amber-box">
+        <strong>No Gambling:</strong> Copa currently does not support betting, gambling,
+        wagering, or any activities that risk Pi on match outcomes. Copa's prediction
+        feature awards points only — no Pi is risked or won through predictions.
+      </div>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-title"><span class="section-num">7</span>Football Data and Content</div>
+    <div class="section-body">
+      <p>Copa sources football data, news, and images from publicly available third-party
+      providers for informational and entertainment purposes only.</p>
+      <ul class="clean">
+        <li>Copa does not guarantee the accuracy, completeness, or timeliness of any data</li>
+        <li>Live scores may be delayed or subject to error from source providers</li>
+        <li>Features, schedules, statistics, and external data may change or become unavailable without notice</li>
+        <li>News content is attributed to original sources and links to original articles</li>
+        <li>Images from Wikimedia Commons are used under Creative Commons licences</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-title"><span class="section-num">8</span>Content Ownership</div>
+    <div class="section-body">
+      <p>Football club names, competition names, player names, images, and associated
+      trademarks belong to their respective owners. Copa provides informational and
+      community experiences and does not claim ownership of any third-party materials
+      displayed within the app.</p>
+      <p>The Copa name, application design, and original code are the intellectual
+      property of Abdallah Elbaggari. You may not reproduce, distribute, or commercially
+      exploit Copa's original branding or code without explicit written permission.</p>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-title"><span class="section-num">9</span>Service Changes and Availability</div>
+    <div class="section-body">
+      <p>We may update, improve, suspend, or discontinue Copa features at any time.
+      Copa aims to provide a reliable experience but cannot guarantee uninterrupted
+      availability. Service may be affected by Cloudflare Pages infrastructure,
+      Pi Network SDK availability, or third-party data providers.</p>
+      <p>We will provide reasonable notice of material changes where possible.
+      Copa Pass holders will be given maximum notice of any service discontinuation.</p>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-title"><span class="section-num">10</span>Disclaimer and Limitation of Liability</div>
+    <div class="section-body">
+      <div class="warn-box">
+        Copa is provided <strong>"as is"</strong> and <strong>"as available"</strong>
+        without warranties of any kind. To the extent permitted by applicable law,
+        Copa and its developer shall not be liable for loss of Pi due to network or
+        Pi Network issues, inaccurate third-party data, service interruptions,
+        or any indirect or consequential damages arising from use of Copa.
+      </div>
+      <p>Copa's total liability to any user shall not exceed the amount paid by that
+      user through Copa in the 30 days preceding the relevant claim.</p>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-title"><span class="section-num">11</span>Termination</div>
+    <div class="section-body">
+      <p>Copa reserves the right to restrict or terminate access to users who violate
+      these Terms or act in a manner harmful to Copa or its users. You may stop using
+      Copa at any time. Since Copa does not maintain a server-side user account,
+      clearing your browser data for copa-pi.pages.dev removes all locally stored data.</p>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-title"><span class="section-num">12</span>Governing Law</div>
+    <div class="section-body">
+      <p>These Terms are interpreted under applicable laws in the jurisdiction where
+      the service is operated, except where local consumer protection laws provide
+      otherwise. Any disputes shall first be attempted to be resolved through
+      good-faith negotiation.</p>
+      <p>Copa operates within the Pi Network ecosystem and is additionally subject
+      to Pi Core Team's Developer Terms of Use in matters relating to Pi SDK usage,
+      Pi payments, and Pi ecosystem policies.</p>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-title"><span class="section-num">13</span>Changes to These Terms</div>
+    <div class="section-body">
+      <p>We may update these Terms from time to time. Material changes will be
+      communicated by updating the "Effective" date on this page. Continued use of
+      Copa after changes constitutes acceptance of the revised Terms.</p>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-title"><span class="section-num">14</span>Contact</div>
+    <div class="section-body">
+      <div class="highlight">
+        <strong>Developer:</strong> Abdallah Elbaggari<br>
+        <strong>Email:</strong> <a href="mailto:support.copa.pi@gmail.com">support.copa.pi@gmail.com</a><br>
+        <strong>App:</strong> copa-pi.pages.dev<br>
+        <strong>Pi Browser:</strong> copa.pi<br><br>
+        We aim to respond within 5 business days.<br>
+        For Pi Network account issues, contact Pi Core Team at
+        <a href="https://support.minepi.com" target="_blank">support.minepi.com</a>.
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<div class="footer">
+  <p>
+    <strong style="color:var(--lime)">Copa</strong> · copa.pi<br>
+    Independent application built for the Pi ecosystem.<br>
+    Not affiliated with Pi Core Team, Inc.<br>
+    <a href="privacy.html">Privacy Policy</a> &nbsp;·&nbsp;
+    <a href="mailto:support.copa.pi@gmail.com">Contact</a><br>
+    <span style="font-size:.7rem">© 2026 Copa · Abdallah Elbaggari</span>
+  </p>
+</div>
+
+</body>
+</html>
