@@ -1,13 +1,12 @@
 {
   "version": 1,
-  "include": ["/*"],
-  "exclude": [],
-  "routes": [
-    { "pattern": "/approve",        "script": "functions/approve.js" },
-    { "pattern": "/complete",       "script": "functions/complete.js" },
-    { "pattern": "/cancel-payment", "script": "functions/cancel-payment.js" },
-    { "pattern": "/data",           "script": "functions/data.js" },
-    { "pattern": "/news",           "script": "functions/news.js" },
-    { "pattern": "/images",         "script": "functions/images.js" }
-  ]
+  "include": [
+    "/approve",
+    "/complete",
+    "/cancel-payment",
+    "/data",
+    "/news",
+    "/images"
+  ],
+  "exclude": []
 }
