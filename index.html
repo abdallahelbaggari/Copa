@@ -37,7 +37,7 @@
 
   --df:'Inter',system-ui,sans-serif;
   --dm:'DM Sans',system-ui,sans-serif;
-  --nav-h:58px;
+  --nav-h:72px;
 
   /* ── GLOW ── */
   --glow-lime:0 0 20px rgba(232,255,0,.25);
@@ -86,17 +86,17 @@ input{font-family:inherit}
   display:flex;align-items:center;justify-content:space-around;
   z-index:50;backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);
   padding-bottom:env(safe-area-inset-bottom)}
-.nav-btn{display:flex;flex-direction:column;align-items:center;gap:.12rem;
-  padding:.35rem .4rem;color:var(--t3);transition:all .2s;flex:1;
-  position:relative}
+.nav-btn{display:flex;flex-direction:column;align-items:center;gap:.18rem;
+  padding:.45rem .3rem;color:var(--t3);transition:all .2s;flex:1;
+  position:relative;min-height:72px;justify-content:center}
 .nav-btn.on{color:var(--c1)}
 .nav-btn.on::after{content:'';position:absolute;bottom:-1px;left:25%;right:25%;
   height:2px;background:var(--c1);border-radius:2px 2px 0 0;
   box-shadow:var(--glow-lime)}
-.nav-btn .nav-icon{font-size:1.4rem;transition:transform .2s}
+.nav-btn .nav-icon{font-size:1.65rem;transition:transform .2s;line-height:1}
 .nav-btn.on .nav-icon{transform:scale(1.15)}
-.nav-btn .nav-lbl{font-size:.52rem;letter-spacing:.05em;font-weight:600;
-  text-transform:uppercase}
+.nav-btn .nav-lbl{font-size:.58rem;letter-spacing:.04em;font-weight:700;
+  text-transform:uppercase;margin-top:.05rem}
 
 /* ── TOAST ── */
 #toast{position:fixed;bottom:calc(var(--nav-h)+16px);left:50%;
@@ -741,9 +741,16 @@ input{font-family:inherit}
           <div>&#x1F30D; Mainnet &#xB7; sandbox:false</div>
           <div style="margin-top:.3rem;color:var(--c1);font-weight:700">copa-pi.pages.dev</div>
         </div>
+        <!-- Privacy & Terms -->
+        <div style="display:flex;gap:.75rem;justify-content:center;padding:.5rem 0 .25rem;flex-wrap:wrap">
+          <a href="/privacy" onclick="event.stopPropagation()" style="font-family:var(--dm);font-size:.52rem;color:var(--t3);text-decoration:underline;text-underline-offset:2px">Privacy Policy</a>
+          <span style="color:var(--t3);font-size:.52rem">&middot;</span>
+          <a href="/terms" onclick="event.stopPropagation()" style="font-family:var(--dm);font-size:.52rem;color:var(--t3);text-decoration:underline;text-underline-offset:2px">Terms of Service</a>
+        </div>
       </div>
 
-    </div><!-- /scr-scroll -->
+    
+        <div style="font-family:var(--dm);font-size:.44rem;color:var(--t3);text-align:center;padding:.15rem 0 .5rem">&copy; 2026 Copa &bull; Developed by Abdullahi Bashir Abubakar</div></div><!-- /scr-scroll -->
   </section>
 
 </div><!-- /main -->
