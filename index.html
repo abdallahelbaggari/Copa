@@ -37,7 +37,7 @@
 
   --df:'Inter',system-ui,sans-serif;
   --dm:'DM Sans',system-ui,sans-serif;
-  --nav-h:72px;
+  --nav-h:80px;
 
   /* ── GLOW ── */
   --glow-lime:0 0 20px rgba(232,255,0,.25);
@@ -86,17 +86,18 @@ input{font-family:inherit}
   display:flex;align-items:center;justify-content:space-around;
   z-index:50;backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);
   padding-bottom:env(safe-area-inset-bottom)}
-.nav-btn{display:flex;flex-direction:column;align-items:center;gap:.18rem;
-  padding:.45rem .3rem;color:var(--t3);transition:all .2s;flex:1;
-  position:relative;min-height:72px;justify-content:center}
+.nav-btn{display:flex;flex-direction:column;align-items:center;gap:.2rem;
+  padding:.5rem .25rem;color:var(--t3);transition:all .2s;flex:1;
+  position:relative;min-height:80px;justify-content:center;
+  -webkit-tap-highlight-color:transparent;touch-action:manipulation}
 .nav-btn.on{color:var(--c1)}
 .nav-btn.on::after{content:'';position:absolute;bottom:-1px;left:25%;right:25%;
   height:2px;background:var(--c1);border-radius:2px 2px 0 0;
   box-shadow:var(--glow-lime)}
-.nav-btn .nav-icon{font-size:1.65rem;transition:transform .2s;line-height:1}
+.nav-btn .nav-icon{font-size:1.85rem;transition:transform .2s;line-height:1;display:block}
 .nav-btn.on .nav-icon{transform:scale(1.15)}
-.nav-btn .nav-lbl{font-size:.58rem;letter-spacing:.04em;font-weight:700;
-  text-transform:uppercase;margin-top:.05rem}
+.nav-btn .nav-lbl{font-size:.62rem;letter-spacing:.03em;font-weight:700;
+  text-transform:uppercase;display:block}
 
 /* ── TOAST ── */
 #toast{position:fixed;bottom:calc(var(--nav-h)+16px);left:50%;
@@ -743,14 +744,14 @@ input{font-family:inherit}
         </div>
         <!-- Privacy & Terms -->
         <div style="display:flex;gap:.75rem;justify-content:center;padding:.5rem 0 .25rem;flex-wrap:wrap">
-          <a href="/privacy" onclick="event.stopPropagation()" style="font-family:var(--dm);font-size:.52rem;color:var(--t3);text-decoration:underline;text-underline-offset:2px">Privacy Policy</a>
-          <span style="color:var(--t3);font-size:.52rem">&middot;</span>
-          <a href="/terms" onclick="event.stopPropagation()" style="font-family:var(--dm);font-size:.52rem;color:var(--t3);text-decoration:underline;text-underline-offset:2px">Terms of Service</a>
+          <span onclick="location.href='/privacy'" style="font-family:var(--dm);font-size:.54rem;color:var(--c1);text-decoration:underline;text-underline-offset:2px;cursor:pointer">Privacy Policy</span>
+          <span style="color:var(--t3);font-size:.54rem">&middot;</span>
+          <span onclick="location.href='/terms'" style="font-family:var(--dm);font-size:.54rem;color:var(--c1);text-decoration:underline;text-underline-offset:2px;cursor:pointer">Terms of Service</span>
         </div>
       </div>
 
     
-        <div style="font-family:var(--dm);font-size:.44rem;color:var(--t3);text-align:center;padding:.15rem 0 .5rem">&copy; 2026 Copa &bull; Developed by Abdullahi Bashir Abubakar</div></div><!-- /scr-scroll -->
+        <div style="font-family:var(--dm);font-size:.48rem;color:var(--t3);text-align:center;padding:.2rem 0 .5rem">&copy; 2026 Copa &bull; Developed by Abdullahi Bashir Abubakar</div></div><!-- /scr-scroll -->
   </section>
 
 </div><!-- /main -->
