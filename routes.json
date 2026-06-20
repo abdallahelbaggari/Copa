@@ -6,7 +6,11 @@
     "/cancel-payment",
     "/data",
     "/news",
-    "/images"
+    "/images",
+    "/privacy",
+    "/privacy.html",
+    "/terms",
+    "/terms.html"
   ],
   "exclude": []
 }
