@@ -743,15 +743,16 @@ input{font-family:inherit}
           <div style="margin-top:.3rem;color:var(--c1);font-weight:700">copa-pi.pages.dev</div>
         </div>
         <!-- Privacy & Terms -->
-        <div style="display:flex;gap:.75rem;justify-content:center;padding:.5rem 0 .25rem;flex-wrap:wrap">
-          <span onclick="location.href='/privacy'" style="font-family:var(--dm);font-size:.54rem;color:var(--c1);text-decoration:underline;text-underline-offset:2px;cursor:pointer">Privacy Policy</span>
-          <span style="color:var(--t3);font-size:.54rem">&middot;</span>
-          <span onclick="location.href='/terms'" style="font-family:var(--dm);font-size:.54rem;color:var(--c1);text-decoration:underline;text-underline-offset:2px;cursor:pointer">Terms of Service</span>
+        <div style="display:flex;gap:.75rem;justify-content:center;padding:.65rem 0 .3rem;flex-wrap:wrap">
+          <span onclick="openLegal('privacy')" style="font-family:var(--dm);font-size:.6rem;color:var(--c1);text-decoration:underline;text-underline-offset:3px;cursor:pointer;padding:.3rem .1rem">Privacy Policy</span>
+          <span style="color:var(--t3);font-size:.6rem;line-height:2">&middot;</span>
+          <span onclick="openLegal('terms')" style="font-family:var(--dm);font-size:.6rem;color:var(--c1);text-decoration:underline;text-underline-offset:3px;cursor:pointer;padding:.3rem .1rem">Terms of Service</span>
         </div>
+        <!-- Copyright -->
+        <div style="font-family:var(--dm);font-size:.5rem;color:var(--t3);text-align:center;padding:.1rem 0 1.5rem">&copy; 2026 Copa &bull; Developed by Abdullahi Bashir Abubakar</div>
       </div>
 
-    
-        <div style="font-family:var(--dm);font-size:.48rem;color:var(--t3);text-align:center;padding:.2rem 0 .5rem">&copy; 2026 Copa &bull; Developed by Abdullahi Bashir Abubakar</div></div><!-- /scr-scroll -->
+    </div><!-- /scr-scroll -->
   </section>
 
 </div><!-- /main -->
@@ -781,6 +782,21 @@ input{font-family:inherit}
   </button>
 </nav>
 
+
+  <!-- Legal Panel -->
+  <div id="legal-panel" style="display:none;position:fixed;inset:0;background:var(--bg1);
+    z-index:200;overflow-y:auto;padding-bottom:env(safe-area-inset-bottom)">
+    <div style="background:rgba(14,14,14,.97);border-bottom:1px solid var(--bd);
+      padding:.6rem .85rem;display:flex;align-items:center;gap:.5rem;
+      position:sticky;top:0;z-index:5">
+      <button onclick="closeLegal()" style="color:var(--c1);font-family:var(--dm);
+        font-size:.7rem;font-weight:700;cursor:pointer;padding:.2rem .1rem;
+        touch-action:manipulation">&#x2190; Back</button>
+      <div id="legal-title" style="font-family:var(--dm);font-size:.6rem;
+        color:var(--t3);flex:1;text-align:center"></div>
+    </div>
+    <div id="legal-body" style="padding:0"></div>
+  </div>
 </div><!-- /app -->
 <div id="toast"></div>
 
@@ -1838,6 +1854,42 @@ function imgCloseLightbox() {
   if (lb) lb.classList.remove('open');
 }
 
+
+/* ── LEGAL PAGES ── */
+function openLegal(page) {
+  var panel = document.getElementById('legal-panel');
+  var body  = document.getElementById('legal-body');
+  var title = document.getElementById('legal-title');
+  if (!panel || !body) return;
+
+  if (title) title.textContent = page === 'privacy' ? 'Privacy Policy' : 'Terms of Service';
+  body.innerHTML = '<div style="display:flex;align-items:center;justify-content:center;'
+    + 'padding:2rem"><div class="spin"></div></div>';
+  panel.style.display = 'block';
+  panel.scrollTop = 0;
+
+  fetch('/' + page)
+    .then(function(r){ return r.text(); })
+    .then(function(html){
+      /* Strip outer html/head/body tags, keep content */
+      var match = html.match(/<body[^>]*>([\s\S]*)<\/body>/i);
+      var content = match ? match[1] : html;
+      /* Remove topbar nav (already have back button) */
+      content = content.replace(/<div class="topbar"[\s\S]*?<\/div>\s*/i, '');
+      body.innerHTML = content;
+    })
+    .catch(function(){
+      body.innerHTML = '<div style="padding:2rem;text-align:center;'
+        + 'font-family:var(--dm);font-size:.65rem;color:var(--t3)">'
+        + 'Could not load page.<br><br>'
+        + '<a href="/' + page + '" style="color:var(--c1)">Open directly</a></div>';
+    });
+}
+
+function closeLegal() {
+  var panel = document.getElementById('legal-panel');
+  if (panel) { panel.style.display = 'none'; }
+}
 </script>
 </body>
 </html>
