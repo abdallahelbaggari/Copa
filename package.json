@@ -1,10 +1,12 @@
 {
   "name": "copa-pi",
   "version": "1.0.0",
-  "description": "Copa.pi - Football Super App on Pi Network",
-  "main": "index.html",
+  "private": true,
+  "type": "module",
+  "description": "Copa \u2014 Every Cup. Every Upset. Every Champion. (Pi Network PWA on Cloudflare Pages)",
   "scripts": {
-    "deploy": "npx wrangler pages deploy . --project-name copa-pi"
-  },
-  "dependencies": {}
+    "test:fd": "MOCK=fd node test/serve.mjs 8787",
+    "test:af": "MOCK=af node test/serve.mjs 8788",
+    "test:hy": "MOCK=hy node test/serve.mjs 8789"
+  }
 }

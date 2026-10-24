@@ -1,16 +1,14 @@
 {
   "version": 1,
   "include": [
+    "/api/*",
     "/approve",
     "/complete",
     "/cancel-payment",
-    "/data",
-    "/news",
-    "/images",
-    "/privacy",
-    "/privacy.html",
-    "/terms",
-    "/terms.html"
+    "/verify-user",
+    "/validation-key.txt",
+    "/launch-check",
+    "/predict"
   ],
   "exclude": []
 }

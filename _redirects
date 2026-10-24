@@ -1,0 +1,7 @@
+# Keep source and dev files from being served as public pages
+/server/*        /  302
+/test/*          /  302
+/functions/*     /  302
+/README.md       /  302
+/package.json    /  302
+/LICENSE         /  302
