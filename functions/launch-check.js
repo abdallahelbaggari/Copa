@@ -6,7 +6,7 @@ export async function onRequestGet(context) {
   if (!vkey && env.ASSETS) {
     try { const r = await env.ASSETS.fetch(new URL('/validation-key.txt', context.request.url)); const t = r.ok ? (await r.text()).trim() : ''; vkey = t.length > 20 && t.length < 400 && !t.startsWith('<'); } catch {} // Pages returns index.html for missing files, so reject HTML
   }
-  const fd = !!(env.FOOTBALL_DATA_KEY || env.FD_API_KEY), af = !!env.API_FOOTBALL_KEY;
+  const fd = !!(env.FOOTBALL_DATA_KEY || env.FD_API_KEY), af = !!(env.API_FOOTBALL_KEY || env.AF_API_KEY);
   const checks = [
     ['Network', true, NETWORK === 'mainnet' ? 'Pi Mainnet' : 'Pi Testnet', ''],
     ['Pi API key', !!env.PI_API_KEY, env.PI_API_KEY ? 'Set' : 'Missing', 'Cloudflare → Settings → Variables and Secrets → add PI_API_KEY (from develop.pi)'],

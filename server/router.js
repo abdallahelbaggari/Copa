@@ -10,6 +10,7 @@ import { newsList, article, ATTRIBUTION as NEWS_ATTR } from './news.js';
 
 export function getProvider(ctx) {
   if (ctx.env && !ctx.env.FOOTBALL_DATA_KEY && ctx.env.FD_API_KEY) ctx.env = Object.assign({}, ctx.env, { FOOTBALL_DATA_KEY: ctx.env.FD_API_KEY });
+  if (ctx.env && !ctx.env.API_FOOTBALL_KEY && ctx.env.AF_API_KEY) ctx.env = Object.assign({}, ctx.env, { API_FOOTBALL_KEY: ctx.env.AF_API_KEY });
   return pickProvider(ctx);
 }
 
@@ -46,6 +47,7 @@ export async function handle(ctx) {
   const q = url.searchParams;
   // Accept FD_API_KEY as another name for FOOTBALL_DATA_KEY.
   if (ctx.env && !ctx.env.FOOTBALL_DATA_KEY && ctx.env.FD_API_KEY) ctx.env = Object.assign({}, ctx.env, { FOOTBALL_DATA_KEY: ctx.env.FD_API_KEY });
+  if (ctx.env && !ctx.env.API_FOOTBALL_KEY && ctx.env.AF_API_KEY) ctx.env = Object.assign({}, ctx.env, { API_FOOTBALL_KEY: ctx.env.AF_API_KEY });
   const p = pickProvider(ctx);
 
   if (parts[0] === 'status') {
