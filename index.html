@@ -1865,10 +1865,11 @@ function piLogin(opts) {
   opts = opts || {};
   if (!inPiBrowser()) { piMsg('Open Copa in the Pi Browser to sign in with Pi.'); return Promise.resolve(false); }
   if (!opts.silent) piMsg('Connecting to Pi…');
-  try {
-    Pi.init({ version: '2.0', sandbox: CONFIG.PI_SANDBOX });
-  } catch (e) { piMsg('Pi sign-in is unavailable here. Open Copa in the Pi Browser.'); return Promise.resolve(false); }
-  return Pi.authenticate(['username', 'payments'], onIncompletePaymentFound).then(function (auth) {
+  if (piLoginPending) return piLoginPending;
+  if (!piInitOnce()) { piMsg('Pi sign-in is unavailable here. Open Copa in the Pi Browser.'); return Promise.resolve(false); }
+  // Pi.authenticate can wait forever if the app is not set up for this address in develop.pi, so give it a time limit.
+  const timeout = new Promise(function (_, rej) { setTimeout(function () { rej(new Error('PI_TIMEOUT')); }, 25000); });
+  piLoginPending = Promise.race([Pi.authenticate(['username', 'payments'], onIncompletePaymentFound), timeout]).then(function (auth) {
     piAuthed = true;
     piToken = auth.accessToken || null;
     piUser = (auth.user && auth.user.username) || null;
@@ -1883,10 +1884,19 @@ function piLogin(opts) {
     return true;
   }).catch(function (err) {
     piAuthed = false;
-    if (!opts.silent) piMsg('Pi sign-in was cancelled or failed. You can keep using Copa without signing in.');
+    const why = err && err.message === 'PI_TIMEOUT'
+      ? 'Pi did not answer the sign-in request. In develop.pi, check that this app’s URL is ' + location.origin + ' and its network is ' + (CONFIG.PI_SANDBOX ? 'Testnet' : 'Mainnet') + ', then close and reopen Copa in the Pi Browser.'
+      : 'Pi sign-in was cancelled or failed' + (err && err.message ? ' (' + err.message + ')' : '') + '. You can keep using Copa without signing in.';
+    if (!opts.silent) { piMsg(why); payLog(why, 'err'); }
     console.warn('[COPA-PI] authenticate failed', err);
     return false;
-  });
+  }).finally(function () { piLoginPending = null; });
+  return piLoginPending;
+}
+let piLoginPending = null, piInited = false;
+function piInitOnce() {
+  if (piInited) return true;
+  try { Pi.init({ version: '2.0', sandbox: CONFIG.PI_SANDBOX }); piInited = true; return true; } catch (e) { console.warn('[COPA-PI] init failed', e); return false; }
 }
 
 function piLogout() {
@@ -1900,10 +1910,10 @@ function submitPiPayment(amount) {
   if (!CONFIG.PAY_AMOUNTS.includes(amount)) return;
   if (!inPiBrowser()) { payLog('Open Copa in the Pi Browser to pay with Pi.', 'err'); return; }
   const go = function () {
-    try { Pi.init({ version: '2.0', sandbox: CONFIG.PI_SANDBOX }); } catch (e) {}
+    piInitOnce();
     payBusy = true;
     payLog('Starting payment of ' + amount + ' π…');
-    Pi.createPayment({
+    try { Pi.createPayment({
       amount: amount,
       memo: 'Support Copa — ' + amount + ' Pi',
       metadata: { app: 'copa', kind: 'support', amount: amount },
@@ -1933,7 +1943,7 @@ function submitPiPayment(amount) {
         payBusy = false;
         payLog('Payment error: ' + ((error && error.message) || 'unknown'), 'err');
       },
-    });
+    }); } catch (e) { payBusy = false; payLog('Pi could not start the payment: ' + ((e && e.message) || 'unknown'), 'err'); }
   };
   if (piAuthed) go();
   else {
