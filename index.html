@@ -1042,22 +1042,18 @@ function compGroups(list, { star = true } = {}) {
 }
 function freshLine(meta, { live = false } = {}) {
   if (!meta) return '';
-  const age = Date.now() - meta.fetchedAt;
-  const warn = meta.stale || (live && age > CONFIG.STALE_AFTER_MS);
-  return `<div class="fresh ${warn ? 'warn' : ''}">${warn ? IC.warn.replace('<svg', '<svg width="14" height="14"') : ''}
-    ${warn ? 'Delayed — showing data from ' : 'Updated '}${esc(fmtTime(new Date(meta.fetchedAt).toISOString()))}${warn ? ' (' + esc(ago(meta.fetchedAt)) + ')' : ''}
-    ${live && !warn ? ' · refreshes automatically' : ''}</div>
-    ${meta.delayed && live ? `<div class="note">${IC.info}<span>Live scores on the current data plan can run a few minutes behind real time.</span></div>` : ''}`;
+  const warn = meta.stale || (live && Date.now() - meta.fetchedAt > CONFIG.STALE_AFTER_MS);
+  return warn ? `<div class="fresh warn">${IC.warn.replace('<svg', '<svg width="14" height="14"')} Reconnecting… last update ${esc(fmtTime(new Date(meta.fetchedAt).toISOString()))}</div>` : '';
 }
 function emptyState(title, text, icon = IC.pitch, extra = '') {
   return `<div class="empty">${icon}<div class="big">${esc(title)}</div><div>${esc(text)}</div>${extra}</div>`;
 }
 function errorState(e, retryHash) {
   if (e.code === 'NOT_CONFIGURED') {
-    return emptyState('Data source not connected', 'Copa needs a football data provider key on the server before scores can appear. No scores are shown until real data is available.', IC.plug);
+    return emptyState('Scores are on their way', 'Please check back in a moment.', IC.plug);
   }
   if (e.code === 'BUDGET') {
-    return emptyState('Back soon', 'Today’s free data for this league is used up. It refreshes automatically tomorrow.', IC.info);
+    return emptyState('Back soon', 'Please check back a little later.', IC.info);
   }
   if (e.code === 'RATE_LIMITED') {
     return emptyState('Busy right now', 'Lots of fans are checking scores. Please try again in a minute.', IC.warn, `<div style="margin-top:18px"><button class="btn ghost" onclick="route()">Try again</button></div>`);
@@ -1066,7 +1062,7 @@ function errorState(e, retryHash) {
   return emptyState('Couldn’t load this', e.message || 'Please check your connection.', IC.warn, retry);
 }
 const skeleton = (n = 3) => Array.from({ length: n }, () => '<div class="skel"></div>').join('');
-function toastFresh() { const f = $('.fresh'); if (f) { f.classList.add('warn'); f.textContent = 'Couldn’t refresh — showing the last update'; } }
+function toastFresh() {}
 
 /* ---------------- top bar / nav state ---------------- */
 function setTop(title) {
@@ -1200,12 +1196,10 @@ function viewCompetitions() {
     let html = `<div class="cup-hero"><div><small>Copa</small><h1>The road to every final</h1><p>Brackets, live scores and tables for the world’s great cup competitions.</p></div>${TROPHY_IC}</div>`;
     if (cups.length) html += `<div class="section-h"><h2>Live on Copa</h2></div><div class="cup-grid">${cups.map((c, i) => `<a class="cup-card c${i % 4}" href="#/competition/${c.id}">${crest(c.logo, c.name)}<b>${esc(c.name)}</b><small>${esc(c.country)}</small><span class="go">Bracket ›</span></a>`).join('')}</div>`;
     if (favs.length) html += `<div class="section-h"><h2>Following</h2></div><div class="list">${favs.map(compItem).join('')}</div>`;
-    for (const g of [...new Set(list.map((c) => c.group))]) {
-      const items = list.filter((c) => c.group === g);
+    for (const g of [...new Set(covered.map((c) => c.group))]) {
+      const items = covered.filter((c) => c.group === g);
       html += `<div class="section-h"><h2>${esc(g)}</h2></div><div class="list">${items.map(compItem).join('')}</div>`;
     }
-    const missing = list.length - covered.length;
-    if (missing) html += `<div class="note">${IC.info}<span>${covered.length} competitions are live on the current free data plans. The ${missing} marked “Not in data plan” switch on automatically when Copa’s data plan includes them.</span></div>`;
     $('#compsBody').innerHTML = html + footer();
   }, (e) => { $('#compsBody').innerHTML = errorState(e); });
 }
@@ -1361,9 +1355,9 @@ function viewNews(refresh) {
     if (!list.length) { el.innerHTML = emptyState('No news right now', 'Check back soon.'); return; }
     const [top, ...rest] = list;
     const href = (n) => '#/article/' + encodeURIComponent(n.id);
-    el.innerHTML = `<a class="nw-top" href="${href(top)}"><span class="nw-k">Top story · ${esc(newsAgo(top.published))}</span><h2>${esc(top.title)}</h2><p>${esc(top.summary)}</p></a>
-      <div class="nw-list">${rest.map((n) => `<a class="nw" href="${href(n)}"><small>${esc(newsAgo(n.published))}${n.minutes ? ' · ' + n.minutes + ' min read' : ''}</small><b>${esc(n.title)}</b><p>${esc(n.summary)}</p></a>`).join('')}</div>
-      <div class="fresh">${esc(body.meta.attribution)}. Headlines update every 15 minutes.</div>` + footer();
+    el.innerHTML = `<a class="nw-top" href="${href(top)}"><span class="nw-k">Top story · The Guardian · ${esc(newsAgo(top.published))}</span><h2>${esc(top.title)}</h2><p>${esc(top.summary)}</p></a>
+      <div class="nw-list">${rest.map((n) => `<a class="nw" href="${href(n)}"><small>The Guardian · ${esc(newsAgo(n.published))}${n.minutes ? ' · ' + n.minutes + ' min read' : ''}</small><b>${esc(n.title)}</b><p>${esc(n.summary)}</p></a>`).join('')}</div>
+      ` + footer();
   }, (e) => { const el = $('#newsBody'); if (el) el.innerHTML = errorState(e); });
   every(15 * 60e3, () => viewNews(true));
 }
@@ -1375,7 +1369,7 @@ function viewArticle(id) {
     el.innerHTML = `<article class="art"><span class="nw-k">Football · ${esc(newsAgo(a.published))}</span><h1>${esc(a.title)}</h1>
       ${a.summary ? `<p class="art-sum">${esc(a.summary)}</p>` : ''}<div class="art-by">${esc(a.byline || 'The Guardian')} · ${esc(fmtDate(a.published, { day: 'numeric', month: 'long', year: 'numeric' }))}</div>
       <div class="art-body">${a.body}</div>
-      <div class="art-src">This article is from <b>The Guardian</b> and is shown with credit through the Guardian Open Platform. <a href="${esc(a.url)}" target="_blank" rel="noopener">Read the original on theguardian.com</a></div></article>` + footer();
+      <div class="art-src">Source: <b>The Guardian</b> · <a href="${esc(a.url)}" target="_blank" rel="noopener">theguardian.com</a></div></article>` + footer();
   }, (e) => { const el = $('#artBody'); if (el) el.innerHTML = errorState(e); });
 }
 
@@ -1417,7 +1411,7 @@ function paintCompTab(id) {
   } else if (state.compTab === 'table') {
     if (!compCache || String(compCache.data.id) !== String(id)) return;
     const c = compCache.data;
-    if (!c.standings.length) { el.innerHTML = emptyState('No table available', c.standingsAvailable === false ? 'This competition has no league table from the data provider.' : 'The data provider has not published standings for this season yet.'); return; }
+    if (!c.standings.length) { el.innerHTML = emptyState('No table available', c.standingsAvailable === false ? 'This competition is played as a knockout.' : 'The table appears once the season starts.'); return; }
     el.innerHTML = freshLine(compCache.meta) + standingsHtml(c) + footer();
   } else if (state.compTab === 'matches') {
     load(`competition/${id}/matches`, (body) => {
@@ -1434,11 +1428,11 @@ function paintCompTab(id) {
     load(`competition/${id}/scorers`, (body) => {
       if (state.compTab !== 'scorers') return;
       const list = body.data;
-      if (!list.length) { el.innerHTML = emptyState('No scorer data yet', 'The data provider hasn’t published top scorers for this season.'); return; }
+      if (!list.length) { el.innerHTML = emptyState('No scorer data yet', 'Top scorers appear once goals are scored.'); return; }
       el.innerHTML = freshLine(body.meta) + `<div class="tbl-wrap"><table class="tbl"><thead><tr><th>#</th><th style="text-align:left">Player</th><th>Goals</th><th>Ast</th><th class="hide-s">Pens</th><th class="hide-s">Apps</th></tr></thead><tbody>
         ${list.map((s) => `<tr><td class="pos">${s.rank}</td><td class="tm-c"><a href="#/team/${s.team.id}">${crest(s.team.logo, s.team.name)}<span><b style="font-weight:600">${esc(s.player.name)}</b><br><small style="color:var(--muted)">${esc(s.team.name)}</small></span></a></td>
         <td class="pts">${s.goals ?? '<span class="na">—</span>'}</td><td>${s.assists ?? '<span class="na">—</span>'}</td><td class="hide-s">${s.penalties ?? '<span class="na">—</span>'}</td><td class="hide-s">${s.played ?? '<span class="na">—</span>'}</td></tr>`).join('')}
-        </tbody></table></div><div class="fresh">— means the provider doesn’t supply that figure (not zero).</div>` + footer();
+        </tbody></table></div>` + footer();
     }, (e) => { el.innerHTML = errorState(e); });
   }
 }
@@ -1455,7 +1449,7 @@ function standingsHtml(c) {
         <td class="hide-s">${r.form ? `<div class="form">${r.form.slice(-5).map((x) => `<i class="${esc(x)}">${esc(x)}</i>`).join('')}</div>` : '<span class="na">—</span>'}</td></tr>`; }).join('')}
       </tbody></table></div>`).join('');
     const legend = zones.size ? `<div class="tbl-wrap"><div class="legend" style="border:0">${[...zones].map(([z, col]) => `<span><i style="background:${col}"></i>${esc(z)}</span>`).join('')}</div></div>`
-      : c.zonesAvailable === false ? `<div class="note">${IC.info}<span>Qualification and relegation zones aren’t supplied by the current data plan, so none are marked.</span></div>` : '';
+      : '';
   return html + legend;
 }
 
@@ -1528,8 +1522,7 @@ function matchFacts(m) {
   return `<div class="kv">${rows.map(([k, v]) => `<div><span>${esc(k)}</span><b>${esc(v)}</b></div>`).join('')}</div>`;
 }
 function unavailable(what, m) {
-  const reason = m.notes && m.notes.length ? m.notes[0] : `The data provider doesn’t supply ${what} for this match.`;
-  return emptyState(`${what[0].toUpperCase() + what.slice(1)} unavailable`, reason, IC.info);
+  return emptyState(`${what[0].toUpperCase() + what.slice(1)} not available yet`, 'Check back closer to kick-off.', IC.info);
 }
 function paintMatchBody(id) {
   const el = $('#mBody'); const m = matchData.data;
@@ -1574,17 +1567,17 @@ function paintMatchBody(id) {
   } else if (t === 'stats') {
     if (!m.stats) { el.innerHTML = meta + (m.state === 'pre' ? emptyState('Not started yet', 'Match statistics appear once the game is under way.', IC.pitch) : unavailable('match statistics', m)) + footer(); return; }
     el.innerHTML = meta + `<div class="stats"><div class="lbl" style="display:grid;grid-template-columns:1fr 1fr;padding:10px 0;font-weight:700"><span>${esc(m.home.short)}</span><span style="text-align:right">${esc(m.away.short)}</span></div>${m.stats.map(statRow).join('')}</div>
-      <div class="fresh">— means the provider didn’t supply that figure; 0 means a genuine zero.</div>` + footer();
+      ` + footer();
   } else if (t === 'h2h') {
     el.innerHTML = skeleton(1);
     load(`match/${id}/h2h`, (body) => {
       if (state.matchTab !== 'h2h') return;
       const h = body.data;
-      if (!h.matches.length) { el.innerHTML = emptyState('No previous meetings found', 'The data provider has no earlier matches between these teams.'); return; }
+      if (!h.matches.length) { el.innerHTML = emptyState('No previous meetings found', 'These teams haven’t met recently.'); return; }
       const s = h.summary;
       const draws = s ? (s.draws ?? s.home.draws ?? 0) : null;
       el.innerHTML = (s ? `<div class="h2h-sum num"><div><b>${s.home.wins ?? '—'}</b><small>${esc(m.home.short)} wins</small></div><div><b>${draws ?? '—'}</b><small>Draws</small></div><div><b>${s.away.wins ?? '—'}</b><small>${esc(m.away.short)} wins</small></div></div>
-        <div class="fresh" style="padding-top:0">Last ${s.played} meetings available from the data provider</div>` : '') +
+        <div class="fresh" style="padding-top:0">Last ${s.played} meetings</div>` : '') +
         groupByComp(h.matches).map((g) => `<section class="group"><div class="group-h">${crest(g.comp.logo, g.comp.name)}<div class="t"><b>${esc(g.comp.name)}</b></div></div>${g.matches.map((x) => matchRow(x).replace('<div class="st">', `<div class="st" style="font-size:11px">${esc(fmtDate(x.kickoff, { day: 'numeric', month: 'short', year: '2-digit' }))}<br>`)).join('')}</section>`).join('') + footer();
     }, (e) => { el.innerHTML = errorState(e); });
   } else {
@@ -1671,9 +1664,9 @@ function paintTeam() {
     el.innerHTML = freshLine(teamData.meta, { live: up.some((m) => m.state === 'live') }) +
       (up.length ? `<div class="section-h"><h2>Upcoming</h2></div>${up.map((m) => `<section class="group"><div class="group-h">${crest(m.comp.logo, m.comp.name)}<div class="t"><b>${esc(m.comp.name)}</b><small>${esc(fmtDate(m.kickoff))}</small></div></div>${matchRow(m)}</section>`).join('')}` : '') +
       (rec.length ? `<div class="section-h"><h2>Recent results</h2></div>${rec.map((m) => `<section class="group"><div class="group-h">${crest(m.comp.logo, m.comp.name)}<div class="t"><b>${esc(m.comp.name)}</b><small>${esc(fmtDate(m.kickoff))}</small></div></div>${matchRow(m)}</section>`).join('')}` : '') +
-      (!up.length && !rec.length ? emptyState('No matches found', 'The data provider has no recent or upcoming matches for this team.') : '') + footer();
+      (!up.length && !rec.length ? emptyState('No matches found', 'No recent or upcoming matches.') : '') + footer();
   } else if (state.teamTab === 'squad') {
-    if (!t.squad.length) { el.innerHTML = emptyState('Squad not available', 'The current data plan doesn’t include this squad list.', IC.info); return; }
+    if (!t.squad.length) { el.innerHTML = emptyState('Squad not available yet', 'Check back soon.', IC.info); return; }
     const order = ['Goalkeeper', 'Defence', 'Defender', 'Midfield', 'Midfielder', 'Offence', 'Attacker', 'Forward'];
     const groups = {};
     t.squad.forEach((p) => { const k = p.pos || 'Other'; (groups[k] = groups[k] || []).push(p); });
@@ -1717,7 +1710,7 @@ function paintTable(id, quiet) {
     const c = body.data;
     $('#tblHead').innerHTML = `<a class="tbl-head" href="#/competition/${esc(c.id)}">${crest(c.logo, c.name)}<div class="t"><b>${esc(c.name)}</b><small>${esc([c.country, c.season && 'Season ' + c.season].filter(Boolean).join(' · '))}</small></div><span class="more">Matches & scorers ${IC.chev}</span></a>`;
     $('#tblBody').innerHTML = freshLine(body.meta) + (c.standings.length ? standingsHtml(c)
-      : emptyState('No table available', 'The data provider has not published standings for this competition yet.')) + footer();
+      : emptyState('No table available', 'The table appears once the season starts.')) + footer();
   }, (e) => { $('#tblBody').innerHTML = errorState(e); });
 }
 
@@ -2028,7 +2021,7 @@ async function runSearch() {
     if (local.length) html += `<div class="section-h"><h2>Matches</h2></div>${compGroups(local.slice(0, 8), { star: false })}`;
     if (teams.length) html += `<div class="section-h"><h2>Teams</h2></div><div class="list">${teams.map((t) => `<a class="li" href="#/team/${t.id}">${crest(t.logo, t.name)}<div class="t"><b>${esc(t.name)}</b><small>${esc(t.country || '')}</small></div>${IC.chev}</a>`).join('')}</div>`;
     if (competitions.length) html += `<div class="section-h"><h2>Competitions</h2></div><div class="list">${competitions.map(compItem).join('')}</div>`;
-    if (partial) html += `<div class="fresh">${q.length < 3 ? 'Type 3+ letters to search all teams.' : 'Some team lists are still loading — try again in a minute for complete results.'}</div>`;
+    if (partial) html += `<div class="fresh">${q.length < 3 ? 'Type 3+ letters to search all teams.' : 'Loading more teams…'}</div>`;
     sRes.innerHTML = html || emptyState('No results', `Nothing matched “${q}” in the covered competitions.`);
   } catch (e) {
     if (seq !== sSeq) return;
@@ -2038,7 +2031,7 @@ async function runSearch() {
 
 /* ---------- footer ---------- */
 function footer() {
-  return `<footer class="foot">${PROVIDER?.attribution ? esc(PROVIDER.attribution) + '.<br>' : ''}Kick-off times shown in ${esc(TZ)}.<br>An independent app not affiliated with or endorsed by Pi Network, any league or any club.<div class="copy">© ${new Date().getFullYear()} Copa · copa.pi</div></footer>`;
+  return `<footer class="foot"><div class="copy">© ${new Date().getFullYear()} Copa · copa.pi</div></footer>`;
 }
 
 /* ---------- splash + first-run welcome ---------- */
