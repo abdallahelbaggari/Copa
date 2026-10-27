@@ -742,6 +742,48 @@ body{background:var(--bg)}
 .onb.light .onb-foot{background:transparent}
 .ms-h b{color:#1E3A8A!important}
 .bk-tm .crest,.bk-tm .crest-fb{flex:none!important;width:20px!important}
+/* ===== Copa cinematic onboarding ===== */
+.onb-slide.cine{background:#050F28}
+.ob-stadium{position:absolute;inset:0;width:100%;height:100%;display:block;transform-origin:50% 45%}
+.onb-slide.play .ob-stadium{animation:stadiumZoom 9s ease-out both}
+@keyframes stadiumZoom{from{transform:scale(1.14)}to{transform:scale(1.02)}}
+.ob-vig{position:absolute;inset:0;pointer-events:none;background:linear-gradient(180deg,rgba(3,10,31,.55) 0%,rgba(3,10,31,0) 18%,rgba(3,10,31,0) 42%,rgba(5,15,40,.72) 66%,#050F28 88%)}
+.ob-flash{position:absolute;inset:0;pointer-events:none}
+.ob-flash i{position:absolute;width:3px;height:3px;border-radius:50%;background:#fff;box-shadow:0 0 8px 3px rgba(255,255,255,.8);opacity:0}
+.onb-slide.play .ob-flash i{animation:camFlash 5s infinite}
+@keyframes camFlash{0%,92%,100%{opacity:0}94%{opacity:1}96%{opacity:.2}}
+.ob-content.cine-c{justify-content:flex-end;padding:86px 22px 6px;gap:0}
+.ob-visual{flex:1;min-height:0;display:flex;align-items:center;justify-content:center;position:relative}
+.ob-text{position:relative}
+.ob-chip{display:inline-flex;width:40px;height:40px;border-radius:50%;align-items:center;justify-content:center;color:#F6DA8A;border:1.5px solid rgba(246,218,138,.65);background:rgba(226,179,60,.12);margin-bottom:12px;box-shadow:0 0 22px rgba(226,179,60,.25)}
+.ob-chip svg{width:21px;height:21px}
+.cine .ob-h{font-size:clamp(32px,9.4vw,42px)!important;line-height:1.02!important;letter-spacing:-.02em;text-shadow:0 4px 24px rgba(0,0,0,.45)!important}
+.cine .ob-p{color:rgba(255,255,255,.86)!important;font-size:15px;margin-top:10px}
+.onb-slide.play .ob-chip{animation:obUp .6s .05s cubic-bezier(.2,.8,.2,1) both}
+.ob-hero{position:relative;display:flex;align-items:center;justify-content:center}
+.ob-hero::before{content:"";position:absolute;width:280px;height:280px;border-radius:50%;background:radial-gradient(closest-side,rgba(246,218,138,.45),rgba(246,218,138,0));filter:blur(6px)}
+.ob-hero .ob-trophy{width:min(50vw,210px)}
+.ob-phone-wrap{transform:scale(.86);transform-origin:50% 50%}
+.cine .ob-phone{box-shadow:0 0 0 1.5px rgba(255,255,255,.22),0 40px 80px rgba(0,0,0,.6),0 0 70px rgba(47,91,211,.45)!important}
+.cine .ob-bk-wrap{padding:0}
+.cine .ob-pred{margin-top:0;width:100%;max-width:400px}
+.cine .op-card,.cine .op-lb{box-shadow:0 20px 50px rgba(0,0,0,.45)!important}
+.ob-ball-wrap{position:relative;display:flex;justify-content:center}
+.ob-ball-wrap::before{content:"";position:absolute;width:220px;height:220px;top:50%;left:50%;transform:translate(-50%,-55%);border-radius:50%;background:radial-gradient(closest-side,rgba(120,160,255,.45),transparent)}
+.ob-ball{position:relative;width:min(34vw,140px);height:auto;filter:drop-shadow(0 18px 30px rgba(0,0,0,.5))}
+.onb-slide.play .ob-ball{animation:ballIn 1s .1s cubic-bezier(.2,.9,.25,1.2) both}
+@keyframes ballIn{from{transform:translateY(-120px) rotate(-200deg);opacity:0}70%{transform:translateY(6px) rotate(10deg);opacity:1}to{transform:none}}
+.cine.join .ob-card{margin-top:16px}
+/* footer: centred dots + round arrow button */
+.onb-foot{display:grid!important;grid-template-columns:1fr auto 1fr;align-items:center}
+.onb-foot .ob-dots{grid-column:2;justify-content:center}
+.onb-foot .ob-next{grid-column:3;justify-self:end;width:58px;height:58px;padding:0!important;border-radius:50%!important;justify-content:center;transition:width .35s,border-radius .35s}
+.onb-foot .ob-next svg{width:22px;height:22px}
+.onb-foot .ob-next.pill{width:auto;padding:0 22px!important;border-radius:29px!important;white-space:nowrap;gap:8px}
+.onb:not(.light) .ob-next{background:linear-gradient(180deg,#F4D27A,#E2B33C 55%,#C9971C)!important;color:#2B1D00!important}
+.onb-top{padding-top:calc(16px + env(safe-area-inset-top,0px))!important}
+@media (max-height:740px){.ob-phone-wrap{transform:scale(.68)}.ob-hero .ob-trophy{width:min(40vw,160px)}.ob-bracket{width:min(84vw,290px)!important}.cine .ob-p{font-size:14px}.ob-ball{width:110px}.cine .op-r{padding:5px 14px}}
+@media (max-height:640px){.ob-phone-wrap{transform:scale(.56)}.cine .ob-pred .op-lb{display:none}}
 @media (prefers-reduced-motion:reduce){.onb-slide .ob-photo{animation:none!important;transform:none}}
 .onb-legal{text-align:center;margin-top:10px;font-size:11.5px;color:var(--dim)}
 .onb-legal a{color:var(--muted);text-decoration:underline}
@@ -2083,33 +2125,56 @@ function showOnboarding(force) {
         <div class="op-r"><b>3</b><span>pioneer_fc</span><em>17</em></div>
         <div class="op-r"><b>4</b><span>cupnights</span><em>15</em></div></div>
     </div>`;
+  // ---- Cinematic stadium scenes (original artwork, painted in code: no photos, logos or trademarks) ----
+  const BALL = `<svg class="ob-ball" viewBox="-60 -60 120 120" aria-hidden="true"><defs>
+      <radialGradient id="obBs" cx="-.35" cy="-.4" r="1.25"><stop offset="0" stop-color="#fff"/><stop offset=".55" stop-color="#E9EDF6"/><stop offset="1" stop-color="#8D9AB8"/></radialGradient>
+      <radialGradient id="obBh" cx="-.3" cy="-.38" r=".55"><stop offset="0" stop-color="#fff" stop-opacity=".9"/><stop offset="1" stop-color="#fff" stop-opacity="0"/></radialGradient>
+      <radialGradient id="obBd" cx=".35" cy=".45" r=".9"><stop offset=".55" stop-color="#000" stop-opacity="0"/><stop offset="1" stop-color="#050F28" stop-opacity=".55"/></radialGradient>
+      <clipPath id="obBc"><circle r="50"/></clipPath></defs>
+    <ellipse cx="4" cy="56" rx="44" ry="7" fill="#000" opacity=".45"/>
+    <circle r="50" fill="url(#obBs)"/>
+    <g clip-path="url(#obBc)" fill="#142A6B" stroke="#0B1D4D" stroke-width="1.2" stroke-linejoin="round">
+      <path d="M0-17L16.2-5.3 10 13.8H-10L-16.2-5.3z"/>
+      <path d="M0-17V-36M16.2-5.3l18-6M10 13.8l11 15.4M-10 13.8l-11 15.4M-16.2-5.3l-18-6" fill="none" stroke="#24418F" stroke-width="2"/>
+      <path d="M-12-44L0-36 12-44 9-60H-9z"/><path d="M34-11.5L47-17 58-4 54 14 40 8z"/><path d="M21 29l14-3 10 14-6 16-15-6z"/>
+      <path d="M-21 29l-14-3-10 14 6 16 15-6z"/><path d="M-34-11.5L-47-17-58-4-54 14-40 8z"/></g>
+    <circle r="50" fill="url(#obBd)"/><circle r="50" fill="url(#obBh)" opacity=".7"/>
+    <path d="M-7 45 A50 50 0 0 0 44 23" fill="none" stroke="#F6DA8A" stroke-opacity=".55" stroke-width="2"/></svg>`;
+  const chip = (svg) => `<span class="ob-chip">${svg}</span>`;
+  const CH = {
+    cup: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 4h8v5a4 4 0 01-8 0z"/><path d="M8 6H5a3 3 0 003 4M16 6h3a3 3 0 01-3 4M12 13v4M8 20h8M9.5 17h5"/></svg>',
+    live: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><path d="M13 2L4 14h7l-1 8 9-12h-7z"/></svg>',
+    tree: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 5h5v4H3zM3 15h5v4H3zM16 10h5v4h-5z"/><path d="M8 7h3v10H8M11 12h5"/></svg>',
+    target: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="8.5"/><circle cx="12" cy="12" r="4.5"/><circle cx="12" cy="12" r="1" fill="currentColor"/></svg>',
+    pi: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M5 7h14M9 7v11M15 7v8.5c0 1.5.8 2.5 2.4 2.5"/></svg>',
+  };
+  const flashes = Array.from({ length: 16 }, (_, k) => `<i style="left:${(k * 61 + 7) % 96 + 2}%;top:${32 + ((k * 37) % 22)}%;animation-delay:${(k * 0.53) % 5}s"></i>`).join('');
+  const bg = (v) => `<canvas class="ob-stadium" data-v="${v}"></canvas><div class="ob-flash">${flashes}</div><div class="ob-vig"></div>`;
+  const text = (icon, h, p) => `<div class="ob-text">${chip(icon)}<h2 class="ob-h">${h}</h2><p class="ob-p">${p}</p></div>`;
   const slides = [
-    `<section class="onb-slide nt"><div class="ob-night"><div class="ob-beam b1"></div><div class="ob-beam b2"></div><div class="ob-conf">${confetti}</div></div>
-      <div class="ob-content center"><div class="ob-stage">${BIG_TROPHY}</div>
-      <h2 class="ob-h">Every Cup.<br>One <em>App.</em></h2>
-      <p class="ob-p">Champions League nights, CAF and Libertadores ties, the World Cup and AFCON: every knockout, all in one place.</p></div></section>`,
-    `<section class="onb-slide lt"><div class="ob-light"></div><div class="ob-glow"></div>
-      <div class="ob-content"><h2 class="ob-h">Live <em>Cup Nights</em></h2>
-      <p class="ob-p">Scores update in real time with the minute, half-time, extra time and penalties.</p>
-      <div style="display:flex;justify-content:center;margin-top:18px">${PHONE_LIVE}</div></div></section>`,
-    `<section class="onb-slide nt"><div class="ob-night soft"></div>
-      <div class="ob-content"><h2 class="ob-h">The Road to<br>the <em>Final</em></h2>
-      <p class="ob-p">Interactive brackets with aggregate scores, two-legged ties and shoot-outs. See who goes through at a glance.</p>
-      <div class="ob-bk-wrap">${BRACKET}</div></div></section>`,
-    `<section class="onb-slide lt"><div class="ob-light"></div><div class="ob-glow" style="left:30%"></div>
-      <div class="ob-content"><h2 class="ob-h">Predict. Score.<br><em>Climb.</em></h2>
-      <p class="ob-p">Call the score before kick-off. Exact score 3 points, right result 1 point. Free to play, no Pi staked.</p>
-      ${PRED}</div></section>`,
-    `<section class="onb-slide nt"><div class="ob-night"><div class="ob-beam b1"></div><div class="ob-conf few">${confetti}</div></div>
-      <div class="ob-content bottom"><div class="ob-mini-cup">${BIG_TROPHY}</div><h2 class="ob-h">Join the <em>Copa</em></h2>
-      <p class="ob-p">Sign in with your Pi account to play the Predictor, follow your clubs and support Copa with Pi (optional).</p>
+    `<section class="onb-slide nt cine">${bg(0)}<div class="ob-conf">${confetti}</div>
+      <div class="ob-content cine-c"><div class="ob-visual"><div class="ob-hero">${BIG_TROPHY}</div></div>
+      ${text(CH.cup, 'Every Cup.<br>One <em>App.</em>', 'Champions League nights, CAF and Libertadores ties, the World Cup and AFCON. Every knockout, all in one place.')}</div></section>`,
+    `<section class="onb-slide nt cine">${bg(1)}
+      <div class="ob-content cine-c"><div class="ob-visual"><div class="ob-phone-wrap">${PHONE_LIVE}</div></div>
+      ${text(CH.live, 'Live <em>Cup Nights</em>', 'Real-time scores with the minute, half-time, extra time and penalties. Never miss a goal.')}</div></section>`,
+    `<section class="onb-slide nt cine">${bg(2)}
+      <div class="ob-content cine-c"><div class="ob-visual"><div class="ob-bk-wrap">${BRACKET}</div></div>
+      ${text(CH.tree, 'The Road to<br>the <em>Final</em>', 'Interactive brackets with aggregate scores, two-legged ties and shoot-outs. See who goes through at a glance.')}</div></section>`,
+    `<section class="onb-slide nt cine">${bg(3)}
+      <div class="ob-content cine-c"><div class="ob-visual">${PRED}</div>
+      ${text(CH.target, 'Predict. Score.<br><em>Climb.</em>', 'Call the score before kick-off: exact score 3 points, right result 1. Free to play, no Pi staked.')}</div></section>`,
+    `<section class="onb-slide nt cine join">${bg(4)}<div class="ob-conf few">${confetti}</div>
+      <div class="ob-content cine-c"><div class="ob-visual"><div class="ob-ball-wrap">${BALL}</div></div>
+      <div class="ob-text">${chip(CH.pi)}<h2 class="ob-h">Ready for<br><em>Cup Night?</em></h2>
+      <p class="ob-p">Sign in with Pi to play the Predictor, follow your clubs and support Copa (optional).</p></div>
       <div class="ob-card">
         <button class="ob-signin" id="obSignin"><span class="pi">π</span><span>Sign in with Pi<small>Pi Mainnet</small></span></button>
         <button class="ob-guest" id="onbGuest">Continue as guest</button>
         <div class="ob-legal">By signing in you agree to the <a href="#/terms" data-legal>Terms of Use</a> and <a href="#/privacy" data-legal>Privacy Policy</a>.</div>
         <div class="ob-msg" id="onbMsg"></div>
       </div>
-      <div class="ob-perks"><span>${ico.bolt}Lightweight</span><span>${ico.lock}Private</span><span>${ico.heart}Free</span></div>
+      <div class="ob-perks"><span>${ico.lock}Secure</span><span>${ico.bolt}Fast</span><span>${ico.heart}Free</span></div>
       <div class="ob-copy">© ${new Date().getFullYear()} Copa · copa.pi</div>
       </div></section>`,
   ];
@@ -2121,9 +2186,94 @@ function showOnboarding(force) {
     <div class="onb-top"><div class="onb-brand">${MARK_SVG}<div><b>COPA</b><small>Every Cup. Every Upset. Every Champion.</small></div></div><button class="onb-skip" id="onbSkip">Skip</button></div>
     <div class="onb-track" id="onbTrack">${slides.join('')}</div>
     <div class="onb-foot" id="onbFoot"><div class="ob-dots" id="obDots" style="--dur:${SCENE_MS}ms">${Array.from({ length: scenes }, () => '<i></i>').join('')}</div>
-      <button class="ob-next" id="onbNext">Next ${ARROW}</button></div>`;
+      <button class="ob-next" id="onbNext" aria-label="Next">${ARROW}</button></div>`;
   document.body.appendChild(o);
   if (CONFIG.PI_SANDBOX) { const sm = o.querySelector('.ob-signin small'); if (sm) sm.textContent = 'Pi Testnet'; }
+  // Paints an original night-stadium scene on each canvas (seeded, so every scene is stable).
+  function paintStadium(cv) {
+    const v = Number(cv.dataset.v) || 0;
+    const dpr = Math.min(window.devicePixelRatio || 1, 2);
+    const W = Math.max(1, cv.clientWidth), H = Math.max(1, cv.clientHeight);
+    cv.width = Math.round(W * dpr); cv.height = Math.round(H * dpr);
+    const g = cv.getContext('2d'); if (!g) return;
+    g.setTransform(dpr, 0, 0, dpr, 0, 0);
+    let seed = 1234 + v * 977; const rnd = () => { seed = (seed * 16807) % 2147483647; return (seed - 1) / 2147483646; };
+    const hz = H * [0.6, 0.62, 0.66, 0.64, 0.6][v % 5];        // horizon (pitch edge)
+    const roof = H * [0.24, 0.26, 0.3, 0.28, 0.24][v % 5];     // top of the stands
+    // sky
+    let gr = g.createLinearGradient(0, 0, 0, hz);
+    gr.addColorStop(0, '#030A1F'); gr.addColorStop(0.45, '#0A1C52'); gr.addColorStop(1, '#183A93');
+    g.fillStyle = gr; g.fillRect(0, 0, W, hz);
+    // stands (curved bowl)
+    const curve = (y, k) => y + Math.pow((W / 2 - 0) / W * 2, 2) * k;
+    g.beginPath(); g.moveTo(0, roof + 22); g.quadraticCurveTo(W / 2, roof - 18, W, roof + 22); g.lineTo(W, hz); g.lineTo(0, hz); g.closePath();
+    gr = g.createLinearGradient(0, roof, 0, hz); gr.addColorStop(0, '#0B1A47'); gr.addColorStop(1, '#13286B');
+    g.fillStyle = gr; g.fill();
+    g.save(); g.clip();
+    // crowd: thousands of tiny dots, brighter near the lights
+    const cols = ['#ffffff', '#DCE6FF', '#9DB6FF', '#F6DA8A', '#E2B33C', '#E5354A', '#C9A27E', '#8A6A50', '#2F5BD3'];
+    const step = 3.2;
+    for (let y = roof - 10; y < hz - 2; y += step) {
+      const t = (y - roof) / (hz - roof);
+      for (let x = 0; x < W; x += step * (0.9 + rnd() * 0.4)) {
+        if (rnd() < 0.12) continue;
+        g.globalAlpha = 0.18 + rnd() * 0.45 * (1 - t * 0.6);
+        g.fillStyle = cols[(rnd() * cols.length) | 0];
+        const s = 0.9 + rnd() * (1.1 + t * 0.9);
+        g.fillRect(x + rnd() * 1.4, y + rnd() * 1.4, s, s);
+      }
+    }
+    g.globalAlpha = 1;
+    // tier rails
+    g.strokeStyle = 'rgba(160,190,255,.16)'; g.lineWidth = 1.2;
+    [0.33, 0.62].forEach((f) => { const y = roof + (hz - roof) * f; g.beginPath(); g.moveTo(0, y + 10); g.quadraticCurveTo(W / 2, y - 8, W, y + 10); g.stroke(); });
+    // advertising-board strip (blank, no brands)
+    gr = g.createLinearGradient(0, 0, W, 0); gr.addColorStop(0, 'rgba(47,91,211,.55)'); gr.addColorStop(0.5, 'rgba(226,179,60,.55)'); gr.addColorStop(1, 'rgba(47,91,211,.55)');
+    g.fillStyle = gr; g.fillRect(0, hz - 7, W, 5);
+    g.restore();
+    // roof edge
+    g.fillStyle = '#040B22'; g.beginPath(); g.moveTo(0, roof + 22); g.quadraticCurveTo(W / 2, roof - 18, W, roof + 22); g.lineTo(W, roof + 12); g.quadraticCurveTo(W / 2, roof - 28, 0, roof + 12); g.closePath(); g.fill();
+    // floodlights: row along the roof + two big banks
+    g.globalCompositeOperation = 'lighter';
+    const lamp = (x, y, r, a) => { const rg = g.createRadialGradient(x, y, 0, x, y, r); rg.addColorStop(0, `rgba(255,255,255,${a})`); rg.addColorStop(0.25, `rgba(190,215,255,${a * 0.45})`); rg.addColorStop(1, 'rgba(120,160,255,0)'); g.fillStyle = rg; g.fillRect(x - r, y - r, r * 2, r * 2); };
+    for (let k = 0; k <= 14; k++) { const x = (W / 14) * k; const y = roof + 17 - Math.sin((k / 14) * Math.PI) * 30; lamp(x, y, 14, 0.75); }
+    const banks = [[W * 0.1, roof - H * 0.1], [W * 0.9, roof - H * 0.1]];
+    if (v === 2 || v === 3) banks.push([W * 0.5, roof - H * 0.13]);
+    banks.forEach(([bx, by]) => {
+      // beam down to the pitch
+      const bm = g.createLinearGradient(bx, by, W / 2, hz + 60);
+      bm.addColorStop(0, 'rgba(200,220,255,.20)'); bm.addColorStop(1, 'rgba(200,220,255,0)');
+      g.fillStyle = bm; g.beginPath(); g.moveTo(bx - 18, by); g.lineTo(bx + 18, by); g.lineTo(W / 2 + W * 0.42, hz + 80); g.lineTo(W / 2 - W * 0.42, hz + 80); g.closePath(); g.fill();
+      lamp(bx, by, 110, 0.55);
+      for (let r = 0; r < 3; r++) for (let c = 0; c < 5; c++) lamp(bx - 20 + c * 10, by - 8 + r * 8, 7, 0.95);
+    });
+    // horizon glow
+    lamp(W / 2, hz - 10, W * 0.75, 0.16);
+    g.globalCompositeOperation = 'source-over';
+    // pitch
+    gr = g.createLinearGradient(0, hz, 0, H); gr.addColorStop(0, '#1C5E45'); gr.addColorStop(0.5, '#0F3D2E'); gr.addColorStop(1, '#061A16');
+    g.fillStyle = gr; g.fillRect(0, hz, W, H - hz);
+    const n = 9;
+    for (let k = 0; k < n; k++) {
+      if (k % 2) continue;
+      const y0 = hz + (H - hz) * Math.pow(k / n, 1.7), y1 = hz + (H - hz) * Math.pow((k + 1) / n, 1.7);
+      g.fillStyle = 'rgba(255,255,255,.045)'; g.fillRect(0, y0, W, y1 - y0);
+    }
+    g.strokeStyle = 'rgba(255,255,255,.35)'; g.lineWidth = 1.5;
+    g.beginPath(); g.moveTo(-10, hz + 6); g.lineTo(W + 10, hz + 6); g.stroke();
+    g.strokeStyle = 'rgba(255,255,255,.22)'; g.lineWidth = 2;
+    g.beginPath(); g.ellipse(W / 2, hz + (H - hz) * 0.42, W * 0.36, (H - hz) * 0.1, 0, 0, Math.PI * 2); g.stroke();
+    g.beginPath(); g.moveTo(W / 2, hz + 6); g.lineTo(W / 2, H); g.stroke();
+    // haze + vignette
+    gr = g.createLinearGradient(0, hz - 50, 0, hz + 40); gr.addColorStop(0, 'rgba(150,180,255,0)'); gr.addColorStop(0.5, 'rgba(150,180,255,.12)'); gr.addColorStop(1, 'rgba(150,180,255,0)');
+    g.fillStyle = gr; g.fillRect(0, hz - 50, W, 90);
+    const vg = g.createRadialGradient(W / 2, H * 0.45, Math.min(W, H) * 0.3, W / 2, H * 0.5, Math.max(W, H) * 0.75);
+    vg.addColorStop(0, 'rgba(0,0,0,0)'); vg.addColorStop(1, 'rgba(2,6,20,.65)'); g.fillStyle = vg; g.fillRect(0, 0, W, H);
+  }
+  const paintAll = () => o.querySelectorAll('.ob-stadium').forEach(paintStadium);
+  requestAnimationFrame(paintAll);
+  let rsz = null; const onRsz = () => { if (!document.body.contains(o)) return window.removeEventListener('resize', onRsz); clearTimeout(rsz); rsz = setTimeout(paintAll, 150); };
+  window.addEventListener('resize', onRsz);
   const track = o.querySelector('#onbTrack'), next = o.querySelector('#onbNext'), skip = o.querySelector('#onbSkip'),
     foot = o.querySelector('#onbFoot'), dotsWrap = o.querySelector('#obDots'), dotEls = [...dotsWrap.querySelectorAll('i')],
     signin = o.querySelector('#obSignin'), guest = o.querySelector('#onbGuest'), msg = o.querySelector('#onbMsg');
@@ -2163,7 +2313,7 @@ function showOnboarding(force) {
     foot.classList.toggle('hide', last);
     o.classList.toggle('light', o.querySelectorAll('.onb-slide')[i].classList.contains('lt'));
     skip.style.visibility = last ? 'hidden' : 'visible';
-    next.innerHTML = (i === scenes - 1 ? 'Get started ' : 'Next ') + ARROW;
+    next.innerHTML = i === scenes - 1 ? 'Get started ' + ARROW : ARROW; next.classList.toggle('pill', i === scenes - 1); next.setAttribute('aria-label', i === scenes - 1 ? 'Get started' : 'Next');
     msg.textContent = '';
     demo(i);
     if (!last && !reduced) timerId = setTimeout(() => go(i + 1), SCENE_MS);
