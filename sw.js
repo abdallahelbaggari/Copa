@@ -1,7 +1,7 @@
 // Copa service worker: offline app shell + last-known API data when offline.
 // API responses are network-first; a cached copy is only used when the network fails,
 // and the page flags it as delayed using the response's own fetchedAt time.
-const VERSION = 'copa-v1.3.0';
+const VERSION = 'copa-v1.3.1';
 const SHELL = ['/', '/index.html', '/manifest.webmanifest', '/icons/icon.svg', '/icons/icon-192.png'];
 
 self.addEventListener('install', (e) => {

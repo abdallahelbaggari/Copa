@@ -1042,7 +1042,8 @@ function compGroups(list, { star = true } = {}) {
 }
 function freshLine(meta, { live = false } = {}) {
   if (!meta) return '';
-  const warn = meta.stale || (live && Date.now() - meta.fetchedAt > CONFIG.STALE_AFTER_MS);
+  const age = Date.now() - meta.fetchedAt;
+  const warn = live ? age > CONFIG.STALE_AFTER_MS : age > 30 * 60e3;
   return warn ? `<div class="fresh warn">${IC.warn.replace('<svg', '<svg width="14" height="14"')} Reconnecting… last update ${esc(fmtTime(new Date(meta.fetchedAt).toISOString()))}</div>` : '';
 }
 function emptyState(title, text, icon = IC.pitch, extra = '') {
@@ -1132,7 +1133,7 @@ function paintHome() {
   if (!list.length) {
     html = all.length
       ? emptyState('Nothing in this filter', 'Try another filter for this day.')
-      : emptyState('No matches this day', 'No fixtures from the covered competitions are scheduled for this date.');
+      : emptyState('No matches this day', 'No fixtures are scheduled for this date.');
   }
   el.innerHTML = freshLine(homeData.meta, { live: state.date === todayStr() }) + html + footer();
 }
@@ -1159,7 +1160,7 @@ function paintLive() {
   const f = state.liveComp;
   const list = f === 'all' ? all : f.startsWith('c:') ? all.filter((m) => String(m.comp.id) === f.slice(2)) : all.filter((m) => m.comp.country === f.slice(2));
   el.innerHTML = freshLine(liveData.meta, { live: true }) +
-    (list.length ? compGroups(list) : emptyState('No live matches right now', 'Matches from the covered competitions appear here the moment they kick off.', IC.pitch,
+    (list.length ? compGroups(list) : emptyState('No live matches right now', 'Matches appear here the moment they kick off.', IC.pitch,
       '<div style="margin-top:18px"><a class="btn ghost" href="#/home">See today’s fixtures</a></div>')) + footer();
 }
 function updateLiveBadge(n) {
@@ -1272,7 +1273,7 @@ function paintPredPlay(el) {
     const soon = Date.now() + 60e3;
     const all = res.flatMap((r) => r.data).filter((m) => m.state === 'pre' && Date.parse(m.kickoff) > soon);
     const seen = new Set(); const list = all.filter((m) => !seen.has(m.id) && seen.add(m.id)).slice(0, 40);
-    if (!list.length) { el.innerHTML = emptyState('No open matches right now', 'Matches from the covered competitions open for predictions up to four days before kick-off.', TROPHY_IC); return; }
+    if (!list.length) { el.innerHTML = emptyState('No open matches right now', 'Matches open for predictions up to four days before kick-off.', TROPHY_IC); return; }
     const can = !!(piUser && piToken);
     const byDay = new Map();
     for (const m of list) { const k = ymd(new Date(m.kickoff)); if (!byDay.has(k)) byDay.set(k, []); byDay.get(k).push(m); }
@@ -2022,7 +2023,7 @@ async function runSearch() {
     if (teams.length) html += `<div class="section-h"><h2>Teams</h2></div><div class="list">${teams.map((t) => `<a class="li" href="#/team/${t.id}">${crest(t.logo, t.name)}<div class="t"><b>${esc(t.name)}</b><small>${esc(t.country || '')}</small></div>${IC.chev}</a>`).join('')}</div>`;
     if (competitions.length) html += `<div class="section-h"><h2>Competitions</h2></div><div class="list">${competitions.map(compItem).join('')}</div>`;
     if (partial) html += `<div class="fresh">${q.length < 3 ? 'Type 3+ letters to search all teams.' : 'Loading more teams…'}</div>`;
-    sRes.innerHTML = html || emptyState('No results', `Nothing matched “${q}” in the covered competitions.`);
+    sRes.innerHTML = html || emptyState('No results', `Nothing matched “${q}”.`);
   } catch (e) {
     if (seq !== sSeq) return;
     sRes.innerHTML = local.length ? compGroups(local) : errorState(e);
