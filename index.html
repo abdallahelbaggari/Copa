@@ -2000,7 +2000,7 @@ sRes.addEventListener('click', (e) => { if (e.target.closest('a')) closeSearch()
 sIn.addEventListener('input', () => { clearTimeout(sTimer); sTimer = setTimeout(runSearch, 350); });
 document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeSearch(); });
 function searchHint() {
-  sRes.innerHTML = `<div class="section-h"><h2>Popular</h2></div><div class="chips" style="flex-wrap:wrap">${['Arsenal', 'Real Madrid', 'Al Hilal', 'Enyimba', 'Premier League', 'Nigeria'].map((s) => `<button class="chip" data-s="${s}">${s}</button>`).join('')}</div>`;
+  sRes.innerHTML = `<div class="section-h"><h2>Popular</h2></div><div class="chips" style="flex-wrap:wrap">${['Arsenal', 'Real Madrid', 'Barcelona', 'Bayern', 'Premier League', 'Champions League'].map((s) => `<button class="chip" data-s="${s}">${s}</button>`).join('')}</div>`;
   sRes.querySelectorAll('[data-s]').forEach((b) => b.onclick = () => { sIn.value = b.dataset.s; runSearch(); });
 }
 async function runSearch() {
@@ -2148,7 +2148,7 @@ function showOnboarding(force) {
   const slides = [
     `<section class="onb-slide nt cine">${bg(0)}<div class="ob-conf">${confetti}</div>
       <div class="ob-content cine-c"><div class="ob-visual"><div class="ob-hero">${BIG_TROPHY}</div></div>
-      ${text(CH.cup, 'Every Cup.<br>One <em>App.</em>', 'Champions League nights, CAF and Libertadores ties, the World Cup and AFCON. Every knockout, all in one place.')}</div></section>`,
+      ${text(CH.cup, 'Every Cup.<br>One <em>App.</em>', 'Champions League nights, the World Cup and the Euros. Every knockout, all in one place.')}</div></section>`,
     `<section class="onb-slide nt cine">${bg(1)}
       <div class="ob-content cine-c"><div class="ob-visual"><div class="ob-phone-wrap">${PHONE_LIVE}</div></div>
       ${text(CH.live, 'Live <em>Cup Nights</em>', 'Real-time scores with the minute, half-time, extra time and penalties. Never miss a goal.')}</div></section>`,
