@@ -42,7 +42,7 @@ globalThis.fetch = async (url, init = {}) => {
 };
 
 const env0 = MOCK === 'fd' ? { FOOTBALL_DATA_KEY: 'test' } : MOCK === 'af' ? { API_FOOTBALL_KEY: 'test', AF_LEAGUES: '12,13' } : MOCK === 'hy' ? { FOOTBALL_DATA_KEY: 'test', API_FOOTBALL_KEY: 'test', AF_LEAGUES: '12,13', ...(process.env.AF_DAILY_LIMIT ? { AF_DAILY_LIMIT: process.env.AF_DAILY_LIMIT } : {}) } : {};
-const env = { ...env0, PI_API_KEY: 'test-pi-key' };
+const env = { ...env0, PI_API_KEY: 'test-pi-key', PREDICT_MEMORY: process.env.NO_KV ? '' : '1' };
 const types = { '.html': 'text/html', '.js': 'text/javascript', '.svg': 'image/svg+xml', '.png': 'image/png', '.webp': 'image/webp', '.webmanifest': 'application/manifest+json', '.json': 'application/json', '.webp': 'image/webp', '.jpg': 'image/jpeg' };
 
 http.createServer(async (req, res) => {

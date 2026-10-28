@@ -1340,7 +1340,7 @@ function paintPredBoard(el) {
   $('#lbChips').onclick = (e) => { const b = e.target.closest('[data-b]'); if (!b) return; state.board = b.dataset.b; paintPredBoard(el); };
   fetch('/predict?board=' + state.board).then((r) => r.json()).then((d) => {
     const body = $('#lbBody'); if (!body) return;
-    if (!d.ok) { body.innerHTML = emptyState('Leaderboard unavailable', 'Please try again in a moment.'); return; }
+    if (!d.ok) { body.innerHTML = emptyState(d.soon ? 'Opening soon' : 'Leaderboard unavailable', d.soon ? 'The Predictor is opening soon. Please check back shortly.' : 'Please try again in a moment.', TROPHY_IC); return; }
     if (!d.rows.length) { body.innerHTML = emptyState('No points yet ' + (state.board === 'week' ? 'this week' : 'this season'), 'Be the first: predict a match and come back after the final whistle.', TROPHY_IC); return; }
     body.innerHTML = `<div class="lb"><div class="lb-h"><span>${esc(d.label)}</span><span>Pts</span></div>${d.rows.map((r) => `<div class="lb-r ${piUser && r.name === piUser ? 'me' : ''}"><span class="rk rk${r.rank}">${r.rank}</span><div class="nm"><b>${esc(r.name)}</b><small>${r.exact} exact · ${r.played} played</small></div><b class="num pt">${r.points}</b></div>`).join('')}</div>`;
   }).catch(() => { const b = $('#lbBody'); if (b) b.innerHTML = emptyState('Leaderboard unavailable', 'Check your connection and try again.'); });

@@ -5,7 +5,12 @@
 import { reply, options, readBody, log } from '../server/pi.js';
 import { verifyPiUser, savePick, myPicks, leaderboard } from '../server/predict.js';
 
+// Predictions must live in shared storage. Without the COPA_CACHE binding, say so instead of losing picks.
+const ready = (env) => !!(env.COPA_CACHE || env.PREDICT_MEMORY === '1');
+const SOON = 'The Predictor is opening soon. Please check back shortly.';
+
 export async function onRequestPost(context) {
+  if (!ready(context.env)) return reply({ ok: false, error: SOON, soon: true });
   const body = await readBody(context.request);
   const user = await verifyPiUser(body.accessToken);
   if (!user) return reply({ ok: false, error: 'Please sign in with Pi again', auth: false });
@@ -21,6 +26,7 @@ export async function onRequestPost(context) {
 }
 
 export async function onRequestGet(context) {
+  if (!ready(context.env)) return reply({ ok: false, error: SOON, soon: true });
   const board = new URL(context.request.url).searchParams.get('board');
   // Public leaderboard: hide Pi uids, mark nothing personal.
   const r = await leaderboard(context.env, board);
