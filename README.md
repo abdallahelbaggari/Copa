@@ -1,4 +1,4 @@
-# Copa — Every Cup. Every Upset. Every Champion.
+# Copa — Football. Live. Connected.
 
 App name: **Copa** · Domain: **copa.pi** · Cloudflare Pages: **copa-pi.pages.dev** · Support: support.copa.pi@gmail.com
 

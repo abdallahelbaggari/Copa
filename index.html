@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Copa — Every Cup. Every Upset. Every Champion.</title>
+<title>Copa — Football. Live. Connected.</title>
 <meta name="application-name" content="Copa">
 <meta name="apple-mobile-web-app-title" content="Copa">
 <meta name="description" content="Copa — cup football, live scores, brackets, predictions and news.">
@@ -828,7 +828,7 @@ body{background:var(--bg)}
 </head>
 <body>
 
-<div class="splash" id="splash" aria-hidden="true"><svg viewBox="0 0 64 64" aria-hidden="true"><defs><linearGradient id="cpG" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#2F5BD3"/><stop offset="1" stop-color="#0B1D4D"/></linearGradient><linearGradient id="cpY" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#FBE7A8"/><stop offset=".55" stop-color="#E9B83F"/><stop offset="1" stop-color="#C8921A"/></linearGradient></defs><rect width="64" height="64" rx="15" fill="url(#cpG)"/><rect x="1" y="1" width="62" height="62" rx="14" fill="none" stroke="#F6DA8A" stroke-opacity=".35" stroke-width="1.5"/><path d="M21 14h22v10.5a11 11 0 01-22 0z" fill="url(#cpY)"/><path d="M21.5 18H16.5a5.5 5.5 0 005.6 8.4M42.5 18h5a5.5 5.5 0 01-5.6 8.4" fill="none" stroke="url(#cpY)" stroke-width="3" stroke-linecap="round"/><path d="M29.5 35h5v6.5h-5z" fill="url(#cpY)"/><rect x="22.5" y="41.5" width="19" height="6" rx="2" fill="url(#cpY)"/><path d="M32 18.6l1.5 3.1 3.4.5-2.5 2.4.6 3.4-3-1.6-3 1.6.6-3.4-2.5-2.4 3.4-.5z" fill="#1E3A8A"/></svg><div class="name">COPA</div><div class="tag">Every Cup. Every Upset. Every Champion.</div><div class="copy">© 2026 Copa · copa.pi</div></div>
+<div class="splash" id="splash" aria-hidden="true"><svg viewBox="0 0 64 64" aria-hidden="true"><defs><linearGradient id="cpG" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#2F5BD3"/><stop offset="1" stop-color="#0B1D4D"/></linearGradient><linearGradient id="cpY" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#FBE7A8"/><stop offset=".55" stop-color="#E9B83F"/><stop offset="1" stop-color="#C8921A"/></linearGradient></defs><rect width="64" height="64" rx="15" fill="url(#cpG)"/><rect x="1" y="1" width="62" height="62" rx="14" fill="none" stroke="#F6DA8A" stroke-opacity=".35" stroke-width="1.5"/><path d="M21 14h22v10.5a11 11 0 01-22 0z" fill="url(#cpY)"/><path d="M21.5 18H16.5a5.5 5.5 0 005.6 8.4M42.5 18h5a5.5 5.5 0 01-5.6 8.4" fill="none" stroke="url(#cpY)" stroke-width="3" stroke-linecap="round"/><path d="M29.5 35h5v6.5h-5z" fill="url(#cpY)"/><rect x="22.5" y="41.5" width="19" height="6" rx="2" fill="url(#cpY)"/><path d="M32 18.6l1.5 3.1 3.4.5-2.5 2.4.6 3.4-3-1.6-3 1.6.6-3.4-2.5-2.4 3.4-.5z" fill="#1E3A8A"/></svg><div class="name">COPA</div><div class="tag">Football. Live. Connected.</div><div class="copy">© 2026 Copa · copa.pi</div></div>
 <header class="top" id="top">
   <button class="back" id="backBtn" aria-label="Back">
     <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>
@@ -1832,7 +1832,7 @@ function viewMe() {
       <div><span>Privacy Policy</span><b><a href="#/privacy" style="color:var(--green)">Read</a></b></div>
       <div><span>Terms of Use</span><b><a href="#/terms" style="color:var(--green)">Read</a></b></div>
       <div><span>Introduction</span><b><button id="replayOnb" style="color:var(--green);font-weight:600">View again</button></b></div>
-      <div><span>Version</span><b>1.0.0 · Pi Mainnet</b></div>
+      <div><span>Version</span><b>1.3.3 · Pi Mainnet</b></div>
     </div>${footer()}</div>`;
   app.querySelectorAll('[data-set]').forEach((b) => b.addEventListener('click', () => {
     const k = b.dataset.set; settings[k] = !settings[k]; saveSettings();
@@ -2177,7 +2177,7 @@ function showOnboarding(force) {
   const o = document.createElement('div');
   o.className = 'onb'; o.setAttribute('role', 'dialog'); o.setAttribute('aria-label', 'Welcome to Copa');
   o.innerHTML = `
-    <div class="onb-top"><div class="onb-brand">${MARK_SVG}<div><b>COPA</b><small>Every Cup. Every Upset. Every Champion.</small></div></div><button class="onb-skip" id="onbSkip">Skip</button></div>
+    <div class="onb-top"><div class="onb-brand">${MARK_SVG}<div><b>COPA</b><small>Football. Live. Connected.</small></div></div><button class="onb-skip" id="onbSkip">Skip</button></div>
     <div class="onb-track" id="onbTrack">${slides.join('')}</div>
     <div class="onb-foot" id="onbFoot"><div class="ob-dots" id="obDots" style="--dur:${SCENE_MS}ms">${Array.from({ length: scenes }, () => '<i></i>').join('')}</div>
       <button class="ob-next" id="onbNext" aria-label="Next">${ARROW}</button></div>`;

@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "private": true,
   "type": "module",
-  "description": "Copa \u2014 Every Cup. Every Upset. Every Champion. (Pi Network PWA on Cloudflare Pages)",
+  "description": "Copa \u2014 Football. Live. Connected. (Pi Network PWA on Cloudflare Pages)",
   "scripts": {
     "test:fd": "MOCK=fd node test/serve.mjs 8787",
     "test:af": "MOCK=af node test/serve.mjs 8788",
