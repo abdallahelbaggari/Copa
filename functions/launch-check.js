@@ -16,7 +16,7 @@ export async function onRequestGet(context) {
     ['Guardian news key', !!env.GUARDIAN_KEY, env.GUARDIAN_KEY ? 'Set' : 'Missing (news uses a test key)', 'Get a free key at open-platform.theguardian.com → add GUARDIAN_KEY in Cloudflare'],
     ['Shared storage (COPA_CACHE) — needed for predictions', !!env.COPA_CACHE, env.COPA_CACHE ? 'Bound' : 'Not bound', 'Cloudflare → Storage → KV → create COPA_CACHE, then the copa project → Settings → Bindings → KV namespace, variable name COPA_CACHE, redeploy'],
   ];
-  const needed = NETWORK === 'mainnet' ? checks : checks.filter((c) => c[0] !== 'API-Football key' && c[0] !== 'Guardian news key');
+  const needed = checks.filter((c) => c[0] !== 'API-Football key' && c[0] !== 'Guardian news key'); // optional on the free plan
   const ready = needed.every((c) => c[1]);
   if (new URL(context.request.url).searchParams.get('format') === 'json') {
     return Response.json({ ready, network: NETWORK, checks: checks.map(([name, ok, value]) => ({ name, ok, value })) }, { headers: { 'Cache-Control': 'no-store' } });
